@@ -1,0 +1,19 @@
+{
+  "name": "RS Construction & Printing – Druckkosten-Rechner",
+  "short_name": "Druckrechner",
+  "description": "Kalkulationstool für 3D-Druckkosten mit Rechnungs-, Angebots- und Lagerverwaltung.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#131A2B",
+  "theme_color": "#131A2B",
+  "lang": "de",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
