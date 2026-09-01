@@ -1993,7 +1993,7 @@
     <div id="settingsTabData" style="display:none;">
       <div id="desktopStorageSection" style="display:none;">
         <div class="section-label">Speicherort (Desktop-App)</div>
-        <p class="note" style="margin-top:0;">Wähle einen Ordner, in dem alle Daten dieser App als Datei gespeichert werden. Liegt der Ordner z.&nbsp;B. in <b>OneDrive</b>, <b>Google Drive</b> oder <b>Dropbox</b>, synchronisiert dein Cloud-Anbieter die Daten automatisch auf alle deine Geräte – ganz ohne Anmeldung in dieser App.</p>
+        <p class="note" style="margin-top:0;">Wähle einen Ordner, in dem alle Daten dieser App als Datei gespeichert werden. Liegt der Ordner z.&nbsp;B. in <b>OneDrive</b>, <b>Google Drive</b>, <b>Dropbox</b> oder dem lokalen <b>iCloud-Drive-Ordner von "iCloud für Windows"</b>, synchronisiert dein Cloud-Anbieter die Daten automatisch auf alle deine Geräte – ganz ohne Anmeldung in dieser App.</p>
         <div class="field">
           <label>Aktueller Speicherort</label>
           <div id="desktopDataPath" style="font-family:'IBM Plex Mono', monospace; font-size:12.5px; word-break:break-all; background:var(--card-2); border-radius:var(--radius-sm); padding:10px 12px;">—</div>
@@ -2005,20 +2005,23 @@
         <p class="note">Die App speichert bei jeder Änderung sofort lokal auf die Festplatte (funktioniert auch komplett offline). Liegt der gewählte Ordner in einem Cloud-Ordner, übernimmt dein Cloud-Client die Synchronisierung im Hintergrund automatisch.</p>
       </div>
 
-      <div id="webStorageSection">
-        <p class="note" style="margin-top:0;">Diese App speichert ihre Daten lokal im Browser jedes Geräts. Liegt die Datei z.&nbsp;B. in iCloud Drive, wird zwar die Datei selbst auf allen Geräten synchronisiert – die gespeicherten Firmen-, Lager- und Buchungsdaten aber nicht automatisch. Über Export/Import kannst du sie manuell zwischen Geräten übertragen.</p>
-      </div>
+      <div id="icloudManualSection">
+        <div class="section-label">Für Apple-Geräte: Manuell über iCloud Drive</div>
+        <p class="note" style="margin-top:0;">Eine echte "Mit iCloud anmelden"-Funktion ist in einer Web-App ohne kostenpflichtigen Apple-Developer-Account technisch nicht umsetzbar – dein iPad/iPhone ist aber ohnehin bereits bei iCloud angemeldet. Darüber läuft der Datenaustausch stattdessen ganz ohne Passwort-Eingabe in dieser App, über echte iCloud-Dateien:</p>
 
-      <div class="field">
-        <label>Alle Daten exportieren</label>
-        <button type="button" id="btnExportData" class="btn-secondary" style="margin-top:0;">⬇️ Backup-Datei speichern</button>
-        <p class="note">Lädt eine Datei <code>druckrechner-backup.json</code> herunter. Speichere sie in deinem iCloud-Drive-Ordner, um sie später auf einem anderen Gerät zu importieren.</p>
-      </div>
+        <div class="field">
+          <label>Schritt 1 · Auf diesem Gerät sichern</label>
+          <button type="button" id="btnExportData" class="btn-secondary" style="margin-top:0;">☁️ In iCloud Drive sichern</button>
+          <p class="note">Tippe auf "Sichern" → wähle als Ort <b>iCloud Drive</b> → speichere <b>immer unter demselben Dateinamen</b> und bestätige ggf. "Ersetzen".</p>
+          <p class="note" id="lastExportInfo" style="display:none;"></p>
+        </div>
 
-      <div class="field">
-        <label for="importDataInput">Daten importieren</label>
-        <input type="file" id="importDataInput" accept="application/json">
-        <p class="note">Wähle eine zuvor exportierte Backup-Datei aus (z.&nbsp;B. aus iCloud Drive). Bestehende lokale Daten auf diesem Gerät werden dabei überschrieben.</p>
+        <div class="field">
+          <label for="importDataInput">Schritt 2 · Auf dem anderen Gerät laden</label>
+          <input type="file" id="importDataInput" accept="application/json">
+          <p class="note">Tippe auf "Durchsuchen" → <b>iCloud Drive</b> → wähle die zuvor gesicherte Datei aus.</p>
+          <p class="note" id="lastImportInfo" style="display:none;"></p>
+        </div>
       </div>
 
       <p class="note" id="dataTransferStatus"></p>
@@ -2873,10 +2876,32 @@
     $('btnSettingsTabCompany').classList.toggle('active', tab === 'company');
     $('btnSettingsTabLocations').classList.toggle('active', tab === 'locations');
     $('btnSettingsTabData').classList.toggle('active', tab === 'data');
+    if (tab === 'data') { refreshSyncTimestamps(); }
   }
   $('btnSettingsTabCompany').addEventListener('click', () => switchSettingsTab('company'));
   $('btnSettingsTabLocations').addEventListener('click', () => switchSettingsTab('locations'));
   $('btnSettingsTabData').addEventListener('click', () => switchSettingsTab('data'));
+
+  function fmtDateTimeShortDE(iso){
+    const d = new Date(iso);
+    return d.toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'}) +
+      ', ' + d.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+  }
+
+  function refreshSyncTimestamps(){
+    try {
+      const lastExport = window.localStorage.getItem(LS_PREFIX + 'last-icloud-export');
+      if (lastExport) {
+        $('lastExportInfo').textContent = 'Zuletzt auf diesem Gerät gesichert: ' + fmtDateTimeShortDE(lastExport);
+        $('lastExportInfo').style.display = 'block';
+      }
+      const lastImport = window.localStorage.getItem(LS_PREFIX + 'last-icloud-import');
+      if (lastImport) {
+        $('lastImportInfo').textContent = 'Zuletzt auf diesem Gerät geladen: ' + fmtDateTimeShortDE(lastImport);
+        $('lastImportInfo').style.display = 'block';
+      }
+    } catch (err) {}
+  }
 
   async function exportAllData(){
     const data = { exportedAt: new Date().toISOString(), version: 1, values: {} };
@@ -2894,7 +2919,9 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    $('dataTransferStatus').textContent = '✓ Backup-Datei wurde heruntergeladen.';
+    try { window.localStorage.setItem(LS_PREFIX + 'last-icloud-export', new Date().toISOString()); } catch (err) {}
+    refreshSyncTimestamps();
+    $('dataTransferStatus').textContent = '✓ Sicherungsdatei wird angeboten – im Dialog "iCloud Drive" als Speicherort wählen.';
     $('dataTransferStatus').style.color = 'var(--energy)';
   }
   $('btnExportData').addEventListener('click', exportAllData);
@@ -2911,7 +2938,8 @@
           await storageSet(key, data.values[key]);
         }
       }
-      $('dataTransferStatus').textContent = '✓ Daten importiert. Die Seite wird neu geladen …';
+      try { window.localStorage.setItem(LS_PREFIX + 'last-icloud-import', new Date().toISOString()); } catch (err) {}
+      $('dataTransferStatus').textContent = '✓ Daten aus iCloud geladen. Die Seite wird neu geladen …';
       $('dataTransferStatus').style.color = 'var(--energy)';
       setTimeout(() => location.reload(), 900);
     } catch (err) {
