@@ -48,11 +48,15 @@
     --rivet-hi: rgba(255,255,255,0.65);
     --rivet-lo: rgba(0,0,0,0.45);
     --accent-glow: rgba(255,122,61,0.28);
-    --shadow-sm: 0 1px 2px rgba(16,20,32,0.06);
-    --shadow-md: 0 8px 24px -8px rgba(16,20,32,0.16);
-    --shadow-lg: 0 24px 60px -20px rgba(8,10,20,0.45);
-    --radius: 16px;
-    --radius-sm: 10px;
+    --shadow-sm: 0 1px 2px rgba(16,20,32,0.05), 0 1px 1px rgba(16,20,32,0.04);
+    --shadow-md: 0 10px 28px -12px rgba(16,20,32,0.18);
+    --shadow-lg: 0 28px 70px -24px rgba(8,10,20,0.40);
+    --shadow-float: 0 18px 44px -16px rgba(8,10,20,0.38);
+    --radius: 20px;
+    --radius-sm: 12px;
+    --radius-lg: 26px;
+    --ease: cubic-bezier(.22,.85,.32,1);
+    --surface-hover: rgba(26,31,46,0.035);
   }
 
   body.resin-mode{
@@ -236,6 +240,58 @@
     .page-switch-btn{ font-size: 11.5px; padding: 12px 8px; }
   }
 
+  .app-toolbar{
+    position: sticky;
+    top: 0;
+    z-index: 80;
+    margin: -6px -18px 22px;
+    padding: 12px 18px 14px;
+    background: rgba(11,15,26,0.72);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    transition: box-shadow .25s var(--ease), border-color .25s var(--ease);
+  }
+  .app-toolbar.scrolled{
+    box-shadow: var(--shadow-float);
+  }
+  .app-toolbar .lang-bar{ margin-bottom: 12px; }
+  .app-toolbar .page-switch-bar{ margin-bottom: 12px; }
+  .app-toolbar .mode-bar{ margin-bottom: 0; }
+
+  .mode-toggle{
+    display:flex;
+    gap:4px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    padding: 4px;
+    backdrop-filter: blur(8px);
+  }
+  .mode-toggle-btn{
+    border:none;
+    padding: 9px 15px;
+    border-radius: 999px;
+    background: transparent;
+    color: rgba(255,255,255,0.58);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    font-weight:600;
+    letter-spacing:0.02em;
+    cursor:pointer;
+    transition: background .2s var(--ease), color .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  .mode-toggle-btn:hover{ color:#fff; }
+  .mode-toggle-btn.active{
+    background: linear-gradient(135deg, var(--filament), var(--filament-dark));
+    color:#fff;
+    box-shadow: 0 6px 16px -4px var(--accent-glow);
+  }
+  .sr-only{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+
   header{
     margin-bottom: 28px;
     position: relative;
@@ -281,18 +337,55 @@
   }
   @media(min-width: 880px){
     .grid{ grid-template-columns: 1fr 360px; align-items:start; }
-    .results{ position: sticky; top: 24px; }
+    .results{ position: sticky; top: calc(var(--toolbar-h, 168px) + 16px); }
   }
+
+  .mobile-total-bar{
+    display:none;
+    position: fixed;
+    left: 12px; right: 12px;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    z-index: 70;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    width: auto;
+    padding: 13px 20px;
+    border:none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--filament), var(--filament-dark));
+    color:#fff;
+    box-shadow: var(--shadow-float);
+    cursor:pointer;
+    transition: transform .15s var(--ease), box-shadow .2s var(--ease);
+  }
+  .mobile-total-bar:active{ transform: scale(0.98); }
+  .mobile-total-info{ display:flex; flex-direction:column; align-items:flex-start; gap:1px; }
+  .mobile-total-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10px; letter-spacing:0.08em; text-transform:uppercase; opacity:0.85;
+  }
+  .mobile-total-amount{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:19px; }
+  .mobile-total-arrow{
+    font-size:16px; opacity:0.9;
+    animation: bounceArrow 1.8s ease-in-out infinite;
+  }
+  @keyframes bounceArrow{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(3px); } }
+  @media(max-width: 879px){
+    .mobile-total-bar{ display:flex; }
+  }
+  @media print{ .mobile-total-bar{ display:none !important; } }
 
   .card{
     background: var(--card);
     border-radius: var(--radius);
-    padding: 24px 24px 26px;
+    padding: 26px 26px 28px;
     position: relative;
     box-shadow: var(--shadow-lg);
     border: 1px solid rgba(16,20,32,0.04);
+    transition: box-shadow .25s var(--ease), transform .25s var(--ease);
   }
-  .card + .card{ margin-top: 16px; }
+  .card + .card{ margin-top: 14px; }
 
   @media (prefers-reduced-motion: no-preference){
     details.card[open] > *:not(summary){
@@ -556,7 +649,7 @@
   details.card:not([open]) > summary.card-summary .card-head{
     margin-bottom:0; padding-bottom:0; border-bottom:none;
   }
-  details.card:not([open]):hover{ box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,122,61,0.18); }
+  details.card:not([open]):hover{ box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,122,61,0.18); transform: translateY(-2px); }
   .card-chevron{
     font-family:'Space Grotesk', sans-serif;
     font-size: 13px;
@@ -849,27 +942,31 @@
 <body>
 <style id="dynamicPageStyle">@page{ size: A4; margin: 0; }</style>
 <div class="page-bg"></div>
-<div class="lang-bar">
-  <button class="settings-btn" id="btnOpenSettings" type="button">⚙️ Firmen-Einstellungen</button>
-  <div class="lang-select-row">
-    <select id="langSelect">
-      <option value="de" selected>🇩🇪 Deutsch</option>
-      <option value="en">🇬🇧 English</option>
-      <option value="zh">🇨🇳 中文</option>
-      <option value="hi">🇮🇳 हिन्दी</option>
-      <option value="es">🇪🇸 Español</option>
-      <option value="fr">🇫🇷 Français</option>
-    </select>
+<div class="app-toolbar" id="appToolbar">
+  <div class="lang-bar">
+    <button class="settings-btn" id="btnOpenSettings" type="button">⚙️ Firmen-Einstellungen</button>
+    <div class="lang-select-row">
+      <select id="langSelect">
+        <option value="de" selected>🇩🇪 Deutsch</option>
+        <option value="en">🇬🇧 English</option>
+        <option value="zh">🇨🇳 中文</option>
+        <option value="hi">🇮🇳 हिन्दी</option>
+        <option value="es">🇪🇸 Español</option>
+        <option value="fr">🇫🇷 Français</option>
+      </select>
+    </div>
   </div>
-</div>
-<div class="page-switch-bar">
-  <button type="button" class="page-switch-btn active" id="btnPageCalculator" data-page="calculator">🖩 Kalkulator</button>
-  <button type="button" class="page-switch-btn" id="btnPageBooking" data-page="booking">📦 Filament buchen</button>
-</div>
-<div class="mode-bar" id="modeBarRow">
-  <span class="mode-label" id="modeBarLabel">Drucktechnologie</span>
-  <div class="mode-select-row">
-    <select id="modeSelect">
+  <div class="page-switch-bar">
+    <button type="button" class="page-switch-btn active" id="btnPageCalculator" data-page="calculator">🖩 Kalkulator</button>
+    <button type="button" class="page-switch-btn" id="btnPageBooking" data-page="booking">📦 Filament buchen</button>
+  </div>
+  <div class="mode-bar" id="modeBarRow">
+    <span class="mode-label" id="modeBarLabel">Drucktechnologie</span>
+    <div class="mode-toggle" id="modeToggle" role="tablist">
+      <button type="button" class="mode-toggle-btn active" id="modeBtnFdm" data-mode="fdm" role="tab" aria-selected="true">🧵 FDM / Filament</button>
+      <button type="button" class="mode-toggle-btn" id="modeBtnResin" data-mode="resin" role="tab" aria-selected="false">🧪 Resin / MSLA</button>
+    </div>
+    <select id="modeSelect" class="sr-only" tabindex="-1" aria-hidden="true">
       <option value="fdm" id="optFdm" selected>🧵 FDM / Filament</option>
       <option value="resin" id="optResin">🧪 Resin / MSLA</option>
     </select>
@@ -1408,6 +1505,14 @@
     </div>
 
   </div>
+
+  <button type="button" class="mobile-total-bar" id="mobileTotalBar" aria-label="Zum Ergebnis scrollen">
+    <span class="mobile-total-info">
+      <span class="mobile-total-label" id="mobileTotalLabel">Gesamtpreis</span>
+      <span class="mobile-total-amount" id="mobileTotalAmount">0,00 €</span>
+    </span>
+    <span class="mobile-total-arrow" aria-hidden="true">↓</span>
+  </button>
 </div>
 
 <div class="wrap" id="pageBooking" style="display:none;">
@@ -2496,6 +2601,8 @@
     $('modeBarLabel').textContent = t.modeTechLabel;
     $('optFdm').textContent = t.optFdm;
     $('optResin').textContent = t.optResin;
+    $('modeBtnFdm').textContent = t.optFdm;
+    $('modeBtnResin').textContent = t.optResin;
     $('cardPrinterTitle').textContent = t.cardPrinterTitle;
     $('lblPrinter').textContent = t.lblPrinter;
     $('lblPrinterResin').textContent = t.lblPrinterResin;
@@ -2515,6 +2622,7 @@
     $('lblMarginPercent').textContent = t.lblMarginPercent;
     $('cardResultTitle').textContent = t.cardResultTitle;
     $('gaugeTotalLabel').textContent = t.gaugeTotalLabel;
+    $('mobileTotalLabel').textContent = t.gaugeTotalLabel;
     $('lblBdFilament').textContent = t.lblBdFilament;
     $('lblBdEnergy').textContent = t.lblBdEnergy;
     $('lblBdExtra').textContent = t.lblBdExtra;
@@ -2615,6 +2723,7 @@
     $('outMargin').textContent = fmtEUR(marginAmount);
     $('outTotal').textContent = fmtEUR(total);
     $('gaugeAmount').textContent = fmtEUR(total);
+    $('mobileTotalAmount').textContent = fmtEUR(total);
     $('outKwhStamp').textContent = fmtKWH(totalKwh);
     $('outPerHour').textContent = (printHours > 0 ? fmtEUR(total / printHours) : fmtEUR(0)) + I18N[currentLang].perHourSuffix;
 
@@ -2646,6 +2755,21 @@
   $('resinMaterial').addEventListener('change', applyResin);
   $('modeSelect').addEventListener('change', e => switchMode(e.target.value));
   $('langSelect').addEventListener('change', e => applyLanguage(e.target.value));
+
+  function setModeToggleUi(mode){
+    $('modeBtnFdm').classList.toggle('active', mode === 'fdm');
+    $('modeBtnFdm').setAttribute('aria-selected', String(mode === 'fdm'));
+    $('modeBtnResin').classList.toggle('active', mode === 'resin');
+    $('modeBtnResin').setAttribute('aria-selected', String(mode === 'resin'));
+  }
+  [$('modeBtnFdm'), $('modeBtnResin')].forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.mode;
+      setModeToggleUi(mode);
+      $('modeSelect').value = mode;
+      $('modeSelect').dispatchEvent(new Event('change'));
+    });
+  });
 
   const now = new Date();
   $('stampDate').textContent = now.toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'});
@@ -4030,6 +4154,23 @@
   });
 
   applyLanguage('de');
+
+  $('mobileTotalBar').addEventListener('click', () => {
+    $('outTotal').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  function updateToolbarHeight(){
+    document.documentElement.style.setProperty('--toolbar-h', $('appToolbar').offsetHeight + 'px');
+  }
+  updateToolbarHeight();
+  window.addEventListener('resize', updateToolbarHeight);
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(updateToolbarHeight).observe($('appToolbar'));
+  }
+
+  window.addEventListener('scroll', () => {
+    $('appToolbar').classList.toggle('scrolled', window.scrollY > 4);
+  }, { passive: true });
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', () => {
