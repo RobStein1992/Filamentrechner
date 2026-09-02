@@ -7,8 +7,8 @@
   "id": "./index.html",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#131A2B",
-  "theme_color": "#131A2B",
+  "background_color": "#0B0E17",
+  "theme_color": "#0B0E17",
   "lang": "de",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
