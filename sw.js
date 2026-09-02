@@ -1,7 +1,10 @@
-const CACHE_NAME = 'druckrechner-cache-v3';
+const CACHE_NAME = 'druckrechner-cache-v4';
 const CACHE_FILES = [
   './index.html',
   './style.css',
+  './kommissionierung.html',
+  './kommissionierung.css',
+  './kommissionierung.js',
   './manifest.json',
   './icon-180.png',
   './icon-152.png',
