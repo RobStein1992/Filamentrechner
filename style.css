@@ -1,18 +1,22 @@
   :root{
-    --blueprint: #131A2B;
-    --blueprint-deep: #0A0E1A;
+    --blueprint: #0B0E17;
+    --blueprint-deep: #050609;
     --grid-line: rgba(255,255,255,0.05);
     --grid-line-strong: rgba(255,255,255,0.08);
-    --card: #FFFFFF;
-    --card-2: #F6F7FB;
-    --ink: #1A1F2E;
-    --ink-soft: #6B7290;
-    --filament: #FF7A3D;
-    --filament-dark: #E85F1F;
-    --energy: #17B097;
-    --extra: #8B7CF6;
+    --card: #161B27;
+    --card-2: #10141E;
+    --card-focus: #1C2230;
+    --ink: #EDEFF5;
+    --ink-soft: #9BA1BE;
+    --filament: #2FBF71;
+    --filament-dark: #1F9E5B;
+    --energy: #24B6C4;
+    --extra: #B084F5;
     --margin-c: #E0A72E;
-    --paper-line: rgba(26,31,46,0.09);
+    --paper-line: rgba(255,255,255,0.08);
+    --card-border: rgba(255,255,255,0.07);
+    --field-border: rgba(255,255,255,0.12);
+    --field-border-hover: rgba(255,255,255,0.24);
     --danger: #E5484D;
     --metal-1: #D7DAE0;
     --metal-2: #A6ABB5;
@@ -21,16 +25,16 @@
     --hazard-ink: #1B2430;
     --rivet-hi: rgba(255,255,255,0.65);
     --rivet-lo: rgba(0,0,0,0.45);
-    --accent-glow: rgba(255,122,61,0.28);
-    --shadow-sm: 0 1px 2px rgba(16,20,32,0.05), 0 1px 1px rgba(16,20,32,0.04);
-    --shadow-md: 0 10px 28px -12px rgba(16,20,32,0.18);
-    --shadow-lg: 0 28px 70px -24px rgba(8,10,20,0.40);
-    --shadow-float: 0 18px 44px -16px rgba(8,10,20,0.38);
+    --accent-glow: rgba(47,191,113,0.28);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3), 0 1px 1px rgba(0,0,0,0.25);
+    --shadow-md: 0 10px 28px -12px rgba(0,0,0,0.5);
+    --shadow-lg: 0 28px 70px -24px rgba(0,0,0,0.6);
+    --shadow-float: 0 18px 44px -16px rgba(0,0,0,0.55);
     --radius: 20px;
     --radius-sm: 12px;
     --radius-lg: 26px;
     --ease: cubic-bezier(.22,.85,.32,1);
-    --surface-hover: rgba(26,31,46,0.035);
+    --surface-hover: rgba(255,255,255,0.04);
   }
 
   body.resin-mode{
@@ -75,8 +79,8 @@
     inset: 0;
     z-index: -1;
     background-image:
-      radial-gradient(1100px 620px at 12% -8%, rgba(255,122,61,0.10), transparent 60%),
-      radial-gradient(900px 560px at 108% 12%, rgba(23,176,151,0.10), transparent 55%),
+      radial-gradient(1100px 620px at 12% -8%, rgba(47,191,113,0.10), transparent 60%),
+      radial-gradient(900px 560px at 108% 12%, rgba(36,182,196,0.10), transparent 55%),
       repeating-linear-gradient(0deg, var(--grid-line) 0px, var(--grid-line) 1px, transparent 1px, transparent 32px),
       repeating-linear-gradient(90deg, var(--grid-line) 0px, var(--grid-line) 1px, transparent 1px, transparent 32px),
       linear-gradient(160deg, var(--blueprint) 0%, var(--blueprint-deep) 100%);
@@ -204,7 +208,6 @@
     transition: background .2s ease, color .2s ease, box-shadow .2s ease;
   }
   .page-switch-btn:hover{ color:#fff; }
-  .settings-tab-btn:hover:not(.active){ color:#1A1F2E !important; }
   .page-switch-btn.active{
     background: linear-gradient(135deg, var(--filament), var(--filament-dark));
     color:#fff;
@@ -356,7 +359,7 @@
     padding: 26px 26px 28px;
     position: relative;
     box-shadow: var(--shadow-lg);
-    border: 1px solid rgba(16,20,32,0.04);
+    border: 1px solid var(--card-border);
     transition: box-shadow .25s var(--ease), transform .25s var(--ease);
   }
   .card + .card{ margin-top: 14px; }
@@ -407,7 +410,7 @@
   .panel-select::after{ content:none; }
   .panel-select select{
     padding-left: 14px;
-    border-left: 1.5px solid rgba(26,31,46,0.16);
+    border-left: 1.5px solid rgba(255,255,255,0.16);
   }
 
   .device-plate{
@@ -503,17 +506,17 @@
     font-family:'IBM Plex Mono', monospace;
     font-size: 15px;
     font-weight:500;
-    border: 1.5px solid rgba(26,31,46,0.12);
+    border: 1.5px solid rgba(255,255,255,0.12);
     border-radius: var(--radius-sm);
     background: var(--card-2);
     color: var(--ink);
     transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
   }
-  input[type="number"]:hover{ border-color: rgba(26,31,46,0.22); }
+  input[type="number"]:hover{ border-color: rgba(255,255,255,0.22); }
   input[type="number"]:focus{
     outline:none;
     border-color: var(--filament);
-    background: #fff;
+    background: var(--card-focus);
     box-shadow: 0 0 0 4px var(--accent-glow);
   }
   input[type="number"]::-webkit-outer-spin-button,
@@ -538,7 +541,7 @@
     font-family:'IBM Plex Mono', monospace;
     font-size: 15px;
     font-weight:600;
-    border: 1.5px solid rgba(26,31,46,0.12);
+    border: 1.5px solid rgba(255,255,255,0.12);
     border-radius: var(--radius-sm);
     background: var(--card-2);
     color: var(--ink);
@@ -547,11 +550,11 @@
     cursor: pointer;
     transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
   }
-  select:hover{ border-color: rgba(26,31,46,0.22); }
+  select:hover{ border-color: rgba(255,255,255,0.22); }
   select:focus{
     outline:none;
     border-color: var(--filament);
-    background: #fff;
+    background: var(--card-focus);
     box-shadow: 0 0 0 4px var(--accent-glow);
   }
   .select-row{ position:relative; }
@@ -623,7 +626,7 @@
   details.card:not([open]) > summary.card-summary .card-head{
     margin-bottom:0; padding-bottom:0; border-bottom:none;
   }
-  details.card:not([open]):hover{ box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,122,61,0.18); transform: translateY(-2px); }
+  details.card:not([open]):hover{ box-shadow: var(--shadow-lg), 0 0 0 1px var(--accent-glow); transform: translateY(-2px); }
   .card-chevron{
     font-family:'Space Grotesk', sans-serif;
     font-size: 13px;
@@ -637,7 +640,7 @@
   details.card > summary.card-summary:hover .card-title{ color: var(--filament-dark); }
   details.card > summary.card-summary{ transition: none; }
 
-  .results .card{ background: linear-gradient(180deg, #fff 0%, var(--card-2) 100%); }
+  .results .card{ background: linear-gradient(180deg, var(--card-focus) 0%, var(--card) 100%); }
   .gauge-wrap{ display:flex; justify-content:center; margin: 6px 0 20px; }
   .gauge-total{
     font-family:'Space Grotesk', sans-serif;
@@ -725,9 +728,9 @@
     transition: transform .12s ease, box-shadow .18s ease, opacity .15s ease, background .18s ease, border-color .18s ease;
   }
   .btn-secondary{
-    background: #fff;
+    background: var(--card-focus);
     color: var(--ink);
-    border: 1.5px solid rgba(26,31,46,0.14);
+    border: 1.5px solid rgba(255,255,255,0.14);
   }
   .btn-secondary:hover{ border-color: var(--ink); box-shadow: var(--shadow-sm); }
   .btn-primary{
@@ -771,7 +774,7 @@
     padding: 12px 14px;
     font-family:'IBM Plex Sans', sans-serif;
     font-size: 13.5px;
-    border: 1.5px solid rgba(26,31,46,0.12);
+    border: 1.5px solid rgba(255,255,255,0.12);
     border-radius: var(--radius-sm);
     background: var(--card-2);
     color: var(--ink);
@@ -780,14 +783,14 @@
     line-height:1.5;
     transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
   }
-  textarea:focus{ outline:none; border-color: var(--filament); background:#fff; box-shadow: 0 0 0 4px var(--accent-glow); }
+  textarea:focus{ outline:none; border-color: var(--filament); background:var(--card-focus); box-shadow: 0 0 0 4px var(--accent-glow); }
   input[type="text"], input[type="date"]{
     width:100%;
     padding: 12px 14px;
     font-family:'IBM Plex Mono', monospace;
     font-size: 14px;
     font-weight:500;
-    border: 1.5px solid rgba(26,31,46,0.12);
+    border: 1.5px solid rgba(255,255,255,0.12);
     border-radius: var(--radius-sm);
     background: var(--card-2);
     color: var(--ink);
@@ -801,9 +804,9 @@
   input[type="date"]::-webkit-calendar-picker-indicator{
     margin-left: 8px;
   }
-  input[type="text"]:hover, input[type="date"]:hover{ border-color: rgba(26,31,46,0.22); }
+  input[type="text"]:hover, input[type="date"]:hover{ border-color: rgba(255,255,255,0.22); }
   input[type="text"]:focus, input[type="date"]:focus{
-    outline:none; border-color: var(--filament); background:#fff; box-shadow: 0 0 0 4px var(--accent-glow);
+    outline:none; border-color: var(--filament); background:var(--card-focus); box-shadow: 0 0 0 4px var(--accent-glow);
   }
   input[type="color"]{ border-radius: var(--radius-sm); }
   .vat-row{ display:flex; align-items:center; gap:10px; }
@@ -853,15 +856,24 @@
   .inv-header .inv-meta b{ color:#1A1F2E; }
   .inv-recipient{ font-size:12.5px; line-height:1.55; white-space:pre-line; margin-bottom: 26px; min-height: 50px; }
   .inv-recipient .inv-recipient-tag{ font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:#8890A8; display:block; margin-bottom:5px; font-family:'IBM Plex Mono', monospace; }
+  /* .inv-table wird sowohl im gedruckten Rechnungspapier (#invoiceSheet, immer hell)
+     als auch in dunklen UI-Listen (Lagerbestand, Historie, CSV-Vorschau) verwendet.
+     Basiswerte hier sind daher theme-abhängig dunkel; #invoiceSheet erzwingt weiter unten
+     mit höherer Spezifität wieder das feste Papier-Layout. */
   table.inv-table{ width:100%; border-collapse:collapse; margin-bottom: 6px; }
   table.inv-table thead th{
     text-align:left; font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.05em; text-transform:uppercase;
-    color:#5B6178; border-bottom: 1.5px solid #1A1F2E; padding: 0 6px 8px;
+    color: var(--ink-soft); border-bottom: 1.5px solid var(--paper-line); padding: 0 6px 8px;
   }
   table.inv-table thead th.num{ text-align:right; }
-  table.inv-table tbody td{ padding: 10px 6px; border-bottom: 1px solid #E4E6EF; font-size:13px; vertical-align:top; }
+  table.inv-table tbody td{ padding: 10px 6px; border-bottom: 1px solid var(--paper-line); font-size:13px; vertical-align:top; color: var(--ink); }
   table.inv-table tbody td.num{ text-align:right; font-family:'IBM Plex Mono', monospace; white-space:nowrap; }
-  table.inv-table tbody td .inv-item-sub{ display:block; font-size:11px; color:#8890A8; margin-top:2px; }
+  table.inv-table tbody td .inv-item-sub{ display:block; font-size:11px; color: var(--ink-soft); margin-top:2px; }
+
+  #invoiceSheet table.inv-table thead th{ color:#5B6178; border-bottom-color:#1A1F2E; }
+  #invoiceSheet table.inv-table tbody td{ border-bottom-color:#E4E6EF; color:#1A1F2E; }
+  #invoiceSheet table.inv-table tbody td .inv-item-sub{ color:#8890A8; }
+
   .inv-totals{ margin-left:auto; width: 260px; margin-top: 10px; }
   .inv-totals div{ display:flex; justify-content:space-between; font-size:13px; padding: 5px 0; }
   .inv-totals .inv-grand{ border-top: 2px solid #1A1F2E; margin-top:6px; padding-top:10px; font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:17px; }
