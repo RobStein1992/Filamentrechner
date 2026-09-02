@@ -494,7 +494,7 @@
   .input-row{ position:relative; display:flex; align-items:center; }
   .input-row.compact{ max-width: 148px; }
   .input-row .unit{
-    position:absolute; right:14px;
+    position:absolute; right:26px;
     font-family:'IBM Plex Mono', monospace;
     font-size: 12.5px;
     color: var(--ink-soft);
@@ -502,7 +502,7 @@
   }
   input[type="number"]{
     width:100%;
-    padding: 12px 44px 12px 14px;
+    padding: 12px 64px 12px 14px;
     font-family:'IBM Plex Mono', monospace;
     font-size: 15px;
     font-weight:500;
@@ -520,7 +520,11 @@
     box-shadow: 0 0 0 4px var(--accent-glow);
   }
   input[type="number"]::-webkit-outer-spin-button,
-  input[type="number"]::-webkit-inner-spin-button{ opacity: 0.45; }
+  input[type="number"]::-webkit-inner-spin-button{
+    opacity: 1;
+    filter: invert(1) brightness(1.7);
+    cursor: pointer;
+  }
 
   input:disabled, select:disabled, textarea:disabled{
     background: transparent;
