@@ -3242,6 +3242,47 @@
 
   applyLanguage('de');
 
+  (function initNumberSteppers(){
+    const upIcon = '<svg viewBox="0 0 10 6" fill="currentColor"><path d="M5 0 L10 6 L0 6 Z"/></svg>';
+    const downIcon = '<svg viewBox="0 0 10 6" fill="currentColor"><path d="M5 6 L0 0 L10 0 Z"/></svg>';
+    document.querySelectorAll('.input-row input[type="number"]').forEach(input => {
+      const row = input.closest('.input-row');
+      if (!row || row.querySelector('.stepper')) return;
+
+      const stepOf = () => {
+        const raw = input.getAttribute('step');
+        const n = raw && raw !== 'any' ? parseFloat(raw) : 1;
+        return isNaN(n) || n <= 0 ? 1 : n;
+      };
+      const decimalsOf = (n) => {
+        const s = String(n);
+        const idx = s.indexOf('.');
+        return idx === -1 ? 0 : s.length - idx - 1;
+      };
+      const bump = (dir) => {
+        if (input.disabled) return;
+        const step = stepOf();
+        const cur = parseFloat(input.value);
+        let next = (isNaN(cur) ? 0 : cur) + dir * step;
+        const min = input.getAttribute('min');
+        if (min !== null && min !== '' && next < parseFloat(min)) next = parseFloat(min);
+        input.value = next.toFixed(decimalsOf(step));
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.focus();
+      };
+
+      const stepper = document.createElement('div');
+      stepper.className = 'stepper';
+      stepper.innerHTML =
+        '<button type="button" tabindex="-1" aria-label="Erhöhen">' + upIcon + '</button>' +
+        '<button type="button" tabindex="-1" aria-label="Verringern">' + downIcon + '</button>';
+      const [upBtn, downBtn] = stepper.querySelectorAll('button');
+      upBtn.addEventListener('click', () => bump(1));
+      downBtn.addEventListener('click', () => bump(-1));
+      row.appendChild(stepper);
+    });
+  })();
+
   $('mobileTotalBar').addEventListener('click', () => {
     $('outTotal').scrollIntoView({ behavior: 'smooth', block: 'center' });
   });

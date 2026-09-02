@@ -494,15 +494,16 @@
   .input-row{ position:relative; display:flex; align-items:center; }
   .input-row.compact{ max-width: 148px; }
   .input-row .unit{
-    position:absolute; right:26px;
+    position:absolute; right:28px;
     font-family:'IBM Plex Mono', monospace;
     font-size: 12.5px;
     color: var(--ink-soft);
     pointer-events:none;
+    white-space:nowrap;
   }
   input[type="number"]{
     width:100%;
-    padding: 12px 64px 12px 14px;
+    padding: 12px 72px 12px 14px;
     font-family:'IBM Plex Mono', monospace;
     font-size: 15px;
     font-weight:500;
@@ -511,6 +512,7 @@
     background: var(--card-2);
     color: var(--ink);
     transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    -moz-appearance: textfield;
   }
   input[type="number"]:hover{ border-color: rgba(255,255,255,0.22); }
   input[type="number"]:focus{
@@ -521,10 +523,33 @@
   }
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button{
-    opacity: 1;
-    filter: invert(1) brightness(1.7);
-    cursor: pointer;
+    -webkit-appearance: none;
+    margin: 0;
   }
+
+  /* Eigene Stepper-Pfeile statt der browserabhängigen nativen Spin-Buttons –
+     deren Breite variiert je nach Browser/Gerät, was zu Überlappungen mit
+     dem Einheiten-Label führen konnte. */
+  .stepper{
+    position:absolute; right:3px; top:4px; bottom:4px;
+    width:20px;
+    display:flex; flex-direction:column;
+    border-radius:7px;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,0.12);
+  }
+  .stepper button{
+    flex:1; min-height:0;
+    display:flex; align-items:center; justify-content:center;
+    border:none; background:rgba(255,255,255,0.05); color:var(--ink-soft);
+    cursor:pointer; padding:0; line-height:1;
+    transition: background .12s ease, color .12s ease;
+  }
+  .stepper button:first-child{ border-bottom:1px solid rgba(255,255,255,0.12); }
+  .stepper button:hover{ background:rgba(255,255,255,0.12); color:var(--ink); }
+  .stepper button:active{ background:rgba(255,255,255,0.2); }
+  .stepper button svg{ width:9px; height:9px; display:block; }
+  .input-row:has(input:disabled) .stepper{ display:none; }
 
   input:disabled, select:disabled, textarea:disabled{
     background: transparent;
@@ -536,8 +561,6 @@
   }
   select:disabled{ appearance:none; -webkit-appearance:none; padding-right:0; }
   .select-row:has(select:disabled)::after{ content:none; }
-  input[type="number"]:disabled::-webkit-outer-spin-button,
-  input[type="number"]:disabled::-webkit-inner-spin-button{ display:none; }
 
   select{
     width:100%;
@@ -578,6 +601,9 @@
   }
 
   .subgrid{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media(max-width: 480px){
+    .subgrid{ grid-template-columns: 1fr; }
+  }
   .note{
     font-size: 12.5px;
     color: var(--ink-soft);
@@ -816,7 +842,7 @@
   .vat-row{ display:flex; align-items:center; gap:10px; }
   .vat-row input[type="checkbox"]{ width:17px; height:17px; accent-color: var(--filament); cursor:pointer; }
   .vat-row label{ font-size:13px; font-weight:500; color:var(--ink); cursor:pointer; margin:0; }
-  .vat-row .input-row{ flex: 0 0 100px; }
+  .vat-row .input-row{ flex: 0 0 120px; }
 
   .invoice-overlay{
     display:none;
