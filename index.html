@@ -712,6 +712,8 @@
     <div class="section-label">Sammelimport</div>
     <button class="btn-secondary" id="btnOpenCsvImport" type="button">📄 CSV importieren (z.&nbsp;B. Spool Buddy)</button>
     <p class="note">Importiert mehrere Filamente auf einmal aus einer CSV-Datei, z.&nbsp;B. dem Export der App <b>Spool Buddy</b>. Spalten werden automatisch erkannt und lassen sich vor dem Import manuell zuordnen.</p>
+    <button class="btn-secondary" id="btnOpenLieferschein" type="button" style="margin-top:10px;">🤖 Lieferschein als PDF hochladen (KI-Erkennung)</button>
+    <p class="note">Liest Lieferant und Positionen automatisch aus einem hochgeladenen Lieferschein-PDF aus. Ergebnis vor dem Buchen prüfen und bei Bedarf korrigieren. Setzt eine einmalig eingerichtete Proxy-Adresse voraus (⚙️ Firmen-Einstellungen → Daten &amp; Geräte).</p>
   </div>
 
   <div class="card" id="stockOutCard" style="max-width: 660px; margin: 0 auto; display:none;">
@@ -1027,6 +1029,45 @@
   </div>
 </div>
 
+<div class="invoice-overlay" id="lieferscheinOverlay">
+  <div class="invoice-toolbar">
+    <button class="btn-secondary" id="btnCloseLieferschein" type="button">✕ Schließen</button>
+  </div>
+  <div style="max-width:760px; margin:0 auto; background:var(--card); border-radius:8px; padding:24px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'IBM Plex Sans',sans-serif;">
+    <h2 style="font-family:'Space Grotesk',sans-serif; font-size:20px; margin:0 0 6px;">Lieferschein hochladen</h2>
+    <p class="note" style="margin-top:4px;">PDF auswählen – die KI liest Lieferant und Positionen automatisch aus. Prüfe das Ergebnis unten, bevor du bucht.</p>
+
+    <p class="note" id="lieferscheinNoConfigNote" style="display:none; color:var(--filament);">Noch keine Proxy-Adresse hinterlegt. Bitte zuerst unter ⚙️ Firmen-Einstellungen → Daten &amp; Geräte → KI-Lieferschein-Erkennung einrichten.</p>
+
+    <div class="field">
+      <label for="lieferscheinFileInput">Lieferschein-PDF auswählen</label>
+      <input type="file" id="lieferscheinFileInput" accept="application/pdf">
+    </div>
+
+    <p class="note" id="lieferscheinStatus"></p>
+
+    <div id="lieferscheinReviewSection" style="display:none; margin-top:8px;">
+      <div class="subgrid">
+        <div class="field">
+          <label for="lsSupplier">Lieferant</label>
+          <input type="text" id="lsSupplier">
+        </div>
+        <div class="field">
+          <label for="lsDocNumber">Lieferschein-Nr.</label>
+          <input type="text" id="lsDocNumber">
+        </div>
+      </div>
+
+      <div class="section-label">Positionen prüfen</div>
+      <div id="lieferscheinItemsWrap"></div>
+      <button type="button" id="btnAddLieferscheinRow" class="btn-secondary" style="margin-top:10px;">+ Position manuell hinzufügen</button>
+
+      <p class="note" id="lieferscheinBookStatus" style="margin-top:16px;"></p>
+      <button class="btn-primary" id="btnRunLieferscheinImport" type="button">📥 Alle geprüften Positionen buchen</button>
+    </div>
+  </div>
+</div>
+
 <div class="invoice-overlay" id="printBookOverlay" style="z-index:1000;">
   <div class="invoice-toolbar">
     <button class="btn-secondary" id="btnPrintBookCancel" type="button">✕ Abbrechen</button>
@@ -1216,6 +1257,15 @@
       </div>
 
       <p class="note" id="dataTransferStatus"></p>
+
+      <div class="section-label">🤖 KI-Lieferschein-Erkennung</div>
+      <p class="note" style="margin-top:0;">Liest hochgeladene Lieferschein-PDFs beim Wareneingang automatisch per KI (Claude) aus. Dafür wird ein kleiner, selbst gehosteter Cloud-Proxy benötigt, der den Anthropic-API-Key sicher verwahrt – er liegt nie im Browser dieser App. Einrichtung: Datei <code>worker/README.md</code> im Projekt-Repository.</p>
+      <div class="field">
+        <label for="lieferscheinWorkerUrl">Proxy-Adresse (Worker-URL)</label>
+        <input type="text" id="lieferscheinWorkerUrl" placeholder="https://dein-worker.deinname.workers.dev" autocomplete="off">
+      </div>
+      <button type="button" id="btnSaveLieferscheinConfig" class="btn-primary" style="margin-top:0;">💾 Speichern</button>
+      <p class="note" id="lieferscheinConfigStatus"></p>
     </div>
 
     <p class="note" id="settingsStatus" style="margin-top:18px;"></p>
@@ -2814,6 +2864,206 @@
 
     $('csvImportStatus').textContent = '✓ ' + imported + ' Filament(e) importiert' + (skipped > 0 ? ', ' + skipped + ' Zeile(n) ohne gültiges Gewicht übersprungen.' : '.');
     $('csvImportStatus').style.color = 'var(--energy)';
+  });
+
+  const LIEFERSCHEIN_WORKER_KEY = LS_PREFIX + 'lieferschein-worker-url';
+  function getLieferscheinWorkerUrl(){
+    try { return (window.localStorage.getItem(LIEFERSCHEIN_WORKER_KEY) || '').trim(); }
+    catch (err) { return ''; }
+  }
+
+  $('lieferscheinWorkerUrl').value = getLieferscheinWorkerUrl();
+  $('btnSaveLieferscheinConfig').addEventListener('click', () => {
+    const url = $('lieferscheinWorkerUrl').value.trim();
+    try { window.localStorage.setItem(LIEFERSCHEIN_WORKER_KEY, url); } catch (err) {}
+    $('lieferscheinConfigStatus').textContent = url ? '✓ Gespeichert.' : 'Adresse entfernt.';
+    $('lieferscheinConfigStatus').style.color = 'var(--energy)';
+  });
+
+  let lieferscheinItems = [];
+
+  function fileToBase64(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function normalizeLieferscheinItem(raw){
+    raw = raw || {};
+    const qty = parseInt(raw.quantity, 10);
+    return {
+      articleNo: raw.articleNo || '',
+      materialText: raw.material || '',
+      manufacturer: raw.manufacturer || '',
+      color: raw.color || '',
+      weight: raw.weight != null && raw.weight !== '' ? raw.weight : '',
+      quantity: !isNaN(qty) && qty > 0 ? qty : 1,
+      location: ''
+    };
+  }
+
+  function renderLieferscheinItems(){
+    $('lieferscheinItemsWrap').innerHTML = lieferscheinItems.map((item, i) => `
+      <div class="ls-item">
+        <div class="ls-item-head">
+          <span class="section-label" style="margin:0;">Position ${i + 1}</span>
+          <button type="button" class="ls-item-remove" data-index="${i}" title="Position entfernen">✕</button>
+        </div>
+        <div class="subgrid">
+          <div class="field" style="margin-bottom:0;">
+            <label>Material</label>
+            <input type="text" class="ls-field" data-index="${i}" data-key="materialText" value="${escapeHtml(item.materialText)}" placeholder="z. B. PLA">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Hersteller</label>
+            <input type="text" class="ls-field" data-index="${i}" data-key="manufacturer" value="${escapeHtml(item.manufacturer)}">
+          </div>
+        </div>
+        <div class="subgrid">
+          <div class="field" style="margin-bottom:0;">
+            <label>Farbe</label>
+            <input type="text" class="ls-field" data-index="${i}" data-key="color" value="${escapeHtml(item.color)}">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Gewicht pro Einheit (g)</label>
+            <input type="number" class="ls-field" data-index="${i}" data-key="weight" value="${escapeHtml(String(item.weight))}" min="0" step="1">
+          </div>
+        </div>
+        <div class="subgrid">
+          <div class="field" style="margin-bottom:0;">
+            <label>Anzahl Einheiten</label>
+            <input type="number" class="ls-field" data-index="${i}" data-key="quantity" value="${item.quantity}" min="1" step="1">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Lagerplatz</label>
+            <input type="text" class="ls-field" data-index="${i}" data-key="location" value="${escapeHtml(item.location)}">
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    $('lieferscheinItemsWrap').querySelectorAll('.ls-field').forEach(input => {
+      input.addEventListener('input', () => {
+        const i = parseInt(input.dataset.index, 10);
+        lieferscheinItems[i][input.dataset.key] = input.value;
+      });
+    });
+    $('lieferscheinItemsWrap').querySelectorAll('.ls-item-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        lieferscheinItems.splice(parseInt(btn.dataset.index, 10), 1);
+        renderLieferscheinItems();
+      });
+    });
+  }
+
+  $('btnAddLieferscheinRow').addEventListener('click', () => {
+    lieferscheinItems.push(normalizeLieferscheinItem({}));
+    renderLieferscheinItems();
+  });
+
+  $('btnOpenLieferschein').addEventListener('click', () => {
+    $('lieferscheinFileInput').value = '';
+    $('lieferscheinReviewSection').style.display = 'none';
+    $('lieferscheinStatus').textContent = '';
+    $('lieferscheinBookStatus').textContent = '';
+    lieferscheinItems = [];
+    $('lieferscheinNoConfigNote').style.display = getLieferscheinWorkerUrl() ? 'none' : 'block';
+    $('lieferscheinOverlay').classList.add('open');
+  });
+  $('btnCloseLieferschein').addEventListener('click', () => $('lieferscheinOverlay').classList.remove('open'));
+  $('lieferscheinOverlay').addEventListener('click', (e) => {
+    if (e.target === $('lieferscheinOverlay')) $('lieferscheinOverlay').classList.remove('open');
+  });
+
+  $('lieferscheinFileInput').addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    const workerUrl = getLieferscheinWorkerUrl();
+    if (!workerUrl) {
+      $('lieferscheinStatus').textContent = 'Bitte zuerst die Proxy-Adresse in den Einstellungen hinterlegen.';
+      $('lieferscheinStatus').style.color = 'var(--filament)';
+      return;
+    }
+
+    $('lieferscheinReviewSection').style.display = 'none';
+    $('lieferscheinStatus').textContent = '⏳ Lieferschein wird analysiert …';
+    $('lieferscheinStatus').style.color = '';
+
+    try {
+      const base64 = await fileToBase64(file);
+      const res = await fetch(workerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pdf_base64: base64, filename: file.name })
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data) {
+        throw new Error((data && data.error) || ('HTTP ' + res.status));
+      }
+
+      lieferscheinItems = Array.isArray(data.items) ? data.items.map(normalizeLieferscheinItem) : [];
+      $('lsSupplier').value = data.supplier || '';
+      $('lsDocNumber').value = data.deliveryNoteNumber || '';
+      renderLieferscheinItems();
+      $('lieferscheinReviewSection').style.display = 'block';
+
+      $('lieferscheinStatus').textContent = lieferscheinItems.length
+        ? '✓ ' + lieferscheinItems.length + ' Position(en) erkannt. Bitte prüfen, bevor du buchst.'
+        : 'Keine Positionen erkannt. Du kannst unten manuell eine hinzufügen.';
+      $('lieferscheinStatus').style.color = lieferscheinItems.length ? 'var(--energy)' : 'var(--filament)';
+    } catch (err) {
+      $('lieferscheinStatus').textContent = '⚠️ Analyse fehlgeschlagen (Proxy nicht erreichbar oder Fehler bei der Erkennung).';
+      $('lieferscheinStatus').style.color = 'var(--filament)';
+    }
+  });
+
+  $('btnRunLieferscheinImport').addEventListener('click', () => {
+    let imported = 0;
+    let skipped = 0;
+    const newLocations = new Set(storageLocations.map(l => l.toLowerCase()));
+
+    lieferscheinItems.forEach(item => {
+      const weight = parseFloat(item.weight);
+      if (!weight || weight <= 0) { skipped++; return; }
+
+      const qty = Math.max(1, parseInt(item.quantity, 10) || 1);
+      const location = (item.location || '').trim();
+      if (location && !newLocations.has(location.toLowerCase())) {
+        storageLocations.push(location);
+        newLocations.add(location.toLowerCase());
+      }
+
+      for (let n = 0; n < qty; n++) {
+        let articleNo = (qty === 1 ? (item.articleNo || '').trim() : '');
+        if (!articleNo) articleNo = nextArticleNumber();
+
+        stockPositions.push({
+          id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+          articleNo,
+          material: mapMaterialTextToCode(item.materialText),
+          manufacturer: (item.manufacturer || '').trim(),
+          location, color: (item.color || '').trim(), colorHex: null,
+          nozzleTemp: null, bedTemp: null,
+          initialWeight: weight,
+          remainingWeight: weight,
+          dateIn: todayISO()
+        });
+        imported++;
+      }
+    });
+
+    saveStock();
+    saveStorageLocations();
+    renderStock();
+    renderLocationManageList();
+    refreshBookLocationSelect();
+
+    $('lieferscheinBookStatus').textContent = '✓ ' + imported + ' Position(en) gebucht' + (skipped > 0 ? ', ' + skipped + ' ohne gültiges Gewicht übersprungen.' : '.');
+    $('lieferscheinBookStatus').style.color = 'var(--energy)';
   });
 
   function switchPage(page){

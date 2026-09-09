@@ -443,6 +443,23 @@
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
 
+  .ls-item{
+    display:flex; flex-direction:column; gap:8px;
+    margin-top:10px;
+    padding: 14px;
+    border: 1px solid var(--paper-line);
+    border-radius: var(--radius-sm);
+    background: var(--card-2);
+  }
+  .ls-item-head{
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .ls-item-remove{
+    border:none; background:none; color:var(--ink-soft);
+    cursor:pointer; font-size:15px; padding:2px 4px;
+  }
+  .ls-item-remove:hover{ color:var(--filament); }
+
   .card-head{
     display:flex;
     align-items:baseline;
