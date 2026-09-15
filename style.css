@@ -921,6 +921,22 @@
   #invoiceSheet table.inv-table tbody td{ border-bottom-color:#E4E6EF; color:#1A1F2E; }
   #invoiceSheet table.inv-table tbody td .inv-item-sub{ color:#8890A8; }
 
+  /* Lieferschein (Versand-Seite) ist wie #invoiceSheet immer weißes Druckpapier */
+  #versandSheet{
+    width: 210mm;
+    margin: 0 auto;
+    background:#fff;
+    color:#1A1F2E;
+    padding: 16mm 16mm 14mm;
+    font-family:'IBM Plex Sans', sans-serif;
+    box-shadow: var(--shadow-lg);
+    box-sizing:border-box;
+    border-radius: 4px;
+  }
+  #versandSheet table.inv-table thead th{ color:#5B6178; border-bottom-color:#1A1F2E; }
+  #versandSheet table.inv-table tbody td{ border-bottom-color:#E4E6EF; color:#1A1F2E; }
+  #versandSheet table.inv-table tbody td .inv-item-sub{ color:#8890A8; }
+
   .inv-totals{ margin-left:auto; width: 260px; margin-top: 10px; }
   .inv-totals div{ display:flex; justify-content:space-between; font-size:13px; padding: 5px 0; }
   .inv-totals .inv-grand{ border-top: 2px solid #1A1F2E; margin-top:6px; padding-top:10px; font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:17px; }
@@ -966,7 +982,7 @@
     .invoice-overlay, .invoice-overlay *{ visibility:visible; }
     .invoice-overlay{ position:absolute; inset:0; background:#fff; padding:0; overflow:visible; backdrop-filter:none; }
     .invoice-toolbar{ display:none; }
-    #invoiceSheet{ box-shadow:none; margin:0; width:auto; min-height:0; border-radius:0; }
+    #invoiceSheet, #versandSheet{ box-shadow:none; margin:0; width:auto; min-height:0; border-radius:0; }
     .label-preview-zoom{ transform:none; margin:0; width:auto; }
     #labelSheet{ box-shadow:none; margin:0; border-radius:0; }
   }

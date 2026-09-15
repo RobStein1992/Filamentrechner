@@ -45,6 +45,7 @@
   <div class="page-switch-bar">
     <button type="button" class="page-switch-btn active" id="btnPageCalculator" data-page="calculator">🖩 Kalkulator</button>
     <button type="button" class="page-switch-btn" id="btnPageBooking" data-page="booking">📦 Filament buchen</button>
+    <button type="button" class="page-switch-btn" id="btnPageVersand" data-page="shipping">🚚 Versand</button>
   </div>
   <div class="mode-bar" id="modeBarRow">
     <span class="mode-label" id="modeBarLabel">Drucktechnologie</span>
@@ -805,6 +806,88 @@
 
 </div>
 
+<div class="wrap" id="pageVersand" style="display:none;">
+
+  <header>
+    <div class="eyebrow"><span class="dot"></span><span>VERSAND · FERTIGE PRODUKTE</span></div>
+    <h1>Versand</h1>
+    <p>Erfasse den Versand fertiger Druckteile an Kunden und erstelle dazu automatisch einen Lieferschein.</p>
+  </header>
+
+  <div class="card" style="max-width: 660px; margin: 0 auto;">
+    <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--energy)"></span><span>Versand erfassen</span></h2>
+    </div>
+
+    <div class="section-label">Kunde</div>
+    <div class="field">
+      <label for="versandCustomerName">Name</label>
+      <input type="text" id="versandCustomerName" placeholder="Max Mustermann / Firma GmbH">
+    </div>
+    <div class="field">
+      <label for="versandCustomerAddress">Lieferadresse</label>
+      <textarea id="versandCustomerAddress" placeholder="Musterstraße 1&#10;12345 Musterstadt"></textarea>
+    </div>
+
+    <div class="subgrid">
+      <div class="field">
+        <label for="versandDate">Versanddatum</label>
+        <input type="date" id="versandDate">
+      </div>
+      <div class="field">
+        <label for="versandReference">Bestell-/Rechnungsnummer <span class="hint">optional</span></label>
+        <input type="text" id="versandReference" placeholder="z. B. RE-20260827-001" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="section-label">Positionen</div>
+    <div id="versandItemsWrap"></div>
+    <button type="button" id="btnAddVersandRow" class="btn-secondary" style="margin-top:10px;">+ Position hinzufügen</button>
+
+    <div class="section-label">Versandart <span class="hint">optional</span></div>
+    <div class="subgrid">
+      <div class="field">
+        <label for="versandCarrier">Versanddienstleister</label>
+        <input type="text" id="versandCarrier" placeholder="z. B. DHL, Selbstabholung" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="versandTracking">Sendungsnummer</label>
+        <input type="text" id="versandTracking" autocomplete="off">
+      </div>
+    </div>
+    <div class="field">
+      <label for="versandNotes">Anmerkungen <span class="hint">optional</span></label>
+      <textarea id="versandNotes" placeholder="z. B. Hinweise zur Verpackung"></textarea>
+    </div>
+
+    <p class="note" id="versandStatus"></p>
+    <button class="btn-primary" id="btnCreateVersand" type="button">📦 Lieferschein erstellen</button>
+  </div>
+
+  <div class="card" style="max-width: 660px; margin: 16px auto 0;">
+    <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--margin-c)"></span><span>Versand-Historie</span></h2>
+    </div>
+
+    <div id="versandHistoryWrap" style="display:none;">
+      <table class="inv-table" style="margin-bottom:0;">
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Lieferschein-Nr.</th>
+            <th>Kunde</th>
+            <th class="num">Positionen</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="versandHistoryBody"></tbody>
+      </table>
+    </div>
+    <p class="note" id="versandHistoryEmptyNote">Noch keine Versände erfasst. Sobald du einen Lieferschein erstellst, erscheint er hier zur Nachverfolgung und zum erneuten Öffnen.</p>
+  </div>
+
+</div>
+
 <div class="wrap" id="pagePositionDetail" style="display:none;">
 
   <button type="button" class="settings-btn" id="btnBackToBooking" style="margin-bottom:18px;">← Zurück zum Lagerbestand</button>
@@ -1099,6 +1182,52 @@
   </div>
 </div>
 
+<div class="invoice-overlay" id="versandOverlay">
+  <div class="invoice-toolbar">
+    <button class="btn-secondary" id="btnCloseVersand" type="button">✕ Schließen</button>
+    <button class="btn-primary" id="btnPrintVersand" type="button">🖨️ Drucken / Als PDF speichern</button>
+  </div>
+  <div id="versandSheet">
+    <div class="inv-header">
+      <div>
+        <img id="versSheetLogo" src="" alt="Firmenlogo">
+        <div class="inv-co-name" id="versSheetCoName">RS Construction &amp; Printing</div>
+        <div class="inv-co-block" id="versSheetCoBlock"></div>
+      </div>
+      <div class="inv-title-block">
+        <div class="inv-title">LIEFERSCHEIN</div>
+        <div class="inv-meta">
+          <div><b>Lieferschein-Nr.:</b> <span id="versSheetNumber">—</span></div>
+          <div><b>Lieferdatum:</b> <span id="versSheetDate">—</span></div>
+          <div id="versSheetRefRow"><b>Referenz:</b> <span id="versSheetRef">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="inv-recipient">
+      <span class="inv-recipient-tag">Lieferadresse</span>
+      <span id="versSheetCustomer">—</span>
+    </div>
+
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th style="width:10%;">Pos.</th>
+          <th>Bezeichnung</th>
+          <th class="num" style="width:20%;">Menge</th>
+        </tr>
+      </thead>
+      <tbody id="versSheetItems"></tbody>
+    </table>
+
+    <div class="inv-note" id="versSheetShippingNote" style="display:none;"></div>
+    <div class="inv-note" id="versSheetCustomerNote" style="display:none;"></div>
+    <div class="inv-note">Bitte prüfen Sie die Lieferung bei Erhalt auf Vollständigkeit und Unversehrtheit. Vielen Dank für Ihren Auftrag!</div>
+
+    <div class="inv-footer" id="versSheetFooter"></div>
+  </div>
+</div>
+
 <div class="invoice-overlay" id="invoiceOverlay">
   <div class="invoice-toolbar">
     <button class="btn-secondary" id="btnCloseInvoice" type="button">✕ Schließen</button>
@@ -1303,7 +1432,7 @@
     } catch (err) {}
     if (!ok) throw new Error('storage unavailable');
   }
-  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements'];
+  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments'];
 
   const ids = ['filamentWeight','pricePerKg','printHours','heatPower','heatMinutes','printPower','acePower',
                'pricePerKwh','machineCost','setupCost','laborMinutes','laborRate','riskPercent','marginPercent','constructionHours','constructionRate'];
@@ -2682,6 +2811,195 @@
   loadStock();
   loadMovements();
 
+  const SHIPMENTS_KEY = 'shipments';
+  let shipments = [];
+  let versandItems = [];
+
+  async function loadShipments(){
+    try {
+      const value = await storageGet(SHIPMENTS_KEY);
+      if (value) shipments = JSON.parse(value);
+    } catch (err) {}
+    renderVersandHistory();
+  }
+
+  async function saveShipments(){
+    try { await storageSet(SHIPMENTS_KEY, JSON.stringify(shipments)); } catch (err) {}
+  }
+
+  function nextDeliveryNoteNumber(){ return defaultDocNumber('LS'); }
+
+  function renderVersandItems(){
+    $('versandItemsWrap').innerHTML = versandItems.map((item, i) => `
+      <div class="ls-item">
+        <div class="ls-item-head">
+          <span class="section-label" style="margin:0;">Position ${i + 1}</span>
+          <button type="button" class="vs-item-remove" data-index="${i}" title="Position entfernen">✕</button>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Bezeichnung</label>
+          <input type="text" class="vs-field" data-index="${i}" data-key="description" value="${escapeHtml(item.description)}" placeholder="z. B. Gehäuse Halterung, schwarz">
+        </div>
+        <div class="field" style="margin-bottom:0; max-width:160px;">
+          <label>Menge</label>
+          <input type="number" class="vs-field" data-index="${i}" data-key="quantity" value="${item.quantity}" min="1" step="1">
+        </div>
+      </div>
+    `).join('');
+
+    $('versandItemsWrap').querySelectorAll('.vs-field').forEach(input => {
+      input.addEventListener('input', () => {
+        const i = parseInt(input.dataset.index, 10);
+        versandItems[i][input.dataset.key] = input.value;
+      });
+    });
+    $('versandItemsWrap').querySelectorAll('.vs-item-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        versandItems.splice(parseInt(btn.dataset.index, 10), 1);
+        renderVersandItems();
+      });
+    });
+  }
+
+  $('btnAddVersandRow').addEventListener('click', () => {
+    versandItems.push({ description: '', quantity: 1 });
+    renderVersandItems();
+  });
+
+  function resetVersandForm(){
+    $('versandCustomerName').value = '';
+    $('versandCustomerAddress').value = '';
+    $('versandDate').value = todayISO();
+    $('versandReference').value = '';
+    $('versandCarrier').value = '';
+    $('versandTracking').value = '';
+    $('versandNotes').value = '';
+    versandItems = [{ description: '', quantity: 1 }];
+    renderVersandItems();
+    $('versandStatus').textContent = '';
+  }
+  resetVersandForm();
+
+  function renderVersandHistory(){
+    if (shipments.length === 0) {
+      $('versandHistoryWrap').style.display = 'none';
+      $('versandHistoryEmptyNote').style.display = 'block';
+      $('versandHistoryBody').innerHTML = '';
+      return;
+    }
+    $('versandHistoryWrap').style.display = 'block';
+    $('versandHistoryEmptyNote').style.display = 'none';
+
+    const sorted = [...shipments].sort((a,b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+    $('versandHistoryBody').innerHTML = sorted.map(s => {
+      const itemCount = s.items.reduce((sum, it) => sum + (parseInt(it.quantity, 10) || 0), 0);
+      return '<tr>' +
+        '<td>' + fmtDateShortDE(s.date) + '</td>' +
+        '<td>' + escapeHtml(s.docNumber) + '</td>' +
+        '<td>' + escapeHtml(s.customerName || '—') + '</td>' +
+        '<td class="num">' + itemCount + '</td>' +
+        '<td class="num"><button type="button" class="btn-secondary versand-reopen" data-id="' + s.id + '" style="width:auto; margin-top:0; padding:6px 12px; font-size:12px;">🖨️ Öffnen</button></td>' +
+        '</tr>';
+    }).join('');
+
+    $('versandHistoryBody').querySelectorAll('.versand-reopen').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const shipment = shipments.find(s => s.id === btn.dataset.id);
+        if (shipment) openVersandSheet(shipment);
+      });
+    });
+  }
+
+  function openVersandSheet(shipment){
+    $('versSheetLogo').src = activeLogoDataUrl;
+    $('versSheetCoName').textContent = companySettings.name || 'RS Construction & Printing';
+    $('versSheetCoBlock').textContent =
+      companySettings.address.split('\n').slice(1).join('\n') +
+      (companySettings.contact ? '\n' + companySettings.contact : '');
+
+    $('versSheetNumber').textContent = shipment.docNumber;
+    $('versSheetDate').textContent = fmtDateDE(shipment.date);
+
+    if (shipment.reference) {
+      $('versSheetRefRow').style.display = '';
+      $('versSheetRef').textContent = shipment.reference;
+    } else {
+      $('versSheetRefRow').style.display = 'none';
+    }
+
+    $('versSheetCustomer').textContent = [shipment.customerName, shipment.customerAddress].filter(Boolean).join('\n') || '—';
+
+    let pos = 1;
+    $('versSheetItems').innerHTML = shipment.items.map(item =>
+      '<tr><td>' + (pos++) + '</td><td>' + escapeHtml(item.description || '—') + '</td>' +
+      '<td class="num">' + escapeHtml(String(item.quantity || 0)) + '</td></tr>'
+    ).join('');
+
+    if (shipment.carrier || shipment.trackingNumber) {
+      $('versSheetShippingNote').style.display = 'block';
+      $('versSheetShippingNote').textContent = 'Versand: ' + [shipment.carrier, shipment.trackingNumber ? ('Sendungsnr. ' + shipment.trackingNumber) : null].filter(Boolean).join(' · ');
+    } else {
+      $('versSheetShippingNote').style.display = 'none';
+    }
+
+    if (shipment.notes) {
+      $('versSheetCustomerNote').style.display = 'block';
+      $('versSheetCustomerNote').textContent = shipment.notes;
+    } else {
+      $('versSheetCustomerNote').style.display = 'none';
+    }
+
+    $('versSheetFooter').textContent =
+      (companySettings.name || 'RS Construction & Printing') +
+      (companySettings.contact ? '  ·  ' + companySettings.contact : '') +
+      (companySettings.taxId ? '  ·  ' + companySettings.taxId : '');
+
+    $('versandOverlay').classList.add('open');
+  }
+
+  $('btnCreateVersand').addEventListener('click', () => {
+    const validItems = versandItems
+      .map(it => ({ description: (it.description || '').trim(), quantity: Math.max(1, parseInt(it.quantity, 10) || 0) }))
+      .filter(it => it.description);
+
+    if (validItems.length === 0) {
+      $('versandStatus').textContent = 'Bitte mindestens eine Position mit Bezeichnung angeben.';
+      $('versandStatus').style.color = 'var(--filament)';
+      return;
+    }
+
+    const shipment = {
+      id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+      docNumber: nextDeliveryNoteNumber(),
+      date: $('versandDate').value || todayISO(),
+      customerName: $('versandCustomerName').value.trim(),
+      customerAddress: $('versandCustomerAddress').value.trim(),
+      reference: $('versandReference').value.trim(),
+      carrier: $('versandCarrier').value.trim(),
+      trackingNumber: $('versandTracking').value.trim(),
+      notes: $('versandNotes').value.trim(),
+      items: validItems
+    };
+
+    shipments.push(shipment);
+    saveShipments();
+    renderVersandHistory();
+
+    $('versandStatus').textContent = '✓ Lieferschein ' + shipment.docNumber + ' erstellt.';
+    $('versandStatus').style.color = 'var(--energy)';
+
+    openVersandSheet(shipment);
+    resetVersandForm();
+  });
+
+  $('btnCloseVersand').addEventListener('click', () => $('versandOverlay').classList.remove('open'));
+  $('versandOverlay').addEventListener('click', (e) => {
+    if (e.target === $('versandOverlay')) $('versandOverlay').classList.remove('open');
+  });
+  $('btnPrintVersand').addEventListener('click', () => doPrintDocument());
+
+  loadShipments();
+
   function parseCSV(text, delimiter){
     const rows = [];
     let row = [];
@@ -3067,18 +3385,20 @@
   });
 
   function switchPage(page){
-    const isBooking = page === 'booking';
-    $('pageCalculator').style.display = isBooking ? 'none' : '';
-    $('pageBooking').style.display = isBooking ? '' : 'none';
+    $('pageCalculator').style.display = page === 'calculator' ? '' : 'none';
+    $('pageBooking').style.display = page === 'booking' ? '' : 'none';
+    $('pageVersand').style.display = page === 'shipping' ? '' : 'none';
     $('pagePositionDetail').style.display = 'none';
-    $('modeBarRow').style.display = isBooking ? 'none' : '';
+    $('modeBarRow').style.display = page === 'calculator' ? '' : 'none';
     document.querySelector('.page-switch-bar').style.display = '';
-    $('btnPageCalculator').classList.toggle('active', !isBooking);
-    $('btnPageBooking').classList.toggle('active', isBooking);
+    $('btnPageCalculator').classList.toggle('active', page === 'calculator');
+    $('btnPageBooking').classList.toggle('active', page === 'booking');
+    $('btnPageVersand').classList.toggle('active', page === 'shipping');
     window.scrollTo(0, 0);
   }
   $('btnPageCalculator').addEventListener('click', () => switchPage('calculator'));
   $('btnPageBooking').addEventListener('click', () => switchPage('booking'));
+  $('btnPageVersand').addEventListener('click', () => switchPage('shipping'));
 
   let currentDetailPositionId = null;
 
@@ -3100,6 +3420,7 @@
 
     $('pageCalculator').style.display = 'none';
     $('pageBooking').style.display = 'none';
+    $('pageVersand').style.display = 'none';
     $('pagePositionDetail').style.display = '';
     $('modeBarRow').style.display = 'none';
     document.querySelector('.page-switch-bar').style.display = 'none';
