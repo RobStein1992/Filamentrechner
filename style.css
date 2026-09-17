@@ -213,6 +213,10 @@
     color:#fff;
     box-shadow: 0 6px 16px -4px var(--accent-glow);
   }
+  @media(max-width: 620px){
+    .page-switch-bar{ flex-wrap: wrap; border-radius: var(--radius-sm); }
+    .page-switch-btn{ flex: 1 1 calc(50% - 4px); border-radius: var(--radius-sm); }
+  }
   @media(max-width: 480px){
     .page-switch-btn{ font-size: 11.5px; padding: 12px 8px; }
   }
@@ -474,9 +478,16 @@
     border-radius: 999px;
     font-size: 10px; font-weight: 700;
     letter-spacing: .06em; text-transform: uppercase;
+    white-space: nowrap;
     color: var(--filament);
     background: rgba(47,191,113,0.14);
     border: 1px solid rgba(47,191,113,0.35);
+  }
+  .order-badge.is-quote{
+    color: var(--extra);
+    background: rgba(176,132,245,0.14);
+    border-color: rgba(176,132,245,0.35);
+    margin-left: 6px;
   }
   .order-badge.is-shipped{
     color: var(--ink-soft);
@@ -486,10 +497,13 @@
   .order-actions{
     white-space: nowrap;
   }
-  .order-actions .order-ship{
-    width:auto; margin-top:0;
+  .order-actions .btn-secondary,
+  .order-actions .btn-primary{
+    width:auto; margin: 0 0 0 6px;
     padding: 6px 12px; font-size: 12px;
   }
+  .order-actions .btn-secondary:first-child,
+  .order-actions .btn-primary:first-child{ margin-left: 0; }
   .order-actions .order-delete{
     border:none; background:none; color:var(--ink-soft);
     cursor:pointer; font-size:14px; padding: 4px 2px; margin-left: 6px;
@@ -497,7 +511,7 @@
   .order-actions .order-delete:hover{ color: var(--margin-c); }
 
   /* Listen dürfen im Notfall in sich scrollen statt die Seite zu sprengen */
-  #orderListWrap, #versandHistoryWrap{
+  #orderListWrap, #versandHistoryWrap, #quoteListWrap, #orderArchiveWrap{
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -506,17 +520,30 @@
 
   @media (max-width: 560px){
     #orderListBody .btn-label,
+    #orderArchiveBody .btn-label,
+    #quoteListBody .btn-label,
     #versandHistoryBody .btn-label{ display:none; }
-    .order-actions .order-ship{ padding: 6px 10px; }
+    .order-actions .btn-secondary,
+    .order-actions .btn-primary{ padding: 6px 10px; margin-left: 4px; }
     #orderListWrap .col-date,
     #orderListWrap .col-customer,
+    #quoteListWrap .col-date,
+    #quoteListWrap .col-customer,
+    #orderArchiveWrap .col-date,
+    #orderArchiveWrap .col-customer,
     #versandHistoryWrap .col-date,
     #versandHistoryWrap .col-order,
     #versandHistoryWrap .col-customer{ display:none; }
     #orderListWrap .order-sub.only-narrow,
+    #quoteListWrap .order-sub.only-narrow,
+    #orderArchiveWrap .order-sub.only-narrow,
     #versandHistoryWrap .order-sub.only-narrow{ display:block; }
     #orderListWrap table.inv-table thead th,
     #orderListWrap table.inv-table tbody td,
+    #quoteListWrap table.inv-table thead th,
+    #quoteListWrap table.inv-table tbody td,
+    #orderArchiveWrap table.inv-table thead th,
+    #orderArchiveWrap table.inv-table tbody td,
     #versandHistoryWrap table.inv-table thead th,
     #versandHistoryWrap table.inv-table tbody td{ padding-left: 4px; padding-right: 4px; }
   }

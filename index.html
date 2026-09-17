@@ -44,6 +44,7 @@
   </div>
   <div class="page-switch-bar">
     <button type="button" class="page-switch-btn active" id="btnPageCalculator" data-page="calculator">🖩 Kalkulator</button>
+    <button type="button" class="page-switch-btn" id="btnPageOrders" data-page="orders">📋 Aufträge</button>
     <button type="button" class="page-switch-btn" id="btnPageBooking" data-page="booking">📦 Filament buchen</button>
     <button type="button" class="page-switch-btn" id="btnPageVersand" data-page="shipping">🚚 Versand</button>
   </div>
@@ -542,7 +543,7 @@
           <button class="btn-primary" id="btnCreateInvoice" type="button">📄 Rechnung erstellen</button>
           <button class="btn-secondary" id="btnCreateQuote" type="button">📋 Angebot erstellen</button>
         </div>
-        <p class="note" style="margin-bottom:0;">Jeder erstellte Beleg wird als <b>Auftrag</b> gespeichert und erscheint im Reiter <b>🚚 Versand</b> &ndash; von dort erzeugst du mit einem Klick den passenden Lieferschein.</p>
+        <p class="note" style="margin-bottom:0;">Jeder erstellte Beleg wird gespeichert und erscheint im Reiter <b>📋 Aufträge</b>: Rechnungen direkt in der Auftragslage, Angebote zuerst in der Angebotsliste. Aus einem Auftrag erzeugst du im Reiter <b>🚚 Versand</b> mit einem Klick den Lieferschein.</p>
         <p class="note">Die Rechnung/das Angebot gliedert sich in bis zu fünf Positionen: <b>3D-Druck</b> und <b>Nacharbeit</b> (Material, Energie, Maschine) jeweils × Menge, sowie <b>Konstruktion</b>, <b>Ausschuss-/Risikoaufschlag</b> und <b>Rüsten</b> jeweils einmalig pro Auftrag. Der Gewinnaufschlag ist im Preis enthalten, erscheint aber nicht als eigene Position. Ohne USt.-Häkchen wird die Rechnung als Kleinunternehmer­rechnung (§19 UStG, ohne ausgewiesene USt.) ausgegeben.</p>
       </details>
 
@@ -807,6 +808,67 @@
 
 </div>
 
+<div class="wrap" id="pageOrders" style="display:none;">
+
+  <header>
+    <div class="eyebrow"><span class="dot"></span><span>AUFTRAGSVERWALTUNG</span></div>
+    <h1>Auftr&auml;ge</h1>
+    <p>Alle Angebote und Auftr&auml;ge an einem Ort. Ein best&auml;tigtes Angebot wird zum Auftrag &ndash; die Auftragsnummer bleibt die Angebotsnummer.</p>
+  </header>
+
+  <div class="card" style="max-width: 760px; margin: 0 auto;">
+    <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--extra)"></span><span>Angebote</span></h2>
+    </div>
+    <p class="note" style="margin-top:0;">Offene Angebote aus dem Kalkulator. Sobald der Kunde best&auml;tigt, wandert das Angebot mit &bdquo;&#10003; In Auftrag&ldquo; in die Auftragslage &ndash; unter derselben Nummer.</p>
+
+    <div id="quoteListWrap" style="display:none; margin-top:14px;">
+      <table class="inv-table" style="margin-bottom:0;">
+        <thead>
+          <tr>
+            <th class="col-date">Datum</th>
+            <th>Angebot</th>
+            <th class="col-customer">Kunde</th>
+            <th class="num">Summe</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="quoteListBody"></tbody>
+      </table>
+    </div>
+    <p class="note" id="quoteEmptyNote">Noch keine offenen Angebote. Erstelle im Kalkulator ein Angebot &ndash; es erscheint dann automatisch hier.</p>
+  </div>
+
+  <div class="card" style="max-width: 760px; margin: 16px auto 0;">
+    <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--filament)"></span><span>Auftragslage</span></h2>
+    </div>
+    <p class="note" style="margin-top:0;">Best&auml;tigte Angebote und direkt erstellte Rechnungen. Von hier geht es mit einem Klick zum Lieferschein im Versandbereich.</p>
+
+    <div class="vat-row" style="margin:14px 0 4px;">
+      <input type="checkbox" id="orderArchiveShowAll">
+      <label for="orderArchiveShowAll">Bereits gelieferte Auftr&auml;ge einblenden</label>
+    </div>
+
+    <div id="orderArchiveWrap" style="display:none; margin-top:14px;">
+      <table class="inv-table" style="margin-bottom:0;">
+        <thead>
+          <tr>
+            <th class="col-date">Datum</th>
+            <th>Auftrag</th>
+            <th class="col-customer">Kunde</th>
+            <th class="num">Summe</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="orderArchiveBody"></tbody>
+      </table>
+    </div>
+    <p class="note" id="orderArchiveEmptyNote">Noch keine Auftr&auml;ge vorhanden. Erstelle im Kalkulator eine Rechnung oder best&auml;tige ein Angebot.</p>
+  </div>
+
+</div>
+
 <div class="wrap" id="pageVersand" style="display:none;">
 
   <header>
@@ -819,7 +881,7 @@
     <div class="card-head">
       <h2 class="card-title"><span class="swatch" style="background:var(--filament)"></span><span>Aufträge</span></h2>
     </div>
-    <p class="note" style="margin-top:0;">Lieferscheine werden aus den Auftr&auml;gen erstellt. Jede Rechnung und jedes Angebot, das du im Kalkulator erzeugst, landet automatisch in dieser Liste.</p>
+    <p class="note" style="margin-top:0;">Lieferscheine werden aus den best&auml;tigten Auftr&auml;gen erstellt. Angebote erscheinen hier erst, wenn du sie im Reiter <b>&#128203; Auftr&auml;ge</b> best&auml;tigt hast.</p>
 
     <div class="vat-row" style="margin:14px 0 4px;">
       <input type="checkbox" id="orderShowAll">
@@ -1965,6 +2027,7 @@
   let lastDocFilamentWeight = 0;
   let lastDocMaterialGuess = null;
   let lastDocArticleNo = '';
+  let viewingArchivedDoc = false;
 
   function setSeg(el, fraction, offsetFraction){
     const len = Math.max(fraction * CIRC, 0);
@@ -3037,7 +3100,7 @@
     }
 
     renderVersandHistory();
-    renderOrders();
+    renderAllOrderViews();
 
     $('versandStatus').textContent = '✓ Lieferschein ' + shipment.docNumber + ' erstellt.';
     $('versandStatus').style.color = 'var(--energy)';
@@ -3055,12 +3118,19 @@
 
   /* ---------- Aufträge: Grundlage für die Lieferscheine ---------- */
 
+  // Belegarten: kind 'quote' = Angebot, kind 'order' = bestätigter Auftrag.
+  // Rechnungen sind sofort Aufträge; Angebote wandern erst nach Bestätigung
+  // hinüber und behalten dabei ihre Angebotsnummer als Auftragsnummer.
   async function loadOrders(){
     try {
       const value = await storageGet(ORDERS_KEY);
       if (value) orders = JSON.parse(value);
     } catch (err) {}
-    renderOrders();
+    orders.forEach(o => {
+      if (!o.kind) o.kind = o.docType === 'quote' ? 'quote' : 'order';
+      if (!Array.isArray(o.shipmentIds)) o.shipmentIds = [];
+    });
+    renderAllOrderViews();
   }
 
   async function saveOrders(){
@@ -3072,56 +3142,169 @@
   }
 
   function orderTypeLabel(order){
-    return order.docType === 'quote' ? 'Angebot' : 'Rechnung';
-  }
-
-  // Wird beim Erstellen einer Rechnung/eines Angebots im Kalkulator aufgerufen.
-  // Gleiche Belegnummer = gleicher Auftrag, damit ein erneutes Erzeugen der
-  // Vorschau keinen Doppeleintrag anlegt.
-  function saveOrderFromDocument(order){
-    const key = (order.docNumber || '').trim().toLowerCase();
-    const existing = key ? orders.find(o => (o.docNumber || '').trim().toLowerCase() === key) : null;
-
-    if (existing) {
-      existing.docType = order.docType;
-      existing.date = order.date;
-      existing.customerName = order.customerName;
-      existing.customerAddress = order.customerAddress;
-      existing.items = order.items;
-      existing.total = order.total;
-      existing.printHours = order.printHours;
-    } else {
-      orders.push({
-        id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
-        docType: order.docType,
-        docNumber: order.docNumber,
-        date: order.date,
-        customerName: order.customerName,
-        customerAddress: order.customerAddress,
-        items: order.items,
-        total: order.total,
-        printHours: order.printHours,
-        shipmentIds: []
-      });
-    }
-
-    saveOrders();
-    renderOrders();
+    if (order.kind === 'quote') return 'Angebot';
+    return order.docType === 'quote' ? 'Auftrag' : 'Rechnung';
   }
 
   function orderQuantity(order){
     return (order.items || []).reduce((sum, it) => sum + (parseInt(it.quantity, 10) || 0), 0);
   }
 
+  function orderItemNames(order){
+    return (order.items || []).map(it => it.description).filter(Boolean).join(', ');
+  }
+
+  // Wird beim Erstellen einer Rechnung/eines Angebots im Kalkulator aufgerufen.
+  // Gleiche Belegnummer = gleicher Vorgang, damit ein erneutes Erzeugen der
+  // Vorschau keinen Doppeleintrag anlegt.
+  function saveOrderFromDocument(doc){
+    const key = (doc.docNumber || '').trim().toLowerCase();
+    const existing = key ? orders.find(o => (o.docNumber || '').trim().toLowerCase() === key) : null;
+
+    if (existing) {
+      existing.docType = doc.docType;
+      existing.date = doc.date;
+      existing.customerName = doc.customerName;
+      existing.customerAddress = doc.customerAddress;
+      existing.items = doc.items;
+      existing.total = doc.total;
+      existing.printHours = doc.printHours;
+      existing.sheet = doc.sheet;
+      // Eine Rechnung ist immer ein Auftrag; ein bereits bestätigter Auftrag
+      // bleibt bestätigt, auch wenn das Angebot noch einmal gedruckt wird.
+      if (doc.docType !== 'quote') {
+        existing.kind = 'order';
+        if (!existing.confirmedAt) existing.confirmedAt = doc.date || todayISO();
+      }
+    } else {
+      const isQuote = doc.docType === 'quote';
+      orders.push({
+        id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+        kind: isQuote ? 'quote' : 'order',
+        docType: doc.docType,
+        docNumber: doc.docNumber,
+        date: doc.date,
+        customerName: doc.customerName,
+        customerAddress: doc.customerAddress,
+        items: doc.items,
+        total: doc.total,
+        printHours: doc.printHours,
+        sheet: doc.sheet,
+        confirmedAt: isQuote ? null : (doc.date || todayISO()),
+        shipmentIds: []
+      });
+    }
+
+    saveOrders();
+    renderAllOrderViews();
+  }
+
+  function renderAllOrderViews(){
+    renderQuoteList();
+    renderOrderArchive();
+    renderOrders();
+  }
+
+  // Die ersten drei Spalten sind in allen drei Listen gleich aufgebaut.
+  function orderBaseCells(order, badgeHtml){
+    const names = orderItemNames(order);
+    return '<td class="col-date">' + fmtDateShortDE(order.date) + '</td>' +
+      '<td>' + escapeHtml(order.docNumber || '—') +
+        '<span class="order-sub">' + orderTypeLabel(order) + (names ? ' · ' + escapeHtml(names) : '') + '</span>' +
+        '<span class="order-sub only-narrow">' + fmtDateShortDE(order.date) + ' · ' + escapeHtml(order.customerName || 'ohne Kunde') + '</span>' +
+        (badgeHtml || '') + '</td>' +
+      '<td class="col-customer">' + escapeHtml(order.customerName || '—') + '</td>';
+  }
+
+  function orderOpenButton(order){
+    return '<button type="button" class="btn-secondary order-open" data-id="' + order.id + '" title="Beleg öffnen">👁<span class="btn-label"> Öffnen</span></button>';
+  }
+
+  function orderDeleteButton(order){
+    return '<button type="button" class="order-delete" data-id="' + order.id + '" title="Eintrag entfernen">✕</button>';
+  }
+
+  function sortedOrders(list){
+    return [...list].sort((a,b) =>
+      (b.date || '').localeCompare(a.date || '') || b.id.localeCompare(a.id));
+  }
+
+  /* --- Liste 1: offene Angebote (Reiter Aufträge) --- */
+  function renderQuoteList(){
+    const quotes = orders.filter(o => o.kind === 'quote');
+
+    if (quotes.length === 0) {
+      $('quoteListWrap').style.display = 'none';
+      $('quoteEmptyNote').style.display = 'block';
+      $('quoteListBody').innerHTML = '';
+      return;
+    }
+    $('quoteListWrap').style.display = 'block';
+    $('quoteEmptyNote').style.display = 'none';
+
+    $('quoteListBody').innerHTML = sortedOrders(quotes).map(o =>
+      '<tr>' +
+        orderBaseCells(o, '<span class="order-badge is-quote">offen</span>') +
+        '<td class="num">' + fmtEUR(o.total || 0) + '</td>' +
+        '<td class="num order-actions">' +
+          orderOpenButton(o) +
+          '<button type="button" class="btn-primary order-confirm" data-id="' + o.id + '" title="Angebot bestätigen und in einen Auftrag umwandeln">✓<span class="btn-label"> In Auftrag</span></button>' +
+          orderDeleteButton(o) +
+        '</td>' +
+      '</tr>'
+    ).join('');
+
+    wireOrderActions($('quoteListBody'));
+  }
+
+  /* --- Liste 2: Auftragslage (Reiter Aufträge) --- */
+  function renderOrderArchive(){
+    const confirmed = orders.filter(o => o.kind === 'order');
+    const showAll = $('orderArchiveShowAll').checked;
+    const visible = confirmed.filter(o => showAll || !orderIsShipped(o));
+
+    if (visible.length === 0) {
+      $('orderArchiveWrap').style.display = 'none';
+      $('orderArchiveEmptyNote').style.display = 'block';
+      $('orderArchiveEmptyNote').textContent = confirmed.length === 0
+        ? 'Noch keine Aufträge vorhanden. Erstelle im Kalkulator eine Rechnung oder bestätige oben ein Angebot.'
+        : 'Alle Aufträge sind bereits geliefert. Setze oben den Haken, um sie einzublenden.';
+      $('orderArchiveBody').innerHTML = '';
+      return;
+    }
+    $('orderArchiveWrap').style.display = 'block';
+    $('orderArchiveEmptyNote').style.display = 'none';
+
+    $('orderArchiveBody').innerHTML = sortedOrders(visible).map(o => {
+      const shipped = orderIsShipped(o);
+      const fromQuote = o.docType === 'quote';
+      return '<tr>' +
+        orderBaseCells(o,
+          '<span class="order-badge' + (shipped ? ' is-shipped' : '') + '">' + (shipped ? 'geliefert' : 'offen') + '</span>' +
+          (fromQuote ? '<span class="order-badge is-quote">aus Angebot</span>' : '')) +
+        '<td class="num">' + fmtEUR(o.total || 0) + '</td>' +
+        '<td class="num order-actions">' +
+          orderOpenButton(o) +
+          '<button type="button" class="btn-secondary order-ship" data-id="' + o.id + '" title="Lieferschein erstellen">📦<span class="btn-label"> Lieferschein</span></button>' +
+          orderDeleteButton(o) +
+        '</td>' +
+      '</tr>';
+    }).join('');
+
+    wireOrderActions($('orderArchiveBody'));
+  }
+
+  /* --- Liste 3: versandfertige Aufträge (Reiter Versand) --- */
   function renderOrders(){
+    const confirmed = orders.filter(o => o.kind === 'order');
     const showAll = $('orderShowAll').checked;
-    const visible = orders.filter(o => showAll || !orderIsShipped(o));
+    const visible = confirmed.filter(o => showAll || !orderIsShipped(o));
 
     if (visible.length === 0) {
       $('orderListWrap').style.display = 'none';
       $('orderEmptyNote').style.display = 'block';
-      $('orderEmptyNote').textContent = orders.length === 0
-        ? 'Noch keine Aufträge vorhanden. Erstelle im Kalkulator eine Rechnung oder ein Angebot – der Auftrag erscheint dann hier und kann von hier aus versendet werden.'
+      $('orderEmptyNote').textContent = confirmed.length === 0
+        ? 'Noch keine bestätigten Aufträge. Erstelle im Kalkulator eine Rechnung oder bestätige im Reiter 📋 Aufträge ein Angebot.'
         : 'Alle Aufträge sind bereits geliefert. Setze oben den Haken, um sie einzublenden.';
       $('orderListBody').innerHTML = '';
       return;
@@ -3130,42 +3313,121 @@
     $('orderListWrap').style.display = 'block';
     $('orderEmptyNote').style.display = 'none';
 
-    const sorted = [...visible].sort((a,b) =>
-      (b.date || '').localeCompare(a.date || '') || b.id.localeCompare(a.id));
-
-    $('orderListBody').innerHTML = sorted.map(o => {
+    $('orderListBody').innerHTML = sortedOrders(visible).map(o => {
       const shipped = orderIsShipped(o);
-      const itemNames = (o.items || []).map(it => it.description).filter(Boolean).join(', ');
       return '<tr>' +
-        '<td class="col-date">' + fmtDateShortDE(o.date) + '</td>' +
-        '<td>' + escapeHtml(o.docNumber || '—') +
-          '<span class="order-sub">' + orderTypeLabel(o) + (itemNames ? ' · ' + escapeHtml(itemNames) : '') + '</span>' +
-          '<span class="order-sub only-narrow">' + fmtDateShortDE(o.date) + ' · ' + escapeHtml(o.customerName || 'ohne Kunde') + '</span>' +
-          '<span class="order-badge' + (shipped ? ' is-shipped' : '') + '">' + (shipped ? 'geliefert' : 'offen') + '</span></td>' +
-        '<td class="col-customer">' + escapeHtml(o.customerName || '—') + '</td>' +
+        orderBaseCells(o, '<span class="order-badge' + (shipped ? ' is-shipped' : '') + '">' + (shipped ? 'geliefert' : 'offen') + '</span>') +
         '<td class="num">' + orderQuantity(o) + '</td>' +
         '<td class="num order-actions">' +
           '<button type="button" class="btn-secondary order-ship" data-id="' + o.id + '" title="Lieferschein erstellen">📦<span class="btn-label"> Lieferschein</span></button>' +
-          '<button type="button" class="order-delete" data-id="' + o.id + '" title="Auftrag entfernen">✕</button>' +
+          orderDeleteButton(o) +
         '</td>' +
-        '</tr>';
+      '</tr>';
     }).join('');
 
-    $('orderListBody').querySelectorAll('.order-ship').forEach(btn => {
+    wireOrderActions($('orderListBody'));
+  }
+
+  function wireOrderActions(tbody){
+    tbody.querySelectorAll('.order-open').forEach(btn => {
+      btn.addEventListener('click', () => openOrderSheet(btn.dataset.id));
+    });
+    tbody.querySelectorAll('.order-confirm').forEach(btn => {
+      btn.addEventListener('click', () => confirmQuote(btn.dataset.id));
+    });
+    tbody.querySelectorAll('.order-ship').forEach(btn => {
       btn.addEventListener('click', () => startVersandFromOrder(btn.dataset.id));
     });
-    $('orderListBody').querySelectorAll('.order-delete').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const order = orders.find(o => o.id === btn.dataset.id);
-        if (!order) return;
-        if (!confirm('Auftrag ' + (order.docNumber || '') + ' aus der Liste entfernen? Bereits erstellte Lieferscheine bleiben erhalten.')) return;
-        orders = orders.filter(o => o.id !== order.id);
-        if (currentVersandOrderId === order.id) { currentVersandOrderId = null; hideVersandForm(); }
-        saveOrders();
-        renderOrders();
-      });
+    tbody.querySelectorAll('.order-delete').forEach(btn => {
+      btn.addEventListener('click', () => deleteOrder(btn.dataset.id));
     });
   }
+
+  // Angebot → Auftrag. Die Nummer bleibt die Angebotsnummer.
+  function confirmQuote(id){
+    const quote = orders.find(o => o.id === id);
+    if (!quote || quote.kind !== 'quote') return;
+    const number = quote.docNumber || '—';
+    if (!confirm('Angebot ' + number + ' als bestätigt in einen Auftrag umwandeln?\n\nDer Auftrag läuft weiter unter der Nummer ' + number + ' und ist danach im Versand verfügbar.')) return;
+
+    quote.kind = 'order';
+    quote.confirmedAt = todayISO();
+    saveOrders();
+    renderAllOrderViews();
+  }
+
+  function deleteOrder(id){
+    const order = orders.find(o => o.id === id);
+    if (!order) return;
+    const what = order.kind === 'quote' ? 'Angebot' : 'Auftrag';
+    if (!confirm(what + ' ' + (order.docNumber || '') + ' aus der Liste entfernen? Bereits erstellte Lieferscheine bleiben erhalten.')) return;
+
+    orders = orders.filter(o => o.id !== order.id);
+    if (currentVersandOrderId === order.id) { currentVersandOrderId = null; hideVersandForm(); }
+    saveOrders();
+    renderAllOrderViews();
+  }
+
+  // Gespeicherten Beleg (Angebot oder Rechnung) erneut anzeigen bzw. drucken.
+  function openOrderSheet(id){
+    const order = orders.find(o => o.id === id);
+    if (!order) return;
+    const sheet = order.sheet;
+    if (!sheet) {
+      alert('Für ' + (order.docNumber || 'diesen Vorgang') + ' wurde noch kein Belegabbild gespeichert. Erstelle den Beleg im Kalkulator einmal neu – danach lässt er sich hier jederzeit öffnen.');
+      return;
+    }
+
+    $('invLogo').src = activeLogoDataUrl;
+    $('invSheetCoName').textContent = companySettings.name || 'RS Construction & Printing';
+    $('invSheetCoBlock').textContent =
+      companySettings.address.split('\n').slice(1).join('\n') +
+      (companySettings.contact ? '\n' + companySettings.contact : '') +
+      (companySettings.taxId ? '\n' + companySettings.taxId : '');
+
+    $('invSheetDocTitle').textContent = sheet.title;
+    $('invSheetNumberLabel').textContent = sheet.numberLabel;
+    $('invSheetNumber').textContent = sheet.number;
+    $('invSheetDateLabel').textContent = sheet.dateLabel;
+    $('invSheetDate').textContent = sheet.date;
+    $('invSheetDate2Label').textContent = sheet.date2Label;
+    $('invSheetDate2').textContent = sheet.date2;
+    $('invSheetRecipientTag').textContent = sheet.recipientTag;
+    $('invSheetCustomer').textContent = sheet.customer;
+    $('invSheetItems').innerHTML = sheet.rowsHtml;
+    $('invSheetSubtotal').textContent = sheet.subtotal;
+
+    $('invSheetRiskRow').style.display = 'none';
+    $('invSheetMarginRow').style.display = 'none';
+    $('invSheetNetRow').style.display = 'none';
+
+    if (sheet.vatVisible) {
+      $('invSheetVatRow').style.display = 'flex';
+      $('invSheetVatLabel').textContent = sheet.vatLabel;
+      $('invSheetVatAmount').textContent = sheet.vatAmount;
+      $('invSheetVatNote').style.display = 'none';
+    } else {
+      $('invSheetVatRow').style.display = 'none';
+      $('invSheetVatNote').style.display = 'block';
+    }
+
+    $('invSheetTotalLabel').textContent = sheet.totalLabel;
+    $('invSheetGrandTotal').textContent = sheet.grandTotal;
+    $('invSheetClosingNote').textContent = sheet.closingNote;
+
+    const bank = companySettings.bank.trim();
+    $('invSheetFooter').textContent =
+      (companySettings.name || 'RS Construction & Printing') +
+      (companySettings.contact ? '  ·  ' + companySettings.contact : '') +
+      (companySettings.taxId ? '  ·  ' + companySettings.taxId : '') +
+      (bank ? '\n' + bank : '');
+
+    // Archivbeleg: beim Drucken nicht erneut Filament ausbuchen anbieten.
+    viewingArchivedDoc = true;
+    $('invoiceOverlay').classList.add('open');
+  }
+
+  $('orderArchiveShowAll').addEventListener('change', renderOrderArchive);
 
   function updateVersandOrderBanner(){
     const order = orders.find(o => o.id === currentVersandOrderId);
@@ -3193,6 +3455,7 @@
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
+    switchPage('shipping');
     currentVersandOrderId = order.id;
     $('versandCustomerName').value = order.customerName || '';
     $('versandCustomerAddress').value = order.customerAddress || '';
@@ -3613,17 +3876,20 @@
 
   function switchPage(page){
     $('pageCalculator').style.display = page === 'calculator' ? '' : 'none';
+    $('pageOrders').style.display = page === 'orders' ? '' : 'none';
     $('pageBooking').style.display = page === 'booking' ? '' : 'none';
     $('pageVersand').style.display = page === 'shipping' ? '' : 'none';
     $('pagePositionDetail').style.display = 'none';
     $('modeBarRow').style.display = page === 'calculator' ? '' : 'none';
     document.querySelector('.page-switch-bar').style.display = '';
     $('btnPageCalculator').classList.toggle('active', page === 'calculator');
+    $('btnPageOrders').classList.toggle('active', page === 'orders');
     $('btnPageBooking').classList.toggle('active', page === 'booking');
     $('btnPageVersand').classList.toggle('active', page === 'shipping');
     window.scrollTo(0, 0);
   }
   $('btnPageCalculator').addEventListener('click', () => switchPage('calculator'));
+  $('btnPageOrders').addEventListener('click', () => switchPage('orders'));
   $('btnPageBooking').addEventListener('click', () => switchPage('booking'));
   $('btnPageVersand').addEventListener('click', () => switchPage('shipping'));
 
@@ -3912,8 +4178,30 @@
     lastDocMaterialGuess = guessStockMaterialFamily();
     lastDocArticleNo = $('filamentArticleNo').value.trim();
 
-    // Beleg als Auftrag sichern – daraus werden im Versandbereich die
-    // Lieferscheine erzeugt.
+    // Abbild des fertigen Belegs sichern, damit er sich im Reiter Aufträge
+    // jederzeit wieder öffnen und drucken lässt.
+    const sheetSnapshot = {
+      title: $('invSheetDocTitle').textContent,
+      numberLabel: $('invSheetNumberLabel').textContent,
+      number: $('invSheetNumber').textContent,
+      dateLabel: $('invSheetDateLabel').textContent,
+      date: $('invSheetDate').textContent,
+      date2Label: $('invSheetDate2Label').textContent,
+      date2: $('invSheetDate2').textContent,
+      recipientTag: $('invSheetRecipientTag').textContent,
+      customer: $('invSheetCustomer').textContent,
+      rowsHtml: $('invSheetItems').innerHTML,
+      subtotal: $('invSheetSubtotal').textContent,
+      vatVisible: vatEnabled,
+      vatLabel: $('invSheetVatLabel').textContent,
+      vatAmount: $('invSheetVatAmount').textContent,
+      totalLabel: $('invSheetTotalLabel').textContent,
+      grandTotal: $('invSheetGrandTotal').textContent,
+      closingNote: $('invSheetClosingNote').textContent
+    };
+
+    // Beleg speichern: Rechnungen landen direkt in der Auftragslage,
+    // Angebote zunächst in der Angebotsliste.
     saveOrderFromDocument({
       docType,
       docNumber: lastDocNumber,
@@ -3922,9 +4210,11 @@
       customerAddress: custAddr,
       items: [{ description: ($('invItemName').value || '').trim() || 'Druckteil', quantity }],
       total: grandTotal,
-      printHours
+      printHours,
+      sheet: sheetSnapshot
     });
 
+    viewingArchivedDoc = false;
     $('invoiceOverlay').classList.add('open');
   }
 
@@ -3944,7 +4234,7 @@
   }
 
   $('btnPrintInvoice').addEventListener('click', () => {
-    if (lastDocType === 'invoice') {
+    if (!viewingArchivedDoc && lastDocType === 'invoice') {
       openPrintBookDialog();
     } else {
       doPrintDocument();
