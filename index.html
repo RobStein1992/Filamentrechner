@@ -542,6 +542,7 @@
           <button class="btn-primary" id="btnCreateInvoice" type="button">📄 Rechnung erstellen</button>
           <button class="btn-secondary" id="btnCreateQuote" type="button">📋 Angebot erstellen</button>
         </div>
+        <p class="note" style="margin-bottom:0;">Jeder erstellte Beleg wird als <b>Auftrag</b> gespeichert und erscheint im Reiter <b>🚚 Versand</b> &ndash; von dort erzeugst du mit einem Klick den passenden Lieferschein.</p>
         <p class="note">Die Rechnung/das Angebot gliedert sich in bis zu fünf Positionen: <b>3D-Druck</b> und <b>Nacharbeit</b> (Material, Energie, Maschine) jeweils × Menge, sowie <b>Konstruktion</b>, <b>Ausschuss-/Risikoaufschlag</b> und <b>Rüsten</b> jeweils einmalig pro Auftrag. Der Gewinnaufschlag ist im Preis enthalten, erscheint aber nicht als eigene Position. Ohne USt.-Häkchen wird die Rechnung als Kleinunternehmer­rechnung (§19 UStG, ohne ausgewiesene USt.) ausgegeben.</p>
       </details>
 
@@ -811,12 +812,47 @@
   <header>
     <div class="eyebrow"><span class="dot"></span><span>VERSAND · FERTIGE PRODUKTE</span></div>
     <h1>Versand</h1>
-    <p>Erfasse den Versand fertiger Druckteile an Kunden und erstelle dazu automatisch einen Lieferschein.</p>
+    <p>Erstelle Lieferscheine direkt aus deinen Auftr&auml;gen &ndash; Kunde und Positionen werden automatisch &uuml;bernommen.</p>
   </header>
 
   <div class="card" style="max-width: 660px; margin: 0 auto;">
     <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--filament)"></span><span>Aufträge</span></h2>
+    </div>
+    <p class="note" style="margin-top:0;">Lieferscheine werden aus den Auftr&auml;gen erstellt. Jede Rechnung und jedes Angebot, das du im Kalkulator erzeugst, landet automatisch in dieser Liste.</p>
+
+    <div class="vat-row" style="margin:14px 0 4px;">
+      <input type="checkbox" id="orderShowAll">
+      <label for="orderShowAll">Bereits gelieferte Auftr&auml;ge einblenden</label>
+    </div>
+
+    <div id="orderListWrap" style="display:none; margin-top:14px;">
+      <table class="inv-table" style="margin-bottom:0;">
+        <thead>
+          <tr>
+            <th class="col-date">Datum</th>
+            <th>Auftrag</th>
+            <th class="col-customer">Kunde</th>
+            <th class="num">Menge</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="orderListBody"></tbody>
+      </table>
+    </div>
+    <p class="note" id="orderEmptyNote">Noch keine Auftr&auml;ge vorhanden. Erstelle im Kalkulator eine Rechnung oder ein Angebot &ndash; der Auftrag erscheint dann hier und kann von hier aus versendet werden.</p>
+
+    <button class="btn-secondary" id="btnFreeVersand" type="button" style="margin-top:14px;">Lieferschein ohne Auftrag erstellen</button>
+  </div>
+
+  <div class="card" id="versandFormCard" style="max-width: 660px; margin: 16px auto 0; display:none;">
+    <div class="card-head">
       <h2 class="card-title"><span class="swatch" style="background:var(--energy)"></span><span>Versand erfassen</span></h2>
+    </div>
+
+    <div class="order-banner" id="versandOrderBanner">
+      <span id="versandOrderBannerText"></span>
+      <button type="button" id="btnCancelVersand" title="Abbrechen">&#10005;</button>
     </div>
 
     <div class="section-label">Kunde</div>
@@ -866,24 +902,25 @@
 
   <div class="card" style="max-width: 660px; margin: 16px auto 0;">
     <div class="card-head">
-      <h2 class="card-title"><span class="swatch" style="background:var(--margin-c)"></span><span>Versand-Historie</span></h2>
+      <h2 class="card-title"><span class="swatch" style="background:var(--margin-c)"></span><span>Lieferscheine</span></h2>
     </div>
 
     <div id="versandHistoryWrap" style="display:none;">
       <table class="inv-table" style="margin-bottom:0;">
         <thead>
           <tr>
-            <th>Datum</th>
+            <th class="col-date">Datum</th>
             <th>Lieferschein-Nr.</th>
-            <th>Kunde</th>
-            <th class="num">Positionen</th>
+            <th class="col-order">Auftrag</th>
+            <th class="col-customer">Kunde</th>
+            <th class="num">Pos.</th>
             <th></th>
           </tr>
         </thead>
         <tbody id="versandHistoryBody"></tbody>
       </table>
     </div>
-    <p class="note" id="versandHistoryEmptyNote">Noch keine Versände erfasst. Sobald du einen Lieferschein erstellst, erscheint er hier zur Nachverfolgung und zum erneuten Öffnen.</p>
+    <p class="note" id="versandHistoryEmptyNote">Noch keine Lieferscheine erstellt. Sobald du einen Auftrag versendest, erscheint der Lieferschein hier zur Nachverfolgung und zum erneuten Öffnen.</p>
   </div>
 
 </div>
@@ -1432,7 +1469,7 @@
     } catch (err) {}
     if (!ok) throw new Error('storage unavailable');
   }
-  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments'];
+  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders'];
 
   const ids = ['filamentWeight','pricePerKg','printHours','heatPower','heatMinutes','printPower','acePower',
                'pricePerKwh','machineCost','setupCost','laborMinutes','laborRate','riskPercent','marginPercent','constructionHours','constructionRate'];
@@ -2812,8 +2849,11 @@
   loadMovements();
 
   const SHIPMENTS_KEY = 'shipments';
+  const ORDERS_KEY = 'orders';
   let shipments = [];
+  let orders = [];
   let versandItems = [];
+  let currentVersandOrderId = null;
 
   async function loadShipments(){
     try {
@@ -2867,6 +2907,7 @@
   });
 
   function resetVersandForm(){
+    currentVersandOrderId = null;
     $('versandCustomerName').value = '';
     $('versandCustomerAddress').value = '';
     $('versandDate').value = todayISO();
@@ -2894,11 +2935,14 @@
     $('versandHistoryBody').innerHTML = sorted.map(s => {
       const itemCount = s.items.reduce((sum, it) => sum + (parseInt(it.quantity, 10) || 0), 0);
       return '<tr>' +
-        '<td>' + fmtDateShortDE(s.date) + '</td>' +
-        '<td>' + escapeHtml(s.docNumber) + '</td>' +
-        '<td>' + escapeHtml(s.customerName || '—') + '</td>' +
+        '<td class="col-date">' + fmtDateShortDE(s.date) + '</td>' +
+        '<td>' + escapeHtml(s.docNumber) +
+          '<span class="order-sub only-narrow">' + fmtDateShortDE(s.date) + ' · ' + escapeHtml(s.customerName || 'ohne Kunde') +
+            (s.reference ? ' · ' + escapeHtml(s.reference) : '') + '</span></td>' +
+        '<td class="col-order">' + escapeHtml(s.reference || '—') + '</td>' +
+        '<td class="col-customer">' + escapeHtml(s.customerName || '—') + '</td>' +
         '<td class="num">' + itemCount + '</td>' +
-        '<td class="num"><button type="button" class="btn-secondary versand-reopen" data-id="' + s.id + '" style="width:auto; margin-top:0; padding:6px 12px; font-size:12px;">🖨️ Öffnen</button></td>' +
+        '<td class="num"><button type="button" class="btn-secondary versand-reopen" data-id="' + s.id + '" title="Lieferschein öffnen" style="width:auto; margin-top:0; padding:6px 12px; font-size:12px;">🖨️<span class="btn-label"> Öffnen</span></button></td>' +
         '</tr>';
     }).join('');
 
@@ -2978,18 +3022,29 @@
       carrier: $('versandCarrier').value.trim(),
       trackingNumber: $('versandTracking').value.trim(),
       notes: $('versandNotes').value.trim(),
+      orderId: currentVersandOrderId || null,
       items: validItems
     };
 
     shipments.push(shipment);
     saveShipments();
+
+    const linkedOrder = orders.find(o => o.id === shipment.orderId);
+    if (linkedOrder) {
+      if (!Array.isArray(linkedOrder.shipmentIds)) linkedOrder.shipmentIds = [];
+      linkedOrder.shipmentIds.push(shipment.id);
+      saveOrders();
+    }
+
     renderVersandHistory();
+    renderOrders();
 
     $('versandStatus').textContent = '✓ Lieferschein ' + shipment.docNumber + ' erstellt.';
     $('versandStatus').style.color = 'var(--energy)';
 
     openVersandSheet(shipment);
     resetVersandForm();
+    hideVersandForm();
   });
 
   $('btnCloseVersand').addEventListener('click', () => $('versandOverlay').classList.remove('open'));
@@ -2998,7 +3053,179 @@
   });
   $('btnPrintVersand').addEventListener('click', () => doPrintDocument());
 
+  /* ---------- Aufträge: Grundlage für die Lieferscheine ---------- */
+
+  async function loadOrders(){
+    try {
+      const value = await storageGet(ORDERS_KEY);
+      if (value) orders = JSON.parse(value);
+    } catch (err) {}
+    renderOrders();
+  }
+
+  async function saveOrders(){
+    try { await storageSet(ORDERS_KEY, JSON.stringify(orders)); } catch (err) {}
+  }
+
+  function orderIsShipped(order){
+    return Array.isArray(order.shipmentIds) && order.shipmentIds.length > 0;
+  }
+
+  function orderTypeLabel(order){
+    return order.docType === 'quote' ? 'Angebot' : 'Rechnung';
+  }
+
+  // Wird beim Erstellen einer Rechnung/eines Angebots im Kalkulator aufgerufen.
+  // Gleiche Belegnummer = gleicher Auftrag, damit ein erneutes Erzeugen der
+  // Vorschau keinen Doppeleintrag anlegt.
+  function saveOrderFromDocument(order){
+    const key = (order.docNumber || '').trim().toLowerCase();
+    const existing = key ? orders.find(o => (o.docNumber || '').trim().toLowerCase() === key) : null;
+
+    if (existing) {
+      existing.docType = order.docType;
+      existing.date = order.date;
+      existing.customerName = order.customerName;
+      existing.customerAddress = order.customerAddress;
+      existing.items = order.items;
+      existing.total = order.total;
+      existing.printHours = order.printHours;
+    } else {
+      orders.push({
+        id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+        docType: order.docType,
+        docNumber: order.docNumber,
+        date: order.date,
+        customerName: order.customerName,
+        customerAddress: order.customerAddress,
+        items: order.items,
+        total: order.total,
+        printHours: order.printHours,
+        shipmentIds: []
+      });
+    }
+
+    saveOrders();
+    renderOrders();
+  }
+
+  function orderQuantity(order){
+    return (order.items || []).reduce((sum, it) => sum + (parseInt(it.quantity, 10) || 0), 0);
+  }
+
+  function renderOrders(){
+    const showAll = $('orderShowAll').checked;
+    const visible = orders.filter(o => showAll || !orderIsShipped(o));
+
+    if (visible.length === 0) {
+      $('orderListWrap').style.display = 'none';
+      $('orderEmptyNote').style.display = 'block';
+      $('orderEmptyNote').textContent = orders.length === 0
+        ? 'Noch keine Aufträge vorhanden. Erstelle im Kalkulator eine Rechnung oder ein Angebot – der Auftrag erscheint dann hier und kann von hier aus versendet werden.'
+        : 'Alle Aufträge sind bereits geliefert. Setze oben den Haken, um sie einzublenden.';
+      $('orderListBody').innerHTML = '';
+      return;
+    }
+
+    $('orderListWrap').style.display = 'block';
+    $('orderEmptyNote').style.display = 'none';
+
+    const sorted = [...visible].sort((a,b) =>
+      (b.date || '').localeCompare(a.date || '') || b.id.localeCompare(a.id));
+
+    $('orderListBody').innerHTML = sorted.map(o => {
+      const shipped = orderIsShipped(o);
+      const itemNames = (o.items || []).map(it => it.description).filter(Boolean).join(', ');
+      return '<tr>' +
+        '<td class="col-date">' + fmtDateShortDE(o.date) + '</td>' +
+        '<td>' + escapeHtml(o.docNumber || '—') +
+          '<span class="order-sub">' + orderTypeLabel(o) + (itemNames ? ' · ' + escapeHtml(itemNames) : '') + '</span>' +
+          '<span class="order-sub only-narrow">' + fmtDateShortDE(o.date) + ' · ' + escapeHtml(o.customerName || 'ohne Kunde') + '</span>' +
+          '<span class="order-badge' + (shipped ? ' is-shipped' : '') + '">' + (shipped ? 'geliefert' : 'offen') + '</span></td>' +
+        '<td class="col-customer">' + escapeHtml(o.customerName || '—') + '</td>' +
+        '<td class="num">' + orderQuantity(o) + '</td>' +
+        '<td class="num order-actions">' +
+          '<button type="button" class="btn-secondary order-ship" data-id="' + o.id + '" title="Lieferschein erstellen">📦<span class="btn-label"> Lieferschein</span></button>' +
+          '<button type="button" class="order-delete" data-id="' + o.id + '" title="Auftrag entfernen">✕</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+
+    $('orderListBody').querySelectorAll('.order-ship').forEach(btn => {
+      btn.addEventListener('click', () => startVersandFromOrder(btn.dataset.id));
+    });
+    $('orderListBody').querySelectorAll('.order-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const order = orders.find(o => o.id === btn.dataset.id);
+        if (!order) return;
+        if (!confirm('Auftrag ' + (order.docNumber || '') + ' aus der Liste entfernen? Bereits erstellte Lieferscheine bleiben erhalten.')) return;
+        orders = orders.filter(o => o.id !== order.id);
+        if (currentVersandOrderId === order.id) { currentVersandOrderId = null; hideVersandForm(); }
+        saveOrders();
+        renderOrders();
+      });
+    });
+  }
+
+  function updateVersandOrderBanner(){
+    const order = orders.find(o => o.id === currentVersandOrderId);
+    $('versandOrderBannerText').textContent = order
+      ? 'Aus ' + orderTypeLabel(order) + ' ' + (order.docNumber || '') + (order.customerName ? ' · ' + order.customerName : '')
+      : 'Freier Lieferschein ohne Auftragsbezug';
+    $('versandOrderBanner').classList.toggle('is-free', !order);
+  }
+
+  function showVersandForm(){
+    updateVersandOrderBanner();
+    $('versandFormCard').style.display = '';
+    // Manuell scrollen statt scrollIntoView: die eingeblendete Karte würde sonst
+    // unter der klebenden Toolbar verschwinden.
+    const offset = ($('appToolbar') ? $('appToolbar').offsetHeight : 0) + 16;
+    const top = $('versandFormCard').getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
+  }
+
+  function hideVersandForm(){
+    $('versandFormCard').style.display = 'none';
+  }
+
+  function startVersandFromOrder(orderId){
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    currentVersandOrderId = order.id;
+    $('versandCustomerName').value = order.customerName || '';
+    $('versandCustomerAddress').value = order.customerAddress || '';
+    $('versandDate').value = todayISO();
+    $('versandReference').value = order.docNumber || '';
+    $('versandCarrier').value = '';
+    $('versandTracking').value = '';
+    $('versandNotes').value = '';
+    $('versandStatus').textContent = '';
+
+    const source = (order.items || []).filter(it => it && it.description);
+    versandItems = source.length
+      ? source.map(it => ({ description: it.description, quantity: Math.max(1, parseInt(it.quantity, 10) || 1) }))
+      : [{ description: '', quantity: 1 }];
+    renderVersandItems();
+
+    showVersandForm();
+  }
+
+  $('btnFreeVersand').addEventListener('click', () => {
+    resetVersandForm();
+    showVersandForm();
+  });
+
+  $('btnCancelVersand').addEventListener('click', () => {
+    resetVersandForm();
+    hideVersandForm();
+  });
+
+  $('orderShowAll').addEventListener('change', renderOrders);
+
   loadShipments();
+  loadOrders();
 
   function parseCSV(text, delimiter){
     const rows = [];
@@ -3684,6 +3911,19 @@
     lastDocFilamentWeight = (parseFloat($('filamentWeight').value) || 0) * quantity;
     lastDocMaterialGuess = guessStockMaterialFamily();
     lastDocArticleNo = $('filamentArticleNo').value.trim();
+
+    // Beleg als Auftrag sichern – daraus werden im Versandbereich die
+    // Lieferscheine erzeugt.
+    saveOrderFromDocument({
+      docType,
+      docNumber: lastDocNumber,
+      date: $('invDate').value || todayISO(),
+      customerName: custName,
+      customerAddress: custAddr,
+      items: [{ description: ($('invItemName').value || '').trim() || 'Druckteil', quantity }],
+      total: grandTotal,
+      printHours
+    });
 
     $('invoiceOverlay').classList.add('open');
   }
