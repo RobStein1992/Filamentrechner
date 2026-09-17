@@ -1494,6 +1494,11 @@
       </div>
       <button type="button" id="btnSaveLieferscheinConfig" class="btn-primary" style="margin-top:0;">💾 Speichern</button>
       <p class="note" id="lieferscheinConfigStatus"></p>
+
+      <div class="section-label">🧪 Testdaten</div>
+      <p class="note" style="margin-top:0;">Legt einen vollst&auml;ndigen Beispielauftrag in der Auftragslage an, um den Ablauf bis zum Lieferschein auszuprobieren. Vorhandene Daten bleiben unber&uuml;hrt &ndash; den Testauftrag entfernst du jederzeit im Reiter <b>📋 Auftr&auml;ge</b> &uuml;ber das ✕.</p>
+      <button type="button" id="btnCreateTestOrder" class="btn-secondary" style="margin-top:0;">🧪 Testauftrag anlegen</button>
+      <p class="note" id="testDataStatus"></p>
     </div>
 
     <p class="note" id="settingsStatus" style="margin-top:18px;"></p>
@@ -3428,6 +3433,74 @@
   }
 
   $('orderArchiveShowAll').addEventListener('change', renderOrderArchive);
+
+  // Beispielauftrag zum Ausprobieren des Ablaufs bis zum Lieferschein.
+  $('btnCreateTestOrder').addEventListener('click', () => {
+    const d = new Date();
+    const stamp = d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate());
+    let counter = 1;
+    let number;
+    do {
+      number = 'TEST-' + stamp + '-' + String(counter).padStart(3, '0');
+      counter++;
+    } while (orders.some(o => (o.docNumber || '').toLowerCase() === number.toLowerCase()));
+
+    const quantity = 3;
+    const unitPrice = 24.5;
+    const printLine = unitPrice * quantity;
+    const setupCost = 8;
+    const total = printLine + setupCost;
+    const today = todayISO();
+    const dateDE = fmtDateDE(today);
+    const customerName = 'Testkunde GmbH';
+    const customerAddress = 'Teststraße 1\n12345 Musterstadt';
+    const itemName = 'Testteil – Halterung';
+
+    const rowsHtml =
+      '<tr><td>1</td><td>' + escapeHtml(itemName) + '<span class="inv-item-sub">' + quantity + ' Stk. · ca. 2,5 Std. Druckzeit / Teil</span></td>' +
+        '<td class="num">' + quantity + '</td>' +
+        '<td class="num">' + fmtEUR(unitPrice) + '</td>' +
+        '<td class="num">' + fmtEUR(printLine) + '</td></tr>' +
+      '<tr><td>2</td><td>Rüsten<span class="inv-item-sub">einmalig pro Auftrag</span></td>' +
+        '<td class="num">1</td>' +
+        '<td class="num">' + fmtEUR(setupCost) + '</td>' +
+        '<td class="num">' + fmtEUR(setupCost) + '</td></tr>';
+
+    saveOrderFromDocument({
+      docType: 'invoice',
+      docNumber: number,
+      date: today,
+      customerName,
+      customerAddress,
+      items: [{ description: itemName, quantity }],
+      total,
+      printHours: 2.5,
+      sheet: {
+        title: 'RECHNUNG',
+        numberLabel: 'Rechnungs-Nr.:',
+        number,
+        dateLabel: 'Rechnungsdatum:',
+        date: dateDE,
+        date2Label: 'Leistungsdatum:',
+        date2: dateDE,
+        recipientTag: 'Rechnungsempfänger',
+        customer: customerName + '\n' + customerAddress,
+        rowsHtml,
+        subtotal: fmtEUR(total),
+        vatVisible: false,
+        vatLabel: '',
+        vatAmount: '',
+        totalLabel: 'Rechnungsbetrag',
+        grandTotal: fmtEUR(total),
+        closingNote: 'Testbeleg – dient nur zum Ausprobieren des Ablaufs und ist keine echte Forderung.'
+      }
+    });
+
+    $('testDataStatus').textContent = '✓ Testauftrag ' + number + ' angelegt.';
+    $('testDataStatus').style.color = 'var(--energy)';
+    $('settingsOverlay').classList.remove('open');
+    switchPage('orders');
+  });
 
   function updateVersandOrderBanner(){
     const order = orders.find(o => o.id === currentVersandOrderId);
