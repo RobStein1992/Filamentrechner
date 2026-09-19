@@ -1451,6 +1451,66 @@
     </div>
 
     <div id="settingsTabData" style="display:none;">
+
+      <div id="syncSection">
+        <div class="section-label">🔄 Ger&auml;te-Synchronisierung</div>
+        <p class="note" style="margin-top:0;">Damit alle deine Ger&auml;te denselben Stand haben. Ohne Einrichtung bleiben die Daten nur auf diesem Ger&auml;t.</p>
+
+        <div class="sync-state" id="syncStatus">Nicht eingerichtet.</div>
+
+        <div class="field">
+          <label>Variante 1 &middot; Datei im Cloud-Ordner <span class="hint">Windows, Mac, Android</span></label>
+          <p class="note" style="margin-top:0;" id="syncFileNote">Die App schreibt bei jeder &Auml;nderung direkt in eine Datei in deinem iCloud-, OneDrive- oder Dropbox-Ordner. Kein Server, keine Anmeldung &ndash; dein Cloud-Client verteilt die Datei.</p>
+          <div class="btn-row" id="syncFileButtons">
+            <button type="button" class="btn-secondary" id="btnSyncFileNew" style="margin-top:0;">📄 Neue Datei anlegen &hellip;</button>
+            <button type="button" class="btn-secondary" id="btnSyncFileOpen" style="margin-top:0;">📂 Vorhandene Datei &ouml;ffnen &hellip;</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Variante 2 &middot; Cloud-Tresor <span class="hint">auch iPhone &amp; iPad</span></label>
+          <p class="note" style="margin-top:0;">Die Daten liegen verschl&uuml;sselt in deinem eigenen Cloudflare-Speicher. Ver- und entschl&uuml;sselt wird nur hier im Browser &ndash; der Server sieht ausschlie&szlig;lich unlesbare Daten. Einrichtung: Datei <code>worker/README-sync.md</code> im Projekt-Repository.</p>
+          <div class="field">
+            <label for="syncWorkerUrl">Adresse des Sync-Workers</label>
+            <input type="text" id="syncWorkerUrl" placeholder="https://druckrechner-sync.deinname.workers.dev" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="syncKeyInput">Zugangsschl&uuml;ssel</label>
+            <input type="text" id="syncKeyInput" placeholder="wird erzeugt" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="btn-row">
+            <button type="button" class="btn-secondary" id="btnSyncKeyGenerate" style="margin-top:0;">🔑 Schl&uuml;ssel erzeugen</button>
+            <button type="button" class="btn-primary" id="btnSyncCloudConnect" style="margin-top:0;">🔄 Verbinden</button>
+          </div>
+        </div>
+
+        <div class="field" id="syncBackupRow" style="display:none;">
+          <label>Zus&auml;tzliche Sicherungsdatei <span class="hint">optional</span></label>
+          <p class="note" style="margin-top:0;">Schreibt bei jedem Abgleich zus&auml;tzlich eine lesbare Datei in deinen Cloud-Ordner &ndash; praktisch als Sicherung au&szlig;erhalb des Tresors. Wird nur geschrieben, nie gelesen.</p>
+          <div class="sync-state" id="syncBackupState" style="margin:8px 0 10px;">Nicht eingerichtet.</div>
+          <div class="btn-row">
+            <button type="button" class="btn-secondary" id="btnSyncBackupFile" style="margin-top:0;">📄 Datei w&auml;hlen &hellip;</button>
+            <button type="button" class="btn-secondary" id="btnSyncBackupOff" style="margin-top:0; display:none;">Abschalten</button>
+          </div>
+        </div>
+
+        <div class="field" id="syncLinkRow" style="display:none;">
+          <label for="syncLink">Einrichtungs-Link f&uuml;r deine weiteren Ger&auml;te</label>
+          <input type="text" id="syncLink" readonly onclick="this.select()">
+          <div class="btn-row">
+            <button type="button" class="btn-secondary" id="btnCopySyncLink" style="margin-top:0;">📋 Link kopieren</button>
+          </div>
+          <p class="note">Diesen Link auf dem iPhone oder iPad &ouml;ffnen &ndash; dort sind Adresse und Schl&uuml;ssel dann bereits eingetragen. Der Link enth&auml;lt deinen Zugangsschl&uuml;ssel, also nicht &ouml;ffentlich teilen.</p>
+          <p class="note">Ablage-Kennung (f&uuml;r die optionale Variable <code>SYNC_KEY_HASH</code> im Worker):<br><code id="syncSpaceIdOut" style="word-break:break-all;">&mdash;</code></p>
+        </div>
+
+        <div class="btn-row" id="syncDisconnectRow" style="display:none;">
+          <button type="button" class="btn-secondary" id="btnSyncNow" style="margin-top:0;">🔄 Jetzt abgleichen</button>
+          <button type="button" class="btn-secondary" id="btnSyncDisconnect" style="margin-top:0;">Trennen</button>
+        </div>
+        <p class="note" id="syncMessage"></p>
+      </div>
+
       <div id="desktopStorageSection" style="display:none;">
         <div class="section-label">Speicherort (Desktop-App)</div>
         <p class="note" style="margin-top:0;">Wähle einen Ordner, in dem alle Daten dieser App als Datei gespeichert werden. Liegt der Ordner z.&nbsp;B. in <b>OneDrive</b>, <b>Google Drive</b>, <b>Dropbox</b> oder dem lokalen <b>iCloud-Drive-Ordner von "iCloud für Windows"</b>, synchronisiert dein Cloud-Anbieter die Daten automatisch auf alle deine Geräte – ganz ohne Anmeldung in dieser App.</p>
@@ -1506,8 +1566,9 @@
 </div>
 
 <div class="sync-banner" id="syncReloadBanner">
-  <span>Die Daten wurden auf einem anderen Ger&auml;t ge&auml;ndert.</span>
+  <span id="syncBannerText">Die Daten wurden auf einem anderen Ger&auml;t ge&auml;ndert.</span>
   <button type="button" class="btn-primary" id="btnSyncReload">Neu laden</button>
+  <button type="button" class="btn-secondary" id="btnSyncKeepMine" style="display:none;">Meinen Stand behalten</button>
   <button type="button" class="sync-banner-close" id="btnSyncDismiss" title="Hinweis ausblenden">&#10005;</button>
 </div>
 
@@ -1541,8 +1602,19 @@
       ok = true;
     } catch (err) {}
     if (!ok) throw new Error('storage unavailable');
+    markLocalChange();
   }
   const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders', 'lieferschein-worker-url'];
+
+  // Zustand der Geräte-Synchronisierung (siehe weiter unten). Hier oben
+  // deklariert, weil storageSet() darauf zugreift.
+  const SYNC_CONFIG_KEY = LS_PREFIX + 'sync-config';
+  const SYNC_STATE_KEY = LS_PREFIX + 'sync-state';
+  let syncConfig = { mode: 'none' };
+  let syncState = {};
+  let syncSuspended = false;
+  try { syncConfig = JSON.parse(window.localStorage.getItem(SYNC_CONFIG_KEY)) || syncConfig; } catch (err) {}
+  try { syncState = JSON.parse(window.localStorage.getItem(SYNC_STATE_KEY)) || syncState; } catch (err) {}
 
   const ids = ['filamentWeight','pricePerKg','printHours','heatPower','heatMinutes','printPower','acePower',
                'pricePerKwh','machineCost','setupCost','laborMinutes','laborRate','riskPercent','marginPercent','constructionHours','constructionRate'];
@@ -2450,8 +2522,639 @@
     e.target.value = '';
   });
 
+  /* ==================== Geräte-Synchronisierung ====================
+   *
+   * Zwei Wege, dieselben Daten auf mehreren Geräten zu haben:
+   *
+   *  - 'file'  : Die App schreibt direkt in eine Datei in einem Cloud-Ordner
+   *              (iCloud Drive, OneDrive, Dropbox …). Braucht die File System
+   *              Access API – vorhanden in Chrome/Edge auf Windows, Mac,
+   *              Linux und Android, nicht in Safari.
+   *  - 'cloud' : Die Daten liegen verschlüsselt im eigenen Cloudflare-Worker.
+   *              Funktioniert in jedem Browser, also auch auf iPhone/iPad.
+   *              Ver- und entschlüsselt wird ausschließlich hier im Browser;
+   *              der Server sieht nur unlesbare Daten.
+   *
+   * In beiden Fällen bleibt der Browserspeicher die schnelle lokale Kopie –
+   * die App funktioniert also weiter, wenn gerade keine Verbindung besteht.
+   */
+
+  const SYNC_SALT = 'druckrechner-sync-v1';
+  const SYNC_PBKDF2_ROUNDS = 200000;
+  let syncPushTimer = null;
+  let syncLastRun = 0;
+  let syncRunning = false;
+  let syncFirstRun = true;
+  let syncFileHandle = null;
+  let syncBackupHandle = null;
+
+  function syncIsConfigured(){
+    return syncConfig.mode === 'file' || syncConfig.mode === 'cloud';
+  }
+
+  function saveSyncConfig(){
+    try { window.localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(syncConfig)); } catch (err) {}
+  }
+  function saveSyncState(){
+    try { window.localStorage.setItem(SYNC_STATE_KEY, JSON.stringify(syncState)); } catch (err) {}
+  }
+
+  // Nach jeder lokalen Änderung: Zeitstempel merken und Hochladen einplanen.
+  function markLocalChange(){
+    if (syncSuspended || !syncIsConfigured()) return;
+    syncState.localUpdatedAt = new Date().toISOString();
+    saveSyncState();
+    if (syncPushTimer) clearTimeout(syncPushTimer);
+    syncPushTimer = setTimeout(() => { syncPushTimer = null; runSync(); }, 2000);
+  }
+
+  function hasLocalChanges(){
+    return !!syncState.localUpdatedAt && syncState.localUpdatedAt !== syncState.lastSyncedAt;
+  }
+
+  /* ---------- Datenpaket ---------- */
+
+  async function buildLocalDoc(){
+    const values = {};
+    for (const key of ALL_STORAGE_KEYS) {
+      try {
+        const value = await storageGet(key);
+        if (typeof value === 'string') values[key] = value;
+      } catch (err) {}
+    }
+    return { version: 1, updatedAt: new Date().toISOString(), values };
+  }
+
+  async function applyDoc(doc){
+    syncSuspended = true;
+    try {
+      for (const key of ALL_STORAGE_KEYS) {
+        if (typeof doc.values[key] === 'string') {
+          await storageSet(key, doc.values[key]);
+        } else {
+          try { window.localStorage.removeItem(LS_PREFIX + key); } catch (err) {}
+        }
+      }
+    } finally {
+      syncSuspended = false;
+    }
+  }
+
+  /* ---------- Variante 1: Datei im Cloud-Ordner ---------- */
+
+  function fileSyncSupported(){
+    return typeof window.showSaveFilePicker === 'function' && typeof window.showOpenFilePicker === 'function';
+  }
+
+  // Der Dateizugriff (FileSystemFileHandle) lässt sich nur in IndexedDB
+  // ablegen, nicht im localStorage.
+  function idb(){
+    return new Promise((resolve, reject) => {
+      const req = window.indexedDB.open('druckrechner-sync', 1);
+      req.onupgradeneeded = () => { req.result.createObjectStore('handles'); };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function idbPut(key, value){
+    const db = await idb();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction('handles', 'readwrite');
+      tx.objectStore('handles').put(value, key);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  }
+  async function idbGet(key){
+    const db = await idb();
+    const value = await new Promise((resolve, reject) => {
+      const tx = db.transaction('handles', 'readonly');
+      const req = tx.objectStore('handles').get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    db.close();
+    return value;
+  }
+
+  async function fileEnsureHandle(interactive){
+    if (!syncFileHandle) syncFileHandle = await idbGet('sync-file');
+    if (!syncFileHandle) return null;
+    const opts = { mode: 'readwrite' };
+    let permission = await syncFileHandle.queryPermission(opts);
+    if (permission === 'prompt' && interactive) permission = await syncFileHandle.requestPermission(opts);
+    return permission === 'granted' ? syncFileHandle : null;
+  }
+
+  async function fileRead(interactive){
+    const handle = await fileEnsureHandle(interactive);
+    if (!handle) throw new Error('Kein Zugriff auf die Datei. Bitte in den Einstellungen erneut freigeben.');
+    const file = await handle.getFile();
+    const text = await file.text();
+    if (!text.trim()) return null;
+    const doc = JSON.parse(text);
+    return (doc && typeof doc.values === 'object') ? doc : null;
+  }
+
+  async function fileWrite(doc){
+    const handle = await fileEnsureHandle(true);
+    if (!handle) throw new Error('Kein Zugriff auf die Datei.');
+    const writable = await handle.createWritable();
+    await writable.write(JSON.stringify(doc, null, 2));
+    await writable.close();
+  }
+
+  /* ---------- Variante 2: verschlüsselter Cloud-Tresor ---------- */
+
+  function bufToB64(buf){
+    let binary = '';
+    new Uint8Array(buf).forEach(b => { binary += String.fromCharCode(b); });
+    return btoa(binary);
+  }
+  function b64ToBuf(b64){
+    const binary = atob(b64);
+    const out = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+    return out;
+  }
+  function bufToHex(buf){
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // Ablage-Kennung: aus dem Zugangsschlüssel abgeleitet, damit der Server den
+  // Schlüssel selbst nie zu sehen bekommt.
+  async function syncSpaceId(key){
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('id|' + key));
+    return bufToHex(digest);
+  }
+
+  async function syncCryptoKey(key){
+    const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(key), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: new TextEncoder().encode(SYNC_SALT), iterations: SYNC_PBKDF2_ROUNDS, hash: 'SHA-256' },
+      material,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    );
+  }
+
+  async function encryptDoc(doc, key){
+    const cryptoKey = await syncCryptoKey(key);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const plain = new TextEncoder().encode(JSON.stringify(doc));
+    const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, cryptoKey, plain);
+    return { v: 1, updatedAt: doc.updatedAt, iv: bufToB64(iv), data: bufToB64(cipher) };
+  }
+
+  async function decryptDoc(envelope, key){
+    const cryptoKey = await syncCryptoKey(key);
+    const plain = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: b64ToBuf(envelope.iv) }, cryptoKey, b64ToBuf(envelope.data));
+    return JSON.parse(new TextDecoder().decode(plain));
+  }
+
+  function cloudEndpoint(id){
+    return syncConfig.workerUrl.replace(/\/+$/, '') + '/' + id;
+  }
+
+  async function cloudRead(){
+    const id = await syncSpaceId(syncConfig.key);
+    const res = await fetch(cloudEndpoint(id), { method: 'GET', cache: 'no-store' });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error('Server antwortet mit Status ' + res.status + '.');
+    const envelope = await res.json();
+    if (!envelope || !envelope.data) return null;
+    try {
+      return await decryptDoc(envelope, syncConfig.key);
+    } catch (err) {
+      throw new Error('Die Daten lassen sich nicht entschlüsseln – stimmt der Zugangsschlüssel?');
+    }
+  }
+
+  async function cloudWrite(doc){
+    const id = await syncSpaceId(syncConfig.key);
+    const envelope = await encryptDoc(doc, syncConfig.key);
+    const res = await fetch(cloudEndpoint(id), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(envelope)
+    });
+    if (!res.ok) throw new Error('Server antwortet mit Status ' + res.status + '.');
+  }
+
+  /* ---------- Ablauf ---------- */
+
+  async function syncRead(interactive){
+    if (syncConfig.mode === 'file') return fileRead(interactive);
+    if (syncConfig.mode === 'cloud') return cloudRead();
+    return null;
+  }
+  async function syncWrite(doc){
+    if (syncConfig.mode === 'file') return fileWrite(doc);
+    if (syncConfig.mode === 'cloud') return cloudWrite(doc);
+  }
+
+  // Zusätzliche Sicherungsdatei: wird nur geschrieben, nie gelesen. Damit
+  // liegt neben dem Tresor auch eine lesbare Datei im Cloud-Ordner.
+  async function writeBackupFile(doc){
+    if (!syncConfig.backupFile || !fileSyncSupported()) return;
+    try {
+      if (!syncBackupHandle) syncBackupHandle = await idbGet('backup-file');
+      if (!syncBackupHandle) return;
+      if (await syncBackupHandle.queryPermission({ mode: 'readwrite' }) !== 'granted') return;
+      const writable = await syncBackupHandle.createWritable();
+      await writable.write(JSON.stringify(doc, null, 2));
+      await writable.close();
+    } catch (err) {}
+  }
+
+  async function pushLocal(){
+    const doc = await buildLocalDoc();
+    await syncWrite(doc);
+    await writeBackupFile(doc);
+    syncState.lastSyncedAt = doc.updatedAt;
+    syncState.localUpdatedAt = doc.updatedAt;
+    syncState.lastSyncAt = new Date().toISOString();
+    saveSyncState();
+  }
+
+  async function adoptRemote(doc){
+    await applyDoc(doc);
+    await writeBackupFile(doc);
+    syncState.lastSyncedAt = doc.updatedAt;
+    syncState.localUpdatedAt = doc.updatedAt;
+    syncState.lastSyncAt = new Date().toISOString();
+    saveSyncState();
+  }
+
+  // interactive = vom Nutzer angestoßen (darf Berechtigungen anfragen und
+  // Fehler deutlich melden).
+  async function runSync(interactive){
+    if (!syncIsConfigured() || syncRunning) return;
+    if (!interactive && Date.now() - syncLastRun < 5000) return;
+    syncRunning = true;
+    syncLastRun = Date.now();
+    setSyncMessage(interactive ? 'Abgleich läuft …' : '', 'neutral');
+
+    try {
+      const remote = await syncRead(interactive);
+
+      if (!remote) {
+        await pushLocal();
+        setSyncMessage('✓ Daten abgelegt.', 'ok');
+      } else {
+        const remoteChanged = remote.updatedAt !== syncState.lastSyncedAt;
+        const localChanged = hasLocalChanges();
+
+        if (remoteChanged && localChanged) {
+          // Beide Seiten haben sich geändert – hier entscheidet der Nutzer.
+          pendingRemoteDoc = remote;
+          showSyncBanner('Auf einem anderen Gerät wurde ebenfalls etwas geändert.', { conflict: true });
+          setSyncMessage('Abgleich angehalten: Auf beiden Seiten gibt es Änderungen.', 'warn');
+        } else if (remoteChanged) {
+          if (syncFirstRun) {
+            // Direkt beim Öffnen: still übernehmen, es kann noch nichts
+            // Eingetipptes verloren gehen.
+            await adoptRemote(remote);
+            location.reload();
+            return;
+          }
+          // Mitten im Betrieb: nicht ungefragt neu laden.
+          pendingRemoteDoc = remote;
+          showSyncBanner('Auf einem anderen Gerät wurde etwas geändert.', {});
+          setSyncMessage('Ein neuerer Stand liegt bereit.', 'neutral');
+        } else if (localChanged) {
+          await pushLocal();
+          setSyncMessage('✓ Änderungen übertragen.', 'ok');
+        } else {
+          syncState.lastSyncAt = new Date().toISOString();
+          saveSyncState();
+          setSyncMessage('✓ Alles auf dem neuesten Stand.', 'ok');
+        }
+      }
+    } catch (err) {
+      const offline = err instanceof TypeError || !navigator.onLine;
+      setSyncMessage(offline
+        ? 'Keine Verbindung – die Änderungen werden beim nächsten erfolgreichen Abgleich übertragen.'
+        : 'Abgleich fehlgeschlagen: ' + (err && err.message ? err.message : 'unbekannter Fehler'), 'warn');
+    } finally {
+      syncRunning = false;
+      syncFirstRun = false;
+      renderSyncStatus();
+    }
+  }
+
+  let pendingRemoteDoc = null;
+
+  /* ---------- Oberfläche ---------- */
+
+  function setSyncMessage(text, tone){
+    const el = $('syncMessage');
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = tone === 'ok' ? 'var(--energy)' : (tone === 'warn' ? 'var(--margin-c)' : 'var(--ink-soft)');
+  }
+
+  function renderSyncStatus(){
+    const el = $('syncStatus');
+    if (!el) return;
+
+    const last = syncState.lastSyncAt ? ' · zuletzt ' + fmtDateTimeShortDE(syncState.lastSyncAt) : '';
+    if (syncConfig.mode === 'file') {
+      el.textContent = '🟢 Datei im Cloud-Ordner' + (syncConfig.fileName ? ' (' + syncConfig.fileName + ')' : '') + last;
+    } else if (syncConfig.mode === 'cloud') {
+      el.textContent = '🟢 Cloud-Tresor verbunden' + last;
+    } else {
+      el.textContent = '⚪️ Nicht eingerichtet – die Daten liegen nur auf diesem Gerät.';
+    }
+
+    $('syncDisconnectRow').style.display = syncIsConfigured() ? '' : 'none';
+    $('syncLinkRow').style.display = syncConfig.mode === 'cloud' ? '' : 'none';
+    if (syncConfig.mode === 'cloud') {
+      $('syncLink').value = buildSyncLink();
+      syncSpaceId(syncConfig.key).then(id => { $('syncSpaceIdOut').textContent = id; }).catch(() => {});
+    }
+
+    const showBackup = syncConfig.mode === 'cloud' && fileSyncSupported();
+    $('syncBackupRow').style.display = showBackup ? '' : 'none';
+    if (showBackup) {
+      $('syncBackupState').textContent = syncConfig.backupFile
+        ? 'Aktiv: ' + syncConfig.backupFile
+        : 'Nicht eingerichtet.';
+      $('btnSyncBackupOff').style.display = syncConfig.backupFile ? '' : 'none';
+    }
+  }
+
+  function buildSyncLink(){
+    const payload = btoa(JSON.stringify({ u: syncConfig.workerUrl, k: syncConfig.key }))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return location.origin + location.pathname + '#sync=' + payload;
+  }
+
+  function generateSyncKey(){
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const bytes = crypto.getRandomValues(new Uint8Array(25));
+    let out = '';
+    for (let i = 0; i < bytes.length; i++) {
+      out += alphabet[bytes[i] % alphabet.length];
+      if (i % 5 === 4 && i !== bytes.length - 1) out += '-';
+    }
+    return out;
+  }
+
+  async function disconnectSync(){
+    syncConfig = { mode: 'none' };
+    syncState = {};
+    syncFileHandle = null;
+    saveSyncConfig();
+    saveSyncState();
+    try { await idbPut('sync-file', null); } catch (err) {}
+    renderSyncStatus();
+    setSyncMessage('Verbindung getrennt. Die Daten bleiben auf diesem Gerät erhalten.', 'neutral');
+  }
+
+  function initSyncUi(){
+    if (!fileSyncSupported()) {
+      $('syncFileButtons').style.display = 'none';
+      $('syncFileNote').textContent = 'Dieser Browser unterstützt den direkten Dateizugriff nicht – auf iPhone und iPad ist das nie der Fall. Nutze dort den Cloud-Tresor weiter unten.';
+    }
+
+    $('btnSyncFileNew').addEventListener('click', async () => {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: 'druckrechner-daten.json',
+          types: [{ description: 'Druckrechner-Daten', accept: { 'application/json': ['.json'] } }]
+        });
+        await idbPut('sync-file', handle);
+        syncFileHandle = handle;
+        syncConfig = { mode: 'file', fileName: handle.name };
+        syncState = {};
+        saveSyncConfig();
+        saveSyncState();
+        await pushLocal();
+        syncFirstRun = false;
+        renderSyncStatus();
+        setSyncMessage('✓ Datei angelegt. Ab jetzt wird jede Änderung dort gespeichert.', 'ok');
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        setSyncMessage('Datei konnte nicht angelegt werden: ' + (err && err.message ? err.message : ''), 'warn');
+      }
+    });
+
+    $('btnSyncFileOpen').addEventListener('click', async () => {
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          multiple: false,
+          types: [{ description: 'Druckrechner-Daten', accept: { 'application/json': ['.json'] } }]
+        });
+        await idbPut('sync-file', handle);
+        syncFileHandle = handle;
+        syncConfig = { mode: 'file', fileName: handle.name };
+        syncState = {};
+        saveSyncConfig();
+        saveSyncState();
+
+        const remote = await fileRead(true);
+        if (remote) {
+          if (!confirm('In dieser Datei liegen bereits Daten. Sie ersetzen den aktuellen Stand dieses Geräts. Fortfahren?')) {
+            await disconnectSync();
+            return;
+          }
+          await adoptRemote(remote);
+          location.reload();
+          return;
+        }
+        await pushLocal();
+        syncFirstRun = false;
+        renderSyncStatus();
+        setSyncMessage('✓ Datei verbunden.', 'ok');
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        setSyncMessage('Datei konnte nicht geöffnet werden: ' + (err && err.message ? err.message : ''), 'warn');
+      }
+    });
+
+    $('btnSyncKeyGenerate').addEventListener('click', () => {
+      $('syncKeyInput').value = generateSyncKey();
+      setSyncMessage('Schlüssel erzeugt. Nach dem Verbinden lässt er sich über den Einrichtungs-Link auf die anderen Geräte übertragen.', 'neutral');
+    });
+
+    $('btnSyncCloudConnect').addEventListener('click', async () => {
+      const workerUrl = $('syncWorkerUrl').value.trim();
+      const key = $('syncKeyInput').value.trim();
+      if (!/^https?:\/\//.test(workerUrl)) {
+        setSyncMessage('Bitte die vollständige Adresse des Sync-Workers eintragen (mit https://).', 'warn');
+        return;
+      }
+      if (key.length < 12) {
+        setSyncMessage('Bitte einen Zugangsschlüssel eintragen oder erzeugen (mindestens 12 Zeichen).', 'warn');
+        return;
+      }
+      await connectCloud(workerUrl, key, true);
+    });
+
+    $('btnSyncBackupFile').addEventListener('click', async () => {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: 'druckrechner-daten.json',
+          types: [{ description: 'Druckrechner-Daten', accept: { 'application/json': ['.json'] } }]
+        });
+        await idbPut('backup-file', handle);
+        syncBackupHandle = handle;
+        syncConfig.backupFile = handle.name;
+        saveSyncConfig();
+        await writeBackupFile(await buildLocalDoc());
+        renderSyncStatus();
+        setSyncMessage('✓ Sicherungsdatei aktiv. Sie wird bei jedem Abgleich mitgeschrieben.', 'ok');
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        setSyncMessage('Sicherungsdatei konnte nicht angelegt werden: ' + (err && err.message ? err.message : ''), 'warn');
+      }
+    });
+
+    $('btnSyncBackupOff').addEventListener('click', async () => {
+      delete syncConfig.backupFile;
+      syncBackupHandle = null;
+      saveSyncConfig();
+      try { await idbPut('backup-file', null); } catch (err) {}
+      renderSyncStatus();
+      setSyncMessage('Sicherungsdatei abgeschaltet.', 'neutral');
+    });
+
+    $('btnSyncNow').addEventListener('click', () => runSync(true));
+    $('btnSyncDisconnect').addEventListener('click', () => {
+      if (confirm('Synchronisierung auf diesem Gerät trennen? Die Daten bleiben hier erhalten.')) disconnectSync();
+    });
+    $('btnCopySyncLink').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(buildSyncLink());
+        setSyncMessage('✓ Einrichtungs-Link kopiert. Auf dem anderen Gerät öffnen – dort ist dann alles eingetragen.', 'ok');
+      } catch (err) {
+        $('syncLink').select();
+        setSyncMessage('Bitte den markierten Link von Hand kopieren.', 'neutral');
+      }
+    });
+
+    if (syncConfig.mode === 'cloud') {
+      $('syncWorkerUrl').value = syncConfig.workerUrl || '';
+      $('syncKeyInput').value = syncConfig.key || '';
+    }
+    renderSyncStatus();
+  }
+
+  async function connectCloud(workerUrl, key, interactive){
+    syncConfig = { mode: 'cloud', workerUrl, key };
+    syncState = {};
+    saveSyncConfig();
+    saveSyncState();
+
+    try {
+      const remote = await cloudRead();
+      if (remote) {
+        if (interactive && !confirm('Im Tresor liegen bereits Daten. Sie ersetzen den aktuellen Stand dieses Geräts. Fortfahren?')) {
+          await disconnectSync();
+          return;
+        }
+        await adoptRemote(remote);
+        location.reload();
+        return;
+      }
+      await pushLocal();
+      syncFirstRun = false;
+      renderSyncStatus();
+      setSyncMessage('✓ Verbunden. Der aktuelle Stand liegt jetzt im Tresor.', 'ok');
+    } catch (err) {
+      setSyncMessage('Verbindung fehlgeschlagen: ' + (err && err.message ? err.message : ''), 'warn');
+      syncConfig = { mode: 'none' };
+      saveSyncConfig();
+      renderSyncStatus();
+    }
+  }
+
+  // Einrichtungs-Link vom anderen Gerät: #sync=<base64>
+  async function handleSyncLink(){
+    const match = /[#&]sync=([A-Za-z0-9_-]+)/.exec(location.hash || '');
+    if (!match) return false;
+    history.replaceState(null, '', location.pathname + location.search);
+    try {
+      const json = atob(match[1].replace(/-/g, '+').replace(/_/g, '/'));
+      const payload = JSON.parse(json);
+      if (!payload.u || !payload.k) return false;
+      if (!confirm('Dieses Gerät mit dem Cloud-Tresor verbinden?\n\nVorhandene Daten auf diesem Gerät werden durch den Stand aus dem Tresor ersetzt.')) return false;
+      await connectCloud(payload.u, payload.k, false);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function startSync(runNow){
+    // Die Auslöser werden immer registriert – auch wenn die Synchronisierung
+    // erst später in den Einstellungen eingerichtet wird. runSync() prüft
+    // selbst, ob überhaupt etwas eingerichtet ist.
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) runSync(false);
+    });
+    window.addEventListener('focus', () => runSync(false));
+    setInterval(() => {
+      if (!document.hidden && syncConfig.mode === 'cloud') runSync(false);
+    }, 60000);
+
+    if (runNow && syncIsConfigured()) runSync(false);
+  }
+
+  (async () => {
+    const linked = await handleSyncLink();
+    initSyncUi();
+    startSync(!linked);
+  })();
+
+  /* ---------- Hinweisleiste unten im Fenster ---------- */
+
+  let syncBannerReload = null;
+
+  function showSyncBanner(text, opts){
+    opts = opts || {};
+    $('syncBannerText').textContent = text;
+    $('btnSyncKeepMine').style.display = opts.conflict ? '' : 'none';
+    $('btnSyncReload').textContent = opts.conflict ? 'Anderen Stand laden' : 'Neu laden';
+    syncBannerReload = opts.onReload || null;
+    $('syncReloadBanner').classList.add('open');
+  }
+
+  $('btnSyncReload').addEventListener('click', async () => {
+    if (syncBannerReload) { syncBannerReload(); return; }
+    if (pendingRemoteDoc) {
+      await adoptRemote(pendingRemoteDoc);
+      pendingRemoteDoc = null;
+    }
+    location.reload();
+  });
+
+  $('btnSyncKeepMine').addEventListener('click', async () => {
+    pendingRemoteDoc = null;
+    $('syncReloadBanner').classList.remove('open');
+    try {
+      // Der eigene Stand gewinnt: als neuester Stand hochladen.
+      syncState.lastSyncedAt = null;
+      await pushLocal();
+      setSyncMessage('✓ Eigener Stand übertragen.', 'ok');
+    } catch (err) {
+      setSyncMessage('Übertragen fehlgeschlagen: ' + (err && err.message ? err.message : ''), 'warn');
+    }
+    renderSyncStatus();
+  });
+
+  $('btnSyncDismiss').addEventListener('click', () => {
+    $('syncReloadBanner').classList.remove('open');
+  });
+
   if (window.desktopApp && window.desktopApp.isElectron) {
     $('desktopStorageSection').style.display = 'block';
+    // Die Desktop-App bringt ihren eigenen Dateispeicher mit.
+    $('syncSection').style.display = 'none';
 
     // Der manuelle iCloud-Umweg ist auf dem Desktop überflüssig – die
     // Sicherungsdatei bleibt aber als Versionsstand vor größeren Änderungen
@@ -2506,18 +3209,16 @@
     // gemeldet, statt den fremden Stand stillschweigend zu überschreiben.
     if (typeof window.desktopApp.onStorageChanged === 'function') {
       window.desktopApp.onStorageChanged(() => {
-        $('syncReloadBanner').classList.add('open');
+        showSyncBanner('Die Daten wurden auf einem anderen Gerät geändert.', {
+          onReload: () => {
+            try {
+              ALL_STORAGE_KEYS.forEach(key => window.localStorage.removeItem(LS_PREFIX + key));
+            } catch (err) {}
+            location.reload();
+          }
+        });
       });
     }
-    $('btnSyncReload').addEventListener('click', () => {
-      try {
-        ALL_STORAGE_KEYS.forEach(key => window.localStorage.removeItem(LS_PREFIX + key));
-      } catch (err) {}
-      location.reload();
-    });
-    $('btnSyncDismiss').addEventListener('click', () => {
-      $('syncReloadBanner').classList.remove('open');
-    });
   }
 
   loadStorageLocations();

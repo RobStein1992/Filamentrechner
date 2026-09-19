@@ -602,6 +602,20 @@
 
   @media print{ .sync-banner{ display:none !important; } }
 
+  .sync-state{
+    margin: 12px 0 18px;
+    padding: 11px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--card-2);
+    border: 1px solid var(--paper-line);
+    font-size: 13px; font-weight: 500;
+    color: var(--ink);
+  }
+  #syncLink{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+
   .card-head{
     display:flex;
     align-items:baseline;
