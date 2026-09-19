@@ -1466,20 +1466,20 @@
       </div>
 
       <div id="icloudManualSection">
-        <div class="section-label">Für Apple-Geräte: Manuell über iCloud Drive</div>
-        <p class="note" style="margin-top:0;">Eine echte "Mit iCloud anmelden"-Funktion ist in einer Web-App ohne kostenpflichtigen Apple-Developer-Account technisch nicht umsetzbar – dein iPad/iPhone ist aber ohnehin bereits bei iCloud angemeldet. Darüber läuft der Datenaustausch stattdessen ganz ohne Passwort-Eingabe in dieser App, über echte iCloud-Dateien:</p>
+        <div class="section-label" id="manualBackupLabel">Für Apple-Geräte: Manuell über iCloud Drive</div>
+        <p class="note" style="margin-top:0;" id="manualBackupIntro">Eine echte "Mit iCloud anmelden"-Funktion ist in einer Web-App ohne kostenpflichtigen Apple-Developer-Account technisch nicht umsetzbar – dein iPad/iPhone ist aber ohnehin bereits bei iCloud angemeldet. Darüber läuft der Datenaustausch stattdessen ganz ohne Passwort-Eingabe in dieser App, über echte iCloud-Dateien:</p>
 
         <div class="field">
-          <label>Schritt 1 · Auf diesem Gerät sichern</label>
+          <label id="manualBackupStep1">Schritt 1 · Auf diesem Gerät sichern</label>
           <button type="button" id="btnExportData" class="btn-secondary" style="margin-top:0;">☁️ In iCloud Drive sichern</button>
-          <p class="note">Tippe auf "Sichern" → wähle als Ort <b>iCloud Drive</b> → speichere <b>immer unter demselben Dateinamen</b> und bestätige ggf. "Ersetzen".</p>
+          <p class="note" id="manualBackupHint1">Tippe auf "Sichern" → wähle als Ort <b>iCloud Drive</b> → speichere <b>immer unter demselben Dateinamen</b> und bestätige ggf. "Ersetzen".</p>
           <p class="note" id="lastExportInfo" style="display:none;"></p>
         </div>
 
         <div class="field">
-          <label for="importDataInput">Schritt 2 · Auf dem anderen Gerät laden</label>
+          <label for="importDataInput" id="manualBackupStep2">Schritt 2 · Auf dem anderen Gerät laden</label>
           <input type="file" id="importDataInput" accept="application/json">
-          <p class="note">Tippe auf "Durchsuchen" → <b>iCloud Drive</b> → wähle die zuvor gesicherte Datei aus.</p>
+          <p class="note" id="manualBackupHint2">Tippe auf "Durchsuchen" → <b>iCloud Drive</b> → wähle die zuvor gesicherte Datei aus.</p>
           <p class="note" id="lastImportInfo" style="display:none;"></p>
         </div>
       </div>
@@ -1503,6 +1503,12 @@
 
     <p class="note" id="settingsStatus" style="margin-top:18px;"></p>
   </div>
+</div>
+
+<div class="sync-banner" id="syncReloadBanner">
+  <span>Die Daten wurden auf einem anderen Ger&auml;t ge&auml;ndert.</span>
+  <button type="button" class="btn-primary" id="btnSyncReload">Neu laden</button>
+  <button type="button" class="sync-banner-close" id="btnSyncDismiss" title="Hinweis ausblenden">&#10005;</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -2446,7 +2452,17 @@
 
   if (window.desktopApp && window.desktopApp.isElectron) {
     $('desktopStorageSection').style.display = 'block';
-    $('webStorageSection').style.display = 'none';
+
+    // Der manuelle iCloud-Umweg ist auf dem Desktop überflüssig – die
+    // Sicherungsdatei bleibt aber als Versionsstand vor größeren Änderungen
+    // nützlich und wird hier nur passend beschriftet.
+    $('manualBackupLabel').textContent = '💾 Zusätzliche Sicherungsdatei';
+    $('manualBackupIntro').textContent = 'Der Speicherort oben wird bei jeder Änderung automatisch geschrieben. Zusätzlich kannst du jederzeit eine Sicherungsdatei mit dem aktuellen Stand ablegen – zum Beispiel als Versionsstand vor größeren Änderungen.';
+    $('manualBackupStep1').textContent = 'Sicherungsdatei erstellen';
+    $('btnExportData').textContent = '💾 Sicherungsdatei speichern';
+    $('manualBackupHint1').textContent = 'Legt eine Datei mit dem kompletten aktuellen Stand ab.';
+    $('manualBackupStep2').textContent = 'Sicherungsdatei laden';
+    $('manualBackupHint2').textContent = 'Ersetzt die aktuellen Daten durch den Stand aus der gewählten Datei.';
 
     async function refreshDesktopDataPath(){
       try {
@@ -2462,7 +2478,17 @@
       try {
         const result = await window.storage.chooseFolder();
         if (result) {
-          $('dataTransferStatus').textContent = '✓ Neuer Speicherort aktiv. Die Seite wird neu geladen …';
+          // Liegt im neuen Ordner schon eine Datei, übernimmt dieses Gerät sie.
+          // Die lokale Kopie im Browserspeicher wird dann verworfen, damit
+          // nicht alte Werte neben den übernommenen stehen bleiben.
+          if (result.adopted) {
+            try {
+              ALL_STORAGE_KEYS.forEach(key => window.localStorage.removeItem(LS_PREFIX + key));
+            } catch (err) {}
+          }
+          $('dataTransferStatus').textContent = result.adopted
+            ? '✓ Vorhandene Daten aus diesem Ordner übernommen. Die Seite wird neu geladen …'
+            : '✓ Neuer Speicherort aktiv. Die Seite wird neu geladen …';
           $('dataTransferStatus').style.color = 'var(--energy)';
           setTimeout(() => location.reload(), 800);
         }
@@ -2474,6 +2500,23 @@
 
     $('btnOpenDataFolder').addEventListener('click', () => {
       window.storage.openFolder();
+    });
+
+    // Hat ein anderes Gerät die Datei im Cloud-Ordner geändert, wird das hier
+    // gemeldet, statt den fremden Stand stillschweigend zu überschreiben.
+    if (typeof window.desktopApp.onStorageChanged === 'function') {
+      window.desktopApp.onStorageChanged(() => {
+        $('syncReloadBanner').classList.add('open');
+      });
+    }
+    $('btnSyncReload').addEventListener('click', () => {
+      try {
+        ALL_STORAGE_KEYS.forEach(key => window.localStorage.removeItem(LS_PREFIX + key));
+      } catch (err) {}
+      location.reload();
+    });
+    $('btnSyncDismiss').addEventListener('click', () => {
+      $('syncReloadBanner').classList.remove('open');
     });
   }
 

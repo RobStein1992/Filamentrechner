@@ -1,0 +1,48 @@
+{
+  "name": "druckkosten-rechner",
+  "version": "1.0.0",
+  "description": "Druckkosten-Rechner für 3D-Druck – Desktop-Variante mit automatischer Sicherung in einen Cloud-Ordner",
+  "private": true,
+  "main": "desktop/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "de.rsconstructionprinting.druckrechner",
+    "productName": "Druckkosten-Rechner",
+    "files": [
+      "index.html",
+      "style.css",
+      "manifest.json",
+      "*.png",
+      "favicon.ico",
+      "desktop/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icon-512.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "icon-512.png",
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "icon-512.png",
+      "category": "Office"
+    }
+  }
+}
