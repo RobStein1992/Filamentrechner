@@ -2719,11 +2719,22 @@
     return syncConfig.workerUrl.replace(/\/+$/, '') + '/' + id;
   }
 
+  // Der Worker legt seine Fehler als { error: '…' } bei – die sind für die
+  // Fehlersuche deutlich hilfreicher als eine nackte Statusnummer.
+  async function serverError(res){
+    let detail = '';
+    try {
+      const body = await res.json();
+      if (body && body.error) detail = ' ' + body.error;
+    } catch (err) {}
+    return new Error('Server antwortet mit Status ' + res.status + '.' + detail);
+  }
+
   async function cloudRead(){
     const id = await syncSpaceId(syncConfig.key);
     const res = await fetch(cloudEndpoint(id), { method: 'GET', cache: 'no-store' });
     if (res.status === 404) return null;
-    if (!res.ok) throw new Error('Server antwortet mit Status ' + res.status + '.');
+    if (!res.ok) throw await serverError(res);
     const envelope = await res.json();
     if (!envelope || !envelope.data) return null;
     try {
@@ -2741,7 +2752,7 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(envelope)
     });
-    if (!res.ok) throw new Error('Server antwortet mit Status ' + res.status + '.');
+    if (!res.ok) throw await serverError(res);
   }
 
   /* ---------- Ablauf ---------- */
@@ -2768,6 +2779,15 @@
       await writable.write(JSON.stringify(doc, null, 2));
       await writable.close();
     } catch (err) {}
+  }
+
+  // Netzwerkfehler erkennt man am TypeError von fetch – daraus wird ein Satz,
+  // mit dem man etwas anfangen kann.
+  function syncErrorText(err, prefix){
+    if (err instanceof TypeError || !navigator.onLine) {
+      return 'Keine Verbindung – Internet prüfen und die Adresse des Sync-Workers kontrollieren (sie endet auf .workers.dev).';
+    }
+    return prefix + (err && err.message ? err.message : 'unbekannter Fehler');
   }
 
   async function pushLocal(){
@@ -2835,10 +2855,7 @@
         }
       }
     } catch (err) {
-      const offline = err instanceof TypeError || !navigator.onLine;
-      setSyncMessage(offline
-        ? 'Keine Verbindung – die Änderungen werden beim nächsten erfolgreichen Abgleich übertragen.'
-        : 'Abgleich fehlgeschlagen: ' + (err && err.message ? err.message : 'unbekannter Fehler'), 'warn');
+      setSyncMessage(syncErrorText(err, 'Abgleich fehlgeschlagen: '), 'warn');
     } finally {
       syncRunning = false;
       syncFirstRun = false;
@@ -3066,7 +3083,7 @@
       renderSyncStatus();
       setSyncMessage('✓ Verbunden. Der aktuelle Stand liegt jetzt im Tresor.', 'ok');
     } catch (err) {
-      setSyncMessage('Verbindung fehlgeschlagen: ' + (err && err.message ? err.message : ''), 'warn');
+      setSyncMessage(syncErrorText(err, 'Verbindung fehlgeschlagen: '), 'warn');
       syncConfig = { mode: 'none' };
       saveSyncConfig();
       renderSyncStatus();
