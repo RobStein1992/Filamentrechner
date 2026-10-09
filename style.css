@@ -1231,9 +1231,9 @@
   }
   .vl-tag{
     display:block;
-    font-size: 1.5mm;
+    font-size: 0.75mm;
     font-weight:700;
-    letter-spacing: 0.3mm;
+    letter-spacing: 0.15mm;
     text-transform: uppercase;
     color:#9299A6;
     margin-bottom: 0.5mm;
