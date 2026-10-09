@@ -294,7 +294,7 @@
     box-shadow: 0 0 0 4px var(--accent-glow);
   }
   h1{
-    font-family:'Space Grotesk', sans-serif;
+    font-family:'IBM Plex Sans', sans-serif;
     color:#fff;
     font-weight:700;
     font-size: clamp(28px, 5vw, 42px);
@@ -346,7 +346,7 @@
     font-family:'IBM Plex Mono', monospace;
     font-size: 10px; letter-spacing:0.08em; text-transform:uppercase; opacity:0.85;
   }
-  .mobile-total-amount{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:19px; }
+  .mobile-total-amount{ font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:19px; }
   .mobile-total-arrow{
     font-size:16px; opacity:0.9;
     animation: bounceArrow 1.8s ease-in-out infinite;
@@ -633,7 +633,7 @@
     text-transform: uppercase;
   }
   .card-title{
-    font-family:'Space Grotesk', sans-serif;
+    font-family:'IBM Plex Sans', sans-serif;
     font-size: 18.5px;
     font-weight: 600;
     margin:0;
@@ -804,7 +804,7 @@
   details > summary::-webkit-details-marker{ display:none; }
   details > summary::before{
     content:"+";
-    font-family:'Space Grotesk', sans-serif;
+    font-family:'IBM Plex Sans', sans-serif;
     font-size:15px;
     color: var(--filament);
     width:16px; text-align:center;
@@ -831,7 +831,7 @@
   }
   details.card:not([open]):hover{ box-shadow: var(--shadow-lg), 0 0 0 1px var(--accent-glow); transform: translateY(-2px); }
   .card-chevron{
-    font-family:'Space Grotesk', sans-serif;
+    font-family:'IBM Plex Sans', sans-serif;
     font-size: 13px;
     color: var(--ink-soft);
     transition: transform .25s cubic-bezier(.2,.8,.3,1);
@@ -846,7 +846,7 @@
   .results .card{ background: linear-gradient(180deg, var(--card-focus) 0%, var(--card) 100%); }
   .gauge-wrap{ display:flex; justify-content:center; margin: 6px 0 20px; }
   .gauge-total{
-    font-family:'Space Grotesk', sans-serif;
+    font-family:'IBM Plex Sans', sans-serif;
     font-weight:700;
   }
   .gauge-total .amount{ font-size: 27px; letter-spacing:-0.01em; }
@@ -876,7 +876,7 @@
     border-top: 2px solid var(--ink);
     display:flex; justify-content:space-between; align-items:baseline;
   }
-  .total-line .lbl{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px; }
+  .total-line .lbl{ font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size:14px; }
   .total-line .val{
     font-family:'IBM Plex Mono', monospace;
     font-weight:700; font-size: 23px;
@@ -1051,10 +1051,10 @@
   }
   .inv-header{ display:flex; justify-content:space-between; align-items:flex-start; gap: 20px; border-bottom: 2px solid #1A1F2E; padding-bottom:14px; margin-bottom: 22px; }
   .inv-header img{ width:78px; height:auto; display:block; }
-  .inv-header .inv-co-name{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:16px; margin: 4px 0 2px; }
+  .inv-header .inv-co-name{ font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:16px; margin: 4px 0 2px; }
   .inv-header .inv-co-block{ font-size:11.5px; line-height:1.5; color:#5B6178; white-space:pre-line; }
   .inv-header .inv-title-block{ text-align:right; }
-  .inv-header .inv-title{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:26px; letter-spacing:0.01em; margin:0 0 6px; }
+  .inv-header .inv-title{ font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:26px; letter-spacing:0.01em; margin:0 0 6px; }
   .inv-header .inv-meta{ font-size:12px; line-height:1.6; color:#5B6178; }
   .inv-header .inv-meta b{ color:#1A1F2E; }
   /* Barcode der Lieferschein-Nr. – nur sichtbar, wenn JsBarcode geladen und
@@ -1098,7 +1098,7 @@
 
   .inv-totals{ margin-left:auto; width: 260px; margin-top: 10px; }
   .inv-totals div{ display:flex; justify-content:space-between; font-size:13px; padding: 5px 0; }
-  .inv-totals .inv-grand{ border-top: 2px solid #1A1F2E; margin-top:6px; padding-top:10px; font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:17px; }
+  .inv-totals .inv-grand{ border-top: 2px solid #1A1F2E; margin-top:6px; padding-top:10px; font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:17px; }
   .inv-footer{ margin-top: 40px; padding-top: 14px; border-top: 1px dashed #D6D9E6; font-size:10.5px; color:#8890A8; line-height:1.6; white-space:pre-line; }
   .inv-note{ margin-top:22px; font-size:12px; color:#5B6178; line-height:1.55; }
 
