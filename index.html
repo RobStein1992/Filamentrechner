@@ -30,6 +30,7 @@
 <div class="page-bg"></div>
 <div class="app-shell">
 <nav class="side-nav" id="sideNav">
+  <button type="button" class="page-switch-btn" id="btnPageDashboard" data-page="dashboard">📊 Dashboard</button>
   <button type="button" class="page-switch-btn active" id="btnPageCalculator" data-page="calculator">🖩 Kalkulator</button>
   <button type="button" class="page-switch-btn" id="btnPageOrders" data-page="orders">📋 Aufträge</button>
   <button type="button" class="page-switch-btn" id="btnPageBooking" data-page="booking">📦 Filament buchen</button>
@@ -604,6 +605,61 @@
     </span>
     <span class="mobile-total-arrow" aria-hidden="true">↓</span>
   </button>
+</div>
+
+<div class="wrap" id="pageDashboard" style="display:none;">
+
+  <header>
+    <div class="eyebrow"><span class="dot"></span><span>ÜBERBLICK · AUFTRÄGE</span></div>
+    <h1>Dashboard</h1>
+    <p>Alle wichtigen Kennzahlen zu deinen Angeboten und Aufträgen auf einen Blick.</p>
+  </header>
+
+  <div class="dash-grid">
+
+    <div class="card dash-tile">
+      <div class="dash-tile-head"><span class="swatch" style="background:var(--energy)"></span><span class="dash-tile-label">📝 Offene Angebote</span></div>
+      <div class="dash-tile-value" id="dashQuotesCount">0</div>
+      <div class="dash-tile-sub" id="dashQuotesValue">0,00 € Gesamtwert</div>
+    </div>
+
+    <div class="card dash-tile">
+      <div class="dash-tile-head"><span class="swatch" style="background:var(--margin-c)"></span><span class="dash-tile-label">📦 Offene Aufträge</span></div>
+      <div class="dash-tile-value" id="dashOpenCount">0</div>
+      <div class="dash-tile-sub" id="dashOpenValue">0,00 € Auftragswert</div>
+    </div>
+
+    <div class="card dash-tile">
+      <div class="dash-tile-head"><span class="swatch" style="background:var(--filament)"></span><span class="dash-tile-label">✅ Gelieferte Aufträge</span></div>
+      <div class="dash-tile-value" id="dashShippedCount">0</div>
+      <div class="dash-tile-sub" id="dashShippedValue">0,00 € Umsatz</div>
+    </div>
+
+    <div class="card dash-tile">
+      <div class="dash-tile-head"><span class="swatch" style="background:var(--extra)"></span><span class="dash-tile-label">💶 Gesamtumsatz</span></div>
+      <div class="dash-tile-value" id="dashRevenueTotal">0,00 €</div>
+      <div class="dash-tile-sub" id="dashRevenueSub">Noch keine Aufträge</div>
+    </div>
+
+    <div class="card dash-tile">
+      <div class="dash-tile-head"><span class="swatch" style="background:var(--energy)"></span><span class="dash-tile-label">📅 Diesen Monat</span></div>
+      <div class="dash-tile-value" id="dashMonthCount">0</div>
+      <div class="dash-tile-sub" id="dashMonthValue">0,00 € Umsatz</div>
+    </div>
+
+    <div class="card dash-tile dash-tile-text">
+      <div class="dash-tile-head"><span class="swatch" style="background:var(--margin-c)"></span><span class="dash-tile-label">🕒 Neuester Auftrag</span></div>
+      <div class="dash-tile-value" id="dashLatestCustomer">—</div>
+      <div class="dash-tile-sub" id="dashLatestMeta">Noch keine Aufträge vorhanden.</div>
+    </div>
+
+    <div class="card dash-tile dash-tile-text">
+      <div class="dash-tile-head"><span class="swatch" style="background:var(--filament)"></span><span class="dash-tile-label">🏆 Top-Kunde</span></div>
+      <div class="dash-tile-value" id="dashTopCustomerName">—</div>
+      <div class="dash-tile-sub" id="dashTopCustomerValue">Noch keine Aufträge vorhanden.</div>
+    </div>
+
+  </div>
 </div>
 
 <div class="wrap" id="pageBooking" style="display:none;">
@@ -4773,6 +4829,61 @@
     renderQuoteList();
     renderOrderArchive();
     renderOrders();
+    renderDashboard();
+  }
+
+  function renderDashboard(){
+    const sum = list => list.reduce((s, o) => s + (parseFloat(o.total) || 0), 0);
+
+    const quotes = orders.filter(o => o.kind === 'quote');
+    const confirmed = orders.filter(o => o.kind === 'order');
+    const openOrders = confirmed.filter(o => !orderIsShipped(o));
+    const shippedOrders = confirmed.filter(o => orderIsShipped(o));
+    const totalValue = sum(confirmed);
+
+    $('dashQuotesCount').textContent = quotes.length;
+    $('dashQuotesValue').textContent = fmtEUR(sum(quotes)) + ' Gesamtwert';
+
+    $('dashOpenCount').textContent = openOrders.length;
+    $('dashOpenValue').textContent = fmtEUR(sum(openOrders)) + ' Auftragswert';
+
+    $('dashShippedCount').textContent = shippedOrders.length;
+    $('dashShippedValue').textContent = fmtEUR(sum(shippedOrders)) + ' Umsatz';
+
+    $('dashRevenueTotal').textContent = fmtEUR(totalValue);
+    $('dashRevenueSub').textContent = confirmed.length
+      ? ('Ø ' + fmtEUR(totalValue / confirmed.length) + ' pro Auftrag')
+      : 'Noch keine Aufträge';
+
+    const now = new Date();
+    const ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    const monthOrders = confirmed.filter(o => (o.date || '').slice(0, 7) === ym);
+    $('dashMonthCount').textContent = monthOrders.length;
+    $('dashMonthValue').textContent = fmtEUR(sum(monthOrders)) + ' Umsatz';
+
+    const latest = sortedOrders(confirmed)[0];
+    if (latest) {
+      $('dashLatestCustomer').textContent = latest.customerName || 'ohne Kunde';
+      $('dashLatestMeta').textContent = fmtDateShortDE(latest.date) + ' · ' + (latest.docNumber || '—') + ' · ' + fmtEUR(latest.total || 0);
+    } else {
+      $('dashLatestCustomer').textContent = '—';
+      $('dashLatestMeta').textContent = 'Noch keine Aufträge vorhanden.';
+    }
+
+    const byCustomer = {};
+    confirmed.forEach(o => {
+      const name = (o.customerName || '').trim();
+      if (!name) return;
+      byCustomer[name] = (byCustomer[name] || 0) + (parseFloat(o.total) || 0);
+    });
+    const topCustomer = Object.entries(byCustomer).sort((a, b) => b[1] - a[1])[0];
+    if (topCustomer) {
+      $('dashTopCustomerName').textContent = topCustomer[0];
+      $('dashTopCustomerValue').textContent = fmtEUR(topCustomer[1]) + ' Umsatz';
+    } else {
+      $('dashTopCustomerName').textContent = '—';
+      $('dashTopCustomerValue').textContent = 'Noch keine Aufträge vorhanden.';
+    }
   }
 
   // Die ersten drei Spalten sind in allen drei Listen gleich aufgebaut.
@@ -5601,19 +5712,23 @@
   });
 
   function switchPage(page){
+    $('pageDashboard').style.display = page === 'dashboard' ? '' : 'none';
     $('pageCalculator').style.display = page === 'calculator' ? '' : 'none';
     $('pageOrders').style.display = page === 'orders' ? '' : 'none';
     $('pageBooking').style.display = page === 'booking' ? '' : 'none';
     $('pageVersand').style.display = page === 'shipping' ? '' : 'none';
     $('pagePositionDetail').style.display = 'none';
     $('modeBarRow').style.display = page === 'calculator' ? '' : 'none';
-    document.querySelector('.page-switch-bar').style.display = '';
+    $('sideNav').style.display = '';
+    $('btnPageDashboard').classList.toggle('active', page === 'dashboard');
     $('btnPageCalculator').classList.toggle('active', page === 'calculator');
     $('btnPageOrders').classList.toggle('active', page === 'orders');
     $('btnPageBooking').classList.toggle('active', page === 'booking');
     $('btnPageVersand').classList.toggle('active', page === 'shipping');
+    if (page === 'dashboard') renderDashboard();
     window.scrollTo(0, 0);
   }
+  $('btnPageDashboard').addEventListener('click', () => switchPage('dashboard'));
   $('btnPageCalculator').addEventListener('click', () => switchPage('calculator'));
   $('btnPageOrders').addEventListener('click', () => switchPage('orders'));
   $('btnPageBooking').addEventListener('click', () => switchPage('booking'));
@@ -5642,7 +5757,7 @@
     $('pageVersand').style.display = 'none';
     $('pagePositionDetail').style.display = '';
     $('modeBarRow').style.display = 'none';
-    document.querySelector('.page-switch-bar').style.display = 'none';
+    $('sideNav').style.display = 'none';
 
     $('detailArticleNo').textContent = pos.articleNo;
     $('detailArticleNoInput').value = pos.articleNo;
