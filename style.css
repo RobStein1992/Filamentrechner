@@ -1229,6 +1229,16 @@
     display:flex;
     flex-direction:column;
   }
+  .vl-tag{
+    display:block;
+    font-size: 1.5mm;
+    font-weight:700;
+    letter-spacing: 0.3mm;
+    text-transform: uppercase;
+    color:#9299A6;
+    margin-bottom: 0.5mm;
+  }
+  .vl-sender-block{ margin-bottom: 1mm; }
   .vl-sender{
     font-size: 1.9mm;
     line-height:1.4;
