@@ -2440,7 +2440,7 @@
     $('locationEmptyNote').style.display = 'none';
     list.innerHTML = storageLocations.map((loc, i) => (
       '<li style="display:flex; justify-content:space-between; align-items:center; padding:10px 4px; border-bottom:1px solid rgba(255,255,255,0.14);">' +
-        '<span style="font-family:\'IBM Plex Mono\', monospace; font-size:13.5px; color:var(--ink);">' + escapeHtml(loc) + '</span>' +
+        '<span style="font-family:\'IBM Plex Sans\', sans-serif; font-size:13.5px; color:var(--ink);">' + escapeHtml(loc) + '</span>' +
         '<button type="button" class="location-delete" data-index="' + i + '" title="Lagerplatz löschen" style="border:none;background:none;color:var(--ink-soft);cursor:pointer;font-size:15px;">✕</button>' +
       '</li>'
     )).join('');
