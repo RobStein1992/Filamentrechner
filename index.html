@@ -1452,48 +1452,18 @@
     <button class="btn-secondary" id="btnCloseVersandLabel" type="button">✕ Schließen</button>
     <button class="btn-primary" id="btnPrintVersandLabel" type="button">🖨️ Label drucken</button>
   </div>
-
-  <div class="no-print" style="max-width:460px; margin:0 auto 18px; background:var(--card); border-radius:8px; padding:20px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'IBM Plex Sans',sans-serif;">
-    <h2 style="font-family:'IBM Plex Sans',sans-serif; font-size:19px; margin:0 0 4px;">📦 Versandlabel</h2>
-    <p class="note" id="versandLabelSubline" style="margin-top:4px;">Lieferschein —</p>
-
-    <div class="field" style="margin-top:10px;">
-      <label for="versandLabelTracking">Sendungsnummer <span class="hint">von DHL</span></label>
-      <input type="text" id="versandLabelTracking" placeholder="z. B. 00340434161094049601" autocomplete="off">
-    </div>
-    <div class="field" style="margin-bottom:0; max-width:160px;">
-      <label for="versandLabelWeight">Gewicht <span class="hint">optional, kg</span></label>
-      <input type="text" id="versandLabelWeight" inputmode="decimal" placeholder="1,5" autocomplete="off">
-    </div>
-    <p class="note" id="versandLabelNote" style="margin-top:8px;">Die Sendungsnummer bekommst du beim Frankieren über dein DHL-Geschäftskundenkonto bzw. die Online-Frankierung. Dieses Label ersetzt nicht das von DHL bezahlte Porto, hilft aber beim Kommissionieren und als Packstück-Beleg.</p>
-  </div>
+  <p class="note no-print" id="versandLabelSubline" style="text-align:center; margin:-8px auto 4px; color:var(--ink);">Lieferschein —</p>
 
   <div class="label-preview-zoom versand-label-zoom">
     <div id="versandLabelSheet">
-      <div class="vl-sender">
-        <span class="vl-tag">Absender</span>
-        <span id="vlSender">—</span>
-      </div>
-
-      <div class="vl-service">
-        <span class="vl-service-name">DHL Paket</span>
-        <span id="vlServiceMeta">—</span>
-      </div>
-
-      <div class="vl-recipient">
-        <span class="vl-tag">Empfänger</span>
-        <div id="vlRecipientName" class="vl-recipient-name">—</div>
-        <div id="vlRecipientAddress" class="vl-recipient-address">—</div>
-      </div>
-
-      <div class="vl-barcode">
-        <svg id="vlBarcode"></svg>
-        <div id="vlBarcodeFallback" style="display:none;">Bitte Sendungsnummer eingeben</div>
-        <div id="vlTrackingText" class="vl-tracking-text">—</div>
-      </div>
-
-      <div class="vl-footer">
-        <span id="vlReference">Lieferschein —</span>
+      <img id="vlLogoWatermark" src="" alt="" class="vl-watermark">
+      <div class="vl-content">
+        <div class="vl-sender" id="vlSender">—</div>
+        <div class="vl-recipient">
+          <div id="vlRecipientName" class="vl-recipient-name">—</div>
+          <div id="vlRecipientAddress" class="vl-recipient-address">—</div>
+        </div>
+        <div class="vl-footer" id="vlReference">Lieferschein —</div>
       </div>
     </div>
   </div>
@@ -4443,93 +4413,37 @@
     openVersandLabel(finishedShipment);
   });
 
-  /* ---------- Versandlabel (103 x 199 mm, DHL-Layout) ---------- */
-
-  let currentLabelShipment = null;
+  /* ---------- Adresslabel (30 x 50 mm) mit blassem Firmenlogo ---------- */
 
   function senderAddressBlock(){
     return [companySettings.name, companySettings.address.split('\n').slice(1).join('\n')]
       .filter(Boolean).join('\n');
   }
 
-  function renderVersandLabelBarcode(){
-    const tracking = $('versandLabelTracking').value.trim();
-    if (!tracking) {
-      $('vlBarcode').style.display = 'none';
-      $('vlBarcodeFallback').style.display = 'flex';
-      $('vlTrackingText').textContent = '';
-      return;
-    }
-    try {
-      if (typeof JsBarcode === 'undefined') throw new Error('JsBarcode nicht geladen');
-      JsBarcode('#vlBarcode', tracking, {
-        format: 'CODE128', width: 2.2, height: 60, margin: 0, displayValue: false
-      });
-      $('vlBarcode').style.display = 'block';
-      $('vlBarcodeFallback').style.display = 'none';
-      $('vlTrackingText').textContent = tracking;
-    } catch (err) {
-      $('vlBarcode').style.display = 'none';
-      $('vlBarcodeFallback').style.display = 'flex';
-      $('vlBarcodeFallback').textContent = 'Barcode konnte nicht erzeugt werden';
-      $('vlTrackingText').textContent = tracking;
-    }
-  }
-
   function openVersandLabel(shipment){
-    currentLabelShipment = shipment;
-
     $('versandLabelSubline').textContent = 'Lieferschein ' + shipment.docNumber;
-    $('versandLabelTracking').value = shipment.trackingNumber || '';
-    $('versandLabelWeight').value = shipment.parcelWeight || '';
 
+    $('vlLogoWatermark').src = activeLogoDataUrl;
     $('vlSender').textContent = senderAddressBlock();
     $('vlRecipientName').textContent = shipment.customerName || '—';
     $('vlRecipientAddress').textContent = formatShippingAddress(shipment.customerStreet, shipment.customerZip, shipment.customerCity) || '—';
-
-    const weightText = shipment.parcelWeight ? shipment.parcelWeight + ' kg' : '';
-    $('vlServiceMeta').textContent = [weightText, fmtDateDE(shipment.date)].filter(Boolean).join('\n');
     $('vlReference').textContent = 'Lieferschein ' + shipment.docNumber +
       (shipment.reference ? ' · Auftrag ' + shipment.reference : '');
 
-    renderVersandLabelBarcode();
     $('versandLabelOverlay').classList.add('open');
   }
 
-  $('versandLabelTracking').addEventListener('input', () => {
-    renderVersandLabelBarcode();
-  });
-  $('versandLabelTracking').addEventListener('blur', () => {
-    if (!currentLabelShipment) return;
-    currentLabelShipment.trackingNumber = $('versandLabelTracking').value.trim();
-    saveShipments();
-    renderVersandHistory();
-  });
-
-  $('versandLabelWeight').addEventListener('input', () => {
-    if (!currentLabelShipment) return;
-    const weightText = $('versandLabelWeight').value.trim() ? $('versandLabelWeight').value.trim() + ' kg' : '';
-    $('vlServiceMeta').textContent = [weightText, fmtDateDE(currentLabelShipment.date)].filter(Boolean).join('\n');
-  });
-  $('versandLabelWeight').addEventListener('blur', () => {
-    if (!currentLabelShipment) return;
-    currentLabelShipment.parcelWeight = $('versandLabelWeight').value.trim();
-    saveShipments();
-  });
-
   $('btnPrintVersandLabel').addEventListener('click', () => {
-    $('dynamicPageStyle').textContent = '@page{ size: 103mm 199mm; margin: 0; }';
+    $('dynamicPageStyle').textContent = '@page{ size: 30mm 50mm; margin: 0; }';
     window.print();
   });
 
   $('btnCloseVersandLabel').addEventListener('click', () => {
     $('versandLabelOverlay').classList.remove('open');
-    currentLabelShipment = null;
   });
   $('versandLabelOverlay').addEventListener('click', (e) => {
     if (e.target === $('versandLabelOverlay')) {
       $('versandLabelOverlay').classList.remove('open');
-      currentLabelShipment = null;
     }
   });
 
