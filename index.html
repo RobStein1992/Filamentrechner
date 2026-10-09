@@ -980,6 +980,10 @@
         <label for="versandReference">Bestell-/Rechnungsnummer <span class="hint">optional</span></label>
         <input type="text" id="versandReference" placeholder="z. B. RE-20260827-001" autocomplete="off">
       </div>
+      <div class="field">
+        <label for="versandValue">Warenwert (€) <span class="hint">für das Dashboard</span></label>
+        <input type="number" id="versandValue" placeholder="0,00" min="0" step="0.01" inputmode="decimal">
+      </div>
     </div>
 
     <div class="section-label">Positionen</div>
@@ -4076,6 +4080,7 @@
     $('versandCustomerCity').value = '';
     $('versandDate').value = todayISO();
     $('versandReference').value = '';
+    $('versandValue').value = '';
     $('versandCarrier').value = '';
     $('versandTracking').value = '';
     $('versandNotes').value = '';
@@ -4683,6 +4688,7 @@
       customerZip: $('versandCustomerZip').value.trim(),
       customerCity: $('versandCustomerCity').value.trim(),
       reference: $('versandReference').value.trim(),
+      value: parseFloat($('versandValue').value) || 0,
       carrier: $('versandCarrier').value.trim(),
       trackingNumber: $('versandTracking').value.trim(),
       notes: $('versandNotes').value.trim(),
@@ -4823,6 +4829,9 @@
     $('dashOpenValue').textContent = fmtEUR(sum(openOrders)) + ' Auftragswert';
 
     const openShipmentsValue = openShipments.reduce((s, sh) => {
+      if (sh.value) return s + (parseFloat(sh.value) || 0);
+      // Ältere Lieferscheine ohne eigenen Warenwert: ersatzweise den Wert
+      // des verknüpften Auftrags verwenden, falls vorhanden.
       const linkedOrder = orders.find(o => o.id === sh.orderId);
       return s + (linkedOrder ? (parseFloat(linkedOrder.total) || 0) : 0);
     }, 0);
@@ -5180,6 +5189,7 @@
         customerZip: customer.zip,
         customerCity: customer.city,
         reference: '',
+        value: quantity * (12 + (i % 4) * 9),
         carrier: i % 3 === 0 ? 'DHL' : (i % 3 === 1 ? 'Selbstabholung' : 'Spedition'),
         trackingNumber: '',
         notes: '',
@@ -5237,6 +5247,7 @@
     $('versandCustomerCity').value = parsedAddress.city;
     $('versandDate').value = todayISO();
     $('versandReference').value = order.docNumber || '';
+    $('versandValue').value = order.total || '';
     $('versandCarrier').value = '';
     $('versandTracking').value = '';
     $('versandNotes').value = '';
