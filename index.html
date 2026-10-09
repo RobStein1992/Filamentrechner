@@ -967,6 +967,15 @@
       <h2 class="card-title"><span class="swatch" style="background:var(--margin-c)"></span><span>Lieferscheine</span></h2>
     </div>
 
+    <div class="field" style="margin-bottom:18px;">
+      <label for="versandScanInput">Lieferschein suchen</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="versandScanInput" placeholder="Barcode scannen oder Lieferschein-Nr. eingeben" autocomplete="off" style="flex:1;">
+        <button type="button" id="btnVersandScanCamera" class="btn-secondary" style="width:auto; margin-top:0; padding:0 16px; flex-shrink:0;" title="Mit Kamera scannen">📷</button>
+      </div>
+      <span class="note" id="versandScanStatusNote" style="display:block; margin-top:6px;"></span>
+    </div>
+
     <div id="versandHistoryWrap" style="display:none;">
       <table class="inv-table" style="margin-bottom:0;">
         <thead>
@@ -1138,7 +1147,7 @@
     <button class="btn-secondary" id="btnCloseScan" type="button">✕ Abbrechen</button>
   </div>
   <div style="max-width:420px; margin:0 auto; background:var(--card); border-radius:8px; padding:16px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6);">
-    <p class="note" style="margin-top:0; color:var(--ink);">Barcode auf dem Etikett vor die Kamera halten.</p>
+    <p class="note" id="scanOverlayIntro" style="margin-top:0; color:var(--ink);">Barcode auf dem Etikett vor die Kamera halten.</p>
     <div id="scanReaderRegion" style="width:100%;"></div>
     <p class="note" id="scanCameraStatus" style="margin-top:10px;"></p>
   </div>
@@ -1300,6 +1309,7 @@
           <div><b>Lieferdatum:</b> <span id="versSheetDate">—</span></div>
           <div id="versSheetRefRow"><b>Referenz:</b> <span id="versSheetRef">—</span></div>
         </div>
+        <svg id="versSheetBarcode" class="inv-sheet-barcode"></svg>
       </div>
     </div>
 
@@ -3589,6 +3599,8 @@
   });
 
   let html5QrCodeInstance = null;
+  let scanResultHandler = null;    // Funktion, die den gescannten Code entgegennimmt
+  let scanErrorNoteId = null;      // Status-Hinweis, der bei Fehlern beschrieben wird
 
   function stopCameraScan(){
     if (html5QrCodeInstance) {
@@ -3599,12 +3611,19 @@
     }
   }
 
-  $('btnScanCamera').addEventListener('click', () => {
+  // Gemeinsamer Kamera-Dialog für alle Scan-Stellen der App (Lagerbuch,
+  // Versand, …). intro = Hinweistext im Dialog, onResult = Callback mit dem
+  // erkannten Code, noteId = Element-ID für Fehlermeldungen außerhalb des Dialogs.
+  function startCameraScan(intro, onResult, noteId){
+    scanResultHandler = onResult;
+    scanErrorNoteId = noteId;
+
     if (typeof Html5Qrcode === 'undefined') {
-      $('scanStatusNote').textContent = 'Kamera-Scan momentan nicht verfügbar (keine Internetverbindung beim Laden der Seite).';
-      $('scanStatusNote').style.color = 'var(--filament)';
+      $(noteId).textContent = 'Kamera-Scan momentan nicht verfügbar (keine Internetverbindung beim Laden der Seite).';
+      $(noteId).style.color = 'var(--filament)';
       return;
     }
+    $('scanOverlayIntro').textContent = intro;
     $('scanCameraStatus').textContent = 'Kamera wird gestartet …';
     $('scanCameraStatus').style.color = '';
     $('scanOverlay').classList.add('open');
@@ -3616,13 +3635,17 @@
       (decodedText) => {
         stopCameraScan();
         $('scanOverlay').classList.remove('open');
-        lookupAndSelectByBarcode(decodedText);
+        if (scanResultHandler) scanResultHandler(decodedText);
       },
       () => { /* einzelne Frames ohne erkannten Code – ignorieren */ }
     ).catch((err) => {
-      $('scanCameraStatus').textContent = 'Kamera konnte nicht gestartet werden. Bitte Kamerazugriff erlauben oder Artikelnummer manuell eingeben. (' + err + ')';
+      $('scanCameraStatus').textContent = 'Kamera konnte nicht gestartet werden. Bitte Kamerazugriff erlauben oder Code manuell eingeben. (' + err + ')';
       $('scanCameraStatus').style.color = 'var(--filament)';
     });
+  }
+
+  $('btnScanCamera').addEventListener('click', () => {
+    startCameraScan('Barcode auf dem Etikett vor die Kamera halten.', lookupAndSelectByBarcode, 'scanStatusNote');
   });
 
   $('btnCloseScan').addEventListener('click', () => {
@@ -3827,8 +3850,52 @@
       (companySettings.contact ? '  ·  ' + companySettings.contact : '') +
       (companySettings.taxId ? '  ·  ' + companySettings.taxId : '');
 
+    try {
+      if (typeof JsBarcode === 'undefined') throw new Error('JsBarcode nicht geladen');
+      JsBarcode('#versSheetBarcode', shipment.docNumber, {
+        format: 'CODE128', width: 1.6, height: 34, margin: 0, displayValue: false
+      });
+      $('versSheetBarcode').style.display = 'block';
+    } catch (err) {
+      $('versSheetBarcode').style.display = 'none';
+    }
+
     $('versandOverlay').classList.add('open');
   }
+
+  // Lieferschein per gescannter oder eingetippter Lieferschein-Nr. finden und
+  // öffnen (Barcode vom ausgedruckten Lieferschein, siehe openVersandSheet()).
+  function lookupAndOpenShipmentByBarcode(rawCode){
+    const code = (rawCode || '').trim();
+    if (!code) return;
+
+    const shipment = shipments.find(s => (s.docNumber || '').toLowerCase() === code.toLowerCase());
+    if (!shipment) {
+      $('versandScanStatusNote').textContent = 'Kein Lieferschein mit der Nummer "' + code + '" gefunden.';
+      $('versandScanStatusNote').style.color = 'var(--filament)';
+      return;
+    }
+
+    $('versandScanStatusNote').textContent = '✓ ' + shipment.docNumber + ' gefunden.';
+    $('versandScanStatusNote').style.color = 'var(--energy)';
+    openVersandSheet(shipment);
+  }
+
+  $('versandScanInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      lookupAndOpenShipmentByBarcode($('versandScanInput').value);
+      $('versandScanInput').value = '';
+    }
+  });
+
+  $('btnVersandScanCamera').addEventListener('click', () => {
+    startCameraScan(
+      'Barcode auf dem Lieferschein vor die Kamera halten.',
+      lookupAndOpenShipmentByBarcode,
+      'versandScanStatusNote'
+    );
+  });
 
   $('btnCreateVersand').addEventListener('click', () => {
     const validItems = versandItems
