@@ -551,7 +551,7 @@
   .order-actions .order-delete:hover{ color: var(--margin-c); }
 
   /* Listen dürfen im Notfall in sich scrollen statt die Seite zu sprengen */
-  #orderListWrap, #versandHistoryWrap, #versandCompletedWrap, #quoteListWrap, #orderArchiveWrap{
+  #orderListWrap, #versandHistoryWrap, #versandCompletedWrap, #quoteListWrap, #orderArchiveWrap, #returnsListWrap{
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -563,7 +563,8 @@
     #orderArchiveBody .btn-label,
     #quoteListBody .btn-label,
     #versandHistoryBody .btn-label,
-    #versandCompletedBody .btn-label{ display:none; }
+    #versandCompletedBody .btn-label,
+    #returnsListBody .btn-label{ display:none; }
     .order-actions .btn-secondary,
     .order-actions .btn-primary{ padding: 6px 10px; margin-left: 4px; }
     #orderListWrap .col-date,
@@ -577,12 +578,15 @@
     #versandHistoryWrap .col-customer,
     #versandCompletedWrap .col-date,
     #versandCompletedWrap .col-order,
-    #versandCompletedWrap .col-customer{ display:none; }
+    #versandCompletedWrap .col-customer,
+    #returnsListWrap .col-date,
+    #returnsListWrap .col-customer{ display:none; }
     #orderListWrap .order-sub.only-narrow,
     #quoteListWrap .order-sub.only-narrow,
     #orderArchiveWrap .order-sub.only-narrow,
     #versandHistoryWrap .order-sub.only-narrow,
-    #versandCompletedWrap .order-sub.only-narrow{ display:block; }
+    #versandCompletedWrap .order-sub.only-narrow,
+    #returnsListWrap .order-sub.only-narrow{ display:block; }
     #orderListWrap table.inv-table thead th,
     #orderListWrap table.inv-table tbody td,
     #quoteListWrap table.inv-table thead th,
@@ -592,7 +596,9 @@
     #versandHistoryWrap table.inv-table thead th,
     #versandHistoryWrap table.inv-table tbody td,
     #versandCompletedWrap table.inv-table thead th,
-    #versandCompletedWrap table.inv-table tbody td{ padding-left: 4px; padding-right: 4px; }
+    #versandCompletedWrap table.inv-table tbody td,
+    #returnsListWrap table.inv-table thead th,
+    #returnsListWrap table.inv-table tbody td{ padding-left: 4px; padding-right: 4px; }
   }
 
   .order-banner{

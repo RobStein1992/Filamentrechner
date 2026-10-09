@@ -35,6 +35,7 @@
   <button type="button" class="page-switch-btn" id="btnPageOrders" data-page="orders">📋 Aufträge</button>
   <button type="button" class="page-switch-btn" id="btnPageBooking" data-page="booking">📦 Filament buchen</button>
   <button type="button" class="page-switch-btn" id="btnPageVersand" data-page="shipping">🚚 Versand</button>
+  <button type="button" class="page-switch-btn" id="btnPageReturns" data-page="returns">↩️ Retouren/Reklamationen</button>
 </nav>
 <div class="app-main">
 <div class="app-toolbar" id="appToolbar">
@@ -1068,6 +1069,87 @@
 
 </div>
 
+<div class="wrap" id="pageReturns" style="display:none;">
+
+  <header>
+    <div class="eyebrow"><span class="dot"></span><span>KUNDENSERVICE · RETOUREN</span></div>
+    <h1>Retouren / Reklamationen</h1>
+    <p>Rücksendungen und Beanstandungen erfassen und bis zur Klärung nachverfolgen.</p>
+  </header>
+
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--danger)"></span><span>Vorgänge</span></h2>
+    </div>
+
+    <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:500; margin-bottom:12px; cursor:pointer;">
+      <input type="checkbox" id="returnsShowAll" style="width:auto;"> Abgeschlossene einblenden
+    </label>
+
+    <div id="returnsListWrap" style="display:none;">
+      <table class="inv-table" style="margin-bottom:0;">
+        <thead>
+          <tr>
+            <th class="col-date">Datum</th>
+            <th>Vorgang</th>
+            <th class="col-customer">Kunde</th>
+            <th class="num">Erstattung</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="returnsListBody"></tbody>
+      </table>
+    </div>
+    <p class="note" id="returnsEmptyNote">Noch keine Retouren oder Reklamationen erfasst.</p>
+
+    <button class="btn-secondary" id="btnNewReturn" type="button" style="margin-top:14px;">+ Neue Retoure/Reklamation erfassen</button>
+  </div>
+
+  <div class="card" id="returnFormCard" style="max-width: 660px; margin: 16px auto 0; display:none;">
+    <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--energy)"></span><span>Retoure/Reklamation erfassen</span></h2>
+    </div>
+
+    <div class="subgrid">
+      <div class="field">
+        <label for="returnType">Art</label>
+        <select id="returnType">
+          <option value="retoure">Retoure</option>
+          <option value="reklamation">Reklamation</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="returnDate">Datum</label>
+        <input type="date" id="returnDate">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="returnCustomerName">Kunde</label>
+      <input type="text" id="returnCustomerName" placeholder="Max Mustermann / Firma GmbH" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="returnReference">Bezug <span class="hint">optional</span></label>
+      <input type="text" id="returnReference" placeholder="z. B. Lieferschein- oder Rechnungsnummer" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="returnReason">Grund / Beschreibung</label>
+      <textarea id="returnReason" placeholder="z. B. Teil beim Transport beschädigt"></textarea>
+    </div>
+    <div class="field">
+      <label for="returnRefund">Erstattungsbetrag (€) <span class="hint">optional</span></label>
+      <input type="number" id="returnRefund" placeholder="0,00" min="0" step="0.01" inputmode="decimal">
+    </div>
+
+    <p class="note" id="returnStatus"></p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn-primary" id="btnCreateReturn" type="button">📥 Erfassen</button>
+      <button class="btn-secondary" id="btnCancelReturn" type="button">✕ Abbrechen</button>
+    </div>
+  </div>
+
+</div>
+
 <div class="wrap" id="pagePositionDetail" style="display:none;">
 
   <button type="button" class="settings-btn" id="btnBackToBooking" style="margin-bottom:18px;">← Zurück zum Lagerbestand</button>
@@ -1794,7 +1876,7 @@
     if (!ok) throw new Error('storage unavailable');
     markLocalChange();
   }
-  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders', 'lieferschein-worker-url', 'product-catalog'];
+  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders', 'returns', 'lieferschein-worker-url', 'product-catalog'];
 
   // Zustand der Geräte-Synchronisierung (siehe weiter unten). Hier oben
   // deklariert, weil storageSet() darauf zugreift.
@@ -4842,6 +4924,138 @@
       : 'Noch keine Sendungen';
   }
 
+  /* ---------- Retouren / Reklamationen ---------- */
+  const RETURNS_KEY = 'returns';
+  let returnsList = [];
+
+  async function loadReturns(){
+    try {
+      const value = await storageGet(RETURNS_KEY);
+      if (value) returnsList = JSON.parse(value);
+    } catch (err) {}
+    renderReturns();
+  }
+
+  async function saveReturns(){
+    try { await storageSet(RETURNS_KEY, JSON.stringify(returnsList)); } catch (err) {}
+  }
+
+  function nextReturnNumber(type){
+    return defaultDocNumber(type === 'reklamation' ? 'RK' : 'RT');
+  }
+
+  function returnTypeLabel(r){
+    return r.type === 'reklamation' ? 'Reklamation' : 'Retoure';
+  }
+
+  function sortedReturns(list){
+    return [...list].sort((a, b) =>
+      (b.date || '').localeCompare(a.date || '') || b.id.localeCompare(a.id));
+  }
+
+  function renderReturns(){
+    const showAll = $('returnsShowAll').checked;
+    const visible = returnsList.filter(r => showAll || !r.resolved);
+
+    if (visible.length === 0) {
+      $('returnsListWrap').style.display = 'none';
+      $('returnsEmptyNote').style.display = 'block';
+      $('returnsEmptyNote').textContent = returnsList.length === 0
+        ? 'Noch keine Retouren oder Reklamationen erfasst.'
+        : 'Alle Vorgänge sind abgeschlossen. Setze oben den Haken, um sie einzublenden.';
+      $('returnsListBody').innerHTML = '';
+      return;
+    }
+    $('returnsListWrap').style.display = 'block';
+    $('returnsEmptyNote').style.display = 'none';
+
+    $('returnsListBody').innerHTML = sortedReturns(visible).map(r => {
+      return '<tr>' +
+        '<td class="col-date">' + fmtDateShortDE(r.date) + '</td>' +
+        '<td>' + escapeHtml(r.docNumber || '—') +
+          '<span class="order-sub">' + returnTypeLabel(r) + (r.reason ? ' · ' + escapeHtml(r.reason) : '') + '</span>' +
+          '<span class="order-sub only-narrow">' + fmtDateShortDE(r.date) + ' · ' + escapeHtml(r.customerName || 'ohne Kunde') + '</span>' +
+          '<span class="order-badge' + (r.resolved ? ' is-shipped' : '') + '">' + (r.resolved ? 'abgeschlossen' : 'offen') + '</span>' +
+          '<span class="order-badge is-quote">' + returnTypeLabel(r) + '</span>' +
+        '</td>' +
+        '<td class="col-customer">' + escapeHtml(r.customerName || '—') + '</td>' +
+        '<td class="num">' + (r.refundAmount ? fmtEUR(r.refundAmount) : '—') + '</td>' +
+        '<td class="num order-actions">' +
+          (r.resolved ? '' : '<button type="button" class="btn-secondary return-resolve" data-id="' + r.id + '" title="Als abgeschlossen markieren">✓<span class="btn-label"> Abschließen</span></button>') +
+          '<button type="button" class="order-delete return-delete" data-id="' + r.id + '" title="Eintrag entfernen">✕</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+
+    $('returnsListBody').querySelectorAll('.return-resolve').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const entry = returnsList.find(x => x.id === btn.dataset.id);
+        if (!entry) return;
+        entry.resolved = true;
+        entry.resolvedAt = new Date().toISOString();
+        saveReturns();
+        renderReturns();
+      });
+    });
+    $('returnsListBody').querySelectorAll('.return-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm('Diesen Vorgang wirklich entfernen?')) return;
+        returnsList = returnsList.filter(x => x.id !== btn.dataset.id);
+        saveReturns();
+        renderReturns();
+      });
+    });
+  }
+
+  $('returnsShowAll').addEventListener('change', renderReturns);
+
+  function openReturnForm(){
+    $('returnType').value = 'retoure';
+    $('returnDate').value = todayISO();
+    $('returnCustomerName').value = '';
+    $('returnReference').value = '';
+    $('returnReason').value = '';
+    $('returnRefund').value = '';
+    $('returnStatus').textContent = '';
+    $('returnFormCard').style.display = 'block';
+    $('returnFormCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  $('btnNewReturn').addEventListener('click', openReturnForm);
+  $('btnCancelReturn').addEventListener('click', () => {
+    $('returnFormCard').style.display = 'none';
+  });
+
+  $('btnCreateReturn').addEventListener('click', () => {
+    const customerName = $('returnCustomerName').value.trim();
+    const reason = $('returnReason').value.trim();
+    if (!customerName || !reason) {
+      $('returnStatus').textContent = '✕ Bitte Kunde und Grund/Beschreibung angeben.';
+      $('returnStatus').style.color = 'var(--danger)';
+      return;
+    }
+
+    const type = $('returnType').value === 'reklamation' ? 'reklamation' : 'retoure';
+    returnsList.push({
+      id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+      docNumber: nextReturnNumber(type),
+      type,
+      date: $('returnDate').value || todayISO(),
+      customerName,
+      reference: $('returnReference').value.trim(),
+      reason,
+      refundAmount: parseFloat($('returnRefund').value) || 0,
+      resolved: false,
+      resolvedAt: null
+    });
+
+    saveReturns();
+    renderReturns();
+    $('returnFormCard').style.display = 'none';
+  });
+
+  loadReturns();
+
   // Die ersten drei Spalten sind in allen drei Listen gleich aufgebaut.
   function orderBaseCells(order, badgeHtml){
     const names = orderItemNames(order);
@@ -5675,6 +5889,7 @@
     $('pageOrders').style.display = page === 'orders' ? '' : 'none';
     $('pageBooking').style.display = page === 'booking' ? '' : 'none';
     $('pageVersand').style.display = page === 'shipping' ? '' : 'none';
+    $('pageReturns').style.display = page === 'returns' ? '' : 'none';
     $('pagePositionDetail').style.display = 'none';
     $('modeBarRow').style.display = page === 'calculator' ? '' : 'none';
     $('sideNav').style.display = '';
@@ -5683,6 +5898,7 @@
     $('btnPageOrders').classList.toggle('active', page === 'orders');
     $('btnPageBooking').classList.toggle('active', page === 'booking');
     $('btnPageVersand').classList.toggle('active', page === 'shipping');
+    $('btnPageReturns').classList.toggle('active', page === 'returns');
     if (page === 'dashboard') renderDashboard();
     window.scrollTo(0, 0);
   }
@@ -5691,6 +5907,7 @@
   $('btnPageOrders').addEventListener('click', () => switchPage('orders'));
   $('btnPageBooking').addEventListener('click', () => switchPage('booking'));
   $('btnPageVersand').addEventListener('click', () => switchPage('shipping'));
+  $('btnPageReturns').addEventListener('click', () => switchPage('returns'));
 
   let currentDetailPositionId = null;
 
