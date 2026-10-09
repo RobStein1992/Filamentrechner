@@ -923,8 +923,18 @@
       <input type="text" id="versandCustomerName" placeholder="Max Mustermann / Firma GmbH">
     </div>
     <div class="field">
-      <label for="versandCustomerAddress">Lieferadresse</label>
-      <textarea id="versandCustomerAddress" placeholder="Musterstraße 1&#10;12345 Musterstadt"></textarea>
+      <label for="versandCustomerStreet">Stra&szlig;e und Hausnummer</label>
+      <input type="text" id="versandCustomerStreet" placeholder="Musterstra&szlig;e 1" autocomplete="off">
+    </div>
+    <div class="subgrid">
+      <div class="field">
+        <label for="versandCustomerZip">PLZ</label>
+        <input type="text" id="versandCustomerZip" placeholder="12345" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="versandCustomerCity">Ort</label>
+        <input type="text" id="versandCustomerCity" placeholder="Musterstadt" autocomplete="off">
+      </div>
     </div>
 
     <div class="subgrid">
@@ -992,6 +1002,30 @@
       </table>
     </div>
     <p class="note" id="versandHistoryEmptyNote">Noch keine Lieferscheine erstellt. Sobald du einen Auftrag versendest, erscheint der Lieferschein hier zur Nachverfolgung und zum erneuten Öffnen.</p>
+  </div>
+
+  <div class="card" style="max-width: 660px; margin: 16px auto 0;">
+    <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--filament)"></span><span>Abgeschlossene Lieferungen</span></h2>
+    </div>
+    <p class="note" style="margin-top:0;">Sobald die Kommissionierung eines Lieferscheins abgeschlossen wird, landet er hier und verschwindet aus der Liste oben.</p>
+
+    <div id="versandCompletedWrap" style="display:none; margin-top:14px;">
+      <table class="inv-table" style="margin-bottom:0;">
+        <thead>
+          <tr>
+            <th class="col-date">Datum</th>
+            <th>Lieferschein-Nr.</th>
+            <th class="col-order">Auftrag</th>
+            <th class="col-customer">Kunde</th>
+            <th class="num">Pos.</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="versandCompletedBody"></tbody>
+      </table>
+    </div>
+    <p class="note" id="versandCompletedEmptyNote">Noch keine abgeschlossenen Lieferungen.</p>
   </div>
 
 </div>
@@ -1391,14 +1425,25 @@
       <label for="pickCompleteName">Name</label>
       <input type="text" id="pickCompleteName" placeholder="Max Mustermann / Firma GmbH">
     </div>
-    <div class="field" style="margin-bottom:0;">
-      <label for="pickCompleteAddress">Lieferadresse</label>
-      <textarea id="pickCompleteAddress" placeholder="Musterstra&szlig;e 1&#10;12345 Musterstadt"></textarea>
+    <div class="field">
+      <label for="pickCompleteStreet">Stra&szlig;e und Hausnummer</label>
+      <input type="text" id="pickCompleteStreet" placeholder="Musterstra&szlig;e 1" autocomplete="off">
+    </div>
+    <div class="subgrid">
+      <div class="field">
+        <label for="pickCompleteZip">PLZ</label>
+        <input type="text" id="pickCompleteZip" placeholder="12345" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" autocomplete="off">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="pickCompleteCity">Ort</label>
+        <input type="text" id="pickCompleteCity" placeholder="Musterstadt" autocomplete="off">
+      </div>
     </div>
 
     <p class="note" id="pickCompleteStatus" style="margin-top:10px;"></p>
 
     <button type="button" id="btnPickCompleteShowSheet" class="btn-secondary" style="margin-top:4px;">🖨️ Lieferschein anzeigen</button>
+    <button type="button" id="btnPickComplete" class="btn-primary" style="margin-top:10px;">✅ Picking abschließen</button>
   </div>
 </div>
 
@@ -3820,6 +3865,38 @@
     return entry.articleNo;
   }
 
+  /* ---------- Lieferadresse im DIN-5008-/DHL-Format ---------- */
+  // Anschriftenfeld für Brief/Paket: Name, dann Straße + Hausnummer, dann
+  // PLZ + Ort auf einer Zeile – exakt die Reihenfolge, die DHL/Deutsche Post
+  // für eine maschinell lesbare Zustellung erwarten.
+  function formatShippingAddress(street, zip, city){
+    const zipCity = [zip, city].filter(Boolean).join(' ');
+    return [street, zipCity].filter(Boolean).join('\n');
+  }
+
+  function isValidGermanZip(zip){
+    return /^\d{5}$/.test((zip || '').trim());
+  }
+
+  // Ältere bzw. aus einer Rechnung/einem Angebot übernommene Adressen liegen
+  // noch als freier Text vor (eine Zeile Straße, eine Zeile "PLZ Ort"). Für
+  // die strukturierten Felder hier bestmöglich auftrennen – was sich nicht
+  // eindeutig erkennen lässt, landet in der Straßenzeile, damit nichts
+  // verloren geht.
+  function splitLegacyAddress(raw){
+    const lines = (raw || '').split('\n').map(l => l.trim()).filter(Boolean);
+    const zipCityLine = lines.find(l => /^\d{5}\s+.+/.test(l));
+    if (zipCityLine) {
+      const m = /^(\d{5})\s+(.+)$/.exec(zipCityLine);
+      return {
+        street: lines.filter(l => l !== zipCityLine).join(', '),
+        zip: m[1],
+        city: m[2]
+      };
+    }
+    return { street: lines.join(', '), zip: '', city: '' };
+  }
+
   const SHIPMENTS_KEY = 'shipments';
   const ORDERS_KEY = 'orders';
   let shipments = [];
@@ -3846,6 +3923,16 @@
         if (typeof it.picked !== 'number' || it.picked < 0) { it.picked = 0; migrated = true; }
         if (!it.code) { it.code = getOrCreateArticleNumber(it.description); migrated = true; }
       });
+      // Adresse war früher ein freier Text – in die DHL-konformen Einzelfelder
+      // auftrennen, falls das noch nicht geschehen ist.
+      if (typeof s.customerStreet !== 'string') {
+        const parsed = splitLegacyAddress(s.customerAddress);
+        s.customerStreet = parsed.street;
+        s.customerZip = parsed.zip;
+        s.customerCity = parsed.city;
+        migrated = true;
+      }
+      if (typeof s.completed !== 'boolean') { s.completed = false; migrated = true; }
     });
     if (migrated) await saveShipments();
     renderVersandHistory();
@@ -3919,7 +4006,9 @@
   function resetVersandForm(){
     currentVersandOrderId = null;
     $('versandCustomerName').value = '';
-    $('versandCustomerAddress').value = '';
+    $('versandCustomerStreet').value = '';
+    $('versandCustomerZip').value = '';
+    $('versandCustomerCity').value = '';
     $('versandDate').value = todayISO();
     $('versandReference').value = '';
     $('versandCarrier').value = '';
@@ -3932,16 +4021,22 @@
   resetVersandForm();
 
   function renderVersandHistory(){
-    if (shipments.length === 0) {
+    renderCompletedShipments();
+    const open = shipments.filter(s => !s.completed);
+
+    if (open.length === 0) {
       $('versandHistoryWrap').style.display = 'none';
       $('versandHistoryEmptyNote').style.display = 'block';
+      $('versandHistoryEmptyNote').textContent = shipments.length === 0
+        ? 'Noch keine Lieferscheine erstellt. Sobald du einen Auftrag versendest, erscheint der Lieferschein hier zur Nachverfolgung und zum erneuten Öffnen.'
+        : 'Alle Lieferscheine sind abgeschlossen. Sie stehen unten unter „Abgeschlossene Lieferungen".';
       $('versandHistoryBody').innerHTML = '';
       return;
     }
     $('versandHistoryWrap').style.display = 'block';
     $('versandHistoryEmptyNote').style.display = 'none';
 
-    const sorted = [...shipments].sort((a,b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+    const sorted = [...open].sort((a,b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
     $('versandHistoryBody').innerHTML = sorted.map(s => {
       const itemCount = s.items.reduce((sum, it) => sum + (parseInt(it.quantity, 10) || 0), 0);
       return '<tr>' +
@@ -3973,6 +4068,44 @@
     });
   }
 
+  function renderCompletedShipments(){
+    const completed = shipments.filter(s => s.completed);
+
+    if (completed.length === 0) {
+      $('versandCompletedWrap').style.display = 'none';
+      $('versandCompletedEmptyNote').style.display = 'block';
+      $('versandCompletedBody').innerHTML = '';
+      return;
+    }
+    $('versandCompletedWrap').style.display = 'block';
+    $('versandCompletedEmptyNote').style.display = 'none';
+
+    const sorted = [...completed].sort((a,b) =>
+      (b.completedAt || b.date).localeCompare(a.completedAt || a.date) || b.id.localeCompare(a.id));
+    $('versandCompletedBody').innerHTML = sorted.map(s => {
+      const itemCount = s.items.reduce((sum, it) => sum + (parseInt(it.quantity, 10) || 0), 0);
+      return '<tr>' +
+        '<td class="col-date">' + fmtDateShortDE(s.date) + '</td>' +
+        '<td>' + escapeHtml(s.docNumber) +
+          '<span class="order-sub only-narrow">' + fmtDateShortDE(s.date) + ' · ' + escapeHtml(s.customerName || 'ohne Kunde') +
+            (s.reference ? ' · ' + escapeHtml(s.reference) : '') + '</span></td>' +
+        '<td class="col-order">' + escapeHtml(s.reference || '—') + '</td>' +
+        '<td class="col-customer">' + escapeHtml(s.customerName || '—') + '</td>' +
+        '<td class="num">' + itemCount + '</td>' +
+        '<td class="num" style="white-space:nowrap;">' +
+          '<button type="button" class="btn-secondary versand-completed-reopen" data-id="' + s.id + '" title="Lieferschein öffnen" style="width:auto; margin-top:0; padding:6px 12px; font-size:12px;">🖨️<span class="btn-label"> Öffnen</span></button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+
+    $('versandCompletedBody').querySelectorAll('.versand-completed-reopen').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const shipment = shipments.find(s => s.id === btn.dataset.id);
+        if (shipment) openVersandSheet(shipment);
+      });
+    });
+  }
+
   function openVersandSheet(shipment){
     $('versSheetLogo').src = activeLogoDataUrl;
     $('versSheetCoName').textContent = companySettings.name || 'RS Construction & Printing';
@@ -3990,7 +4123,7 @@
       $('versSheetRefRow').style.display = 'none';
     }
 
-    $('versSheetCustomer').textContent = [shipment.customerName, shipment.customerAddress].filter(Boolean).join('\n') || '—';
+    $('versSheetCustomer').textContent = [shipment.customerName, formatShippingAddress(shipment.customerStreet, shipment.customerZip, shipment.customerCity)].filter(Boolean).join('\n') || '—';
 
     let pos = 1;
     $('versSheetItems').innerHTML = shipment.items.map(item =>
@@ -4192,15 +4325,25 @@
   function openPickCompleteDialog(shipment){
     $('pickCompleteSubline').textContent = 'Lieferschein ' + shipment.docNumber;
     $('pickCompleteName').value = shipment.customerName || '';
-    $('pickCompleteAddress').value = shipment.customerAddress || '';
+    $('pickCompleteStreet').value = shipment.customerStreet || '';
+    $('pickCompleteZip').value = shipment.customerZip || '';
+    $('pickCompleteCity').value = shipment.customerCity || '';
     $('pickCompleteStatus').textContent = '';
     $('pickCompleteOverlay').classList.add('open');
   }
 
+  // Die Eingaben aus der Maske ins Lieferschein-Objekt übernehmen – von
+  // "Speichern" und "Picking abschließen" gemeinsam genutzt.
+  function applyPickCompleteFields(){
+    currentPickingShipment.customerName = $('pickCompleteName').value.trim();
+    currentPickingShipment.customerStreet = $('pickCompleteStreet').value.trim();
+    currentPickingShipment.customerZip = $('pickCompleteZip').value.trim();
+    currentPickingShipment.customerCity = $('pickCompleteCity').value.trim();
+  }
+
   $('btnPickCompleteSave').addEventListener('click', () => {
     if (!currentPickingShipment) return;
-    currentPickingShipment.customerName = $('pickCompleteName').value.trim();
-    currentPickingShipment.customerAddress = $('pickCompleteAddress').value.trim();
+    applyPickCompleteFields();
     saveShipments();
     renderVersandHistory();
     $('pickingSubline').textContent = 'Lieferschein ' + currentPickingShipment.docNumber +
@@ -4214,6 +4357,36 @@
     $('pickCompleteOverlay').classList.remove('open');
     $('pickingOverlay').classList.remove('open');
     openVersandSheet(currentPickingShipment);
+  });
+
+  // Versand endgültig abschließen: Lieferschein verschwindet aus der
+  // offenen Liste und taucht unter "Abgeschlossene Lieferungen" auf. Eine
+  // gültige, DHL-konforme Postleitzahl ist dafür Pflicht – anders als beim
+  // reinen Zwischenspeichern, das auch mit unvollständiger Adresse geht.
+  $('btnPickComplete').addEventListener('click', () => {
+    if (!currentPickingShipment) return;
+
+    const zip = $('pickCompleteZip').value.trim();
+    if (!isValidGermanZip(zip)) {
+      $('pickCompleteStatus').textContent = '✕ Bitte eine gültige 5-stellige Postleitzahl angeben, bevor der Versand abgeschlossen wird.';
+      $('pickCompleteStatus').style.color = 'var(--danger)';
+      flashScanInputError($('pickCompleteZip'));
+      return;
+    }
+
+    applyPickCompleteFields();
+    currentPickingShipment.completed = true;
+    currentPickingShipment.completedAt = new Date().toISOString();
+    saveShipments();
+    renderVersandHistory();
+
+    const finishedNumber = currentPickingShipment.docNumber;
+    $('pickCompleteOverlay').classList.remove('open');
+    $('pickingOverlay').classList.remove('open');
+    currentPickingShipment = null;
+
+    $('versandScanStatusNote').textContent = '✓ Lieferschein ' + finishedNumber + ' abgeschlossen – steht jetzt unter „Abgeschlossene Lieferungen".';
+    $('versandScanStatusNote').style.color = 'var(--energy)';
   });
 
   $('btnPickCompleteClose').addEventListener('click', () => $('pickCompleteOverlay').classList.remove('open'));
@@ -4271,12 +4444,15 @@
       docNumber: nextDeliveryNoteNumber(),
       date: $('versandDate').value || todayISO(),
       customerName: $('versandCustomerName').value.trim(),
-      customerAddress: $('versandCustomerAddress').value.trim(),
+      customerStreet: $('versandCustomerStreet').value.trim(),
+      customerZip: $('versandCustomerZip').value.trim(),
+      customerCity: $('versandCustomerCity').value.trim(),
       reference: $('versandReference').value.trim(),
       carrier: $('versandCarrier').value.trim(),
       trackingNumber: $('versandTracking').value.trim(),
       notes: $('versandNotes').value.trim(),
       orderId: currentVersandOrderId || null,
+      completed: false,
       items: validItems
     };
 
@@ -4702,13 +4878,13 @@
     'Dichtring Pumpengehäuse', 'Ersatzgriff Schublade'
   ];
   const TEST_SHIPMENT_CUSTOMERS = [
-    { name: 'Mayer Metallbau GmbH', address: 'Industriering 4\n73033 Göppingen' },
-    { name: 'Fischer Elektrotechnik', address: 'Hauptstraße 21\n70173 Stuttgart' },
-    { name: 'Schmidt & Söhne OHG', address: 'Amselweg 9\n89073 Ulm' },
-    { name: 'Becker Maschinenbau', address: 'Gewerbepark 2\n72762 Reutlingen' },
-    { name: 'Hoffmann Sanitär', address: 'Rosenstraße 15\n71634 Ludwigsburg' },
-    { name: 'Weber Logistik GmbH', address: 'Speditionsweg 6\n74072 Heilbronn' },
-    { name: 'Klein Werkzeugtechnik', address: 'Werkstattgasse 3\n78462 Konstanz' }
+    { name: 'Mayer Metallbau GmbH', street: 'Industriering 4', zip: '73033', city: 'Göppingen' },
+    { name: 'Fischer Elektrotechnik', street: 'Hauptstraße 21', zip: '70173', city: 'Stuttgart' },
+    { name: 'Schmidt & Söhne OHG', street: 'Amselweg 9', zip: '89073', city: 'Ulm' },
+    { name: 'Becker Maschinenbau', street: 'Gewerbepark 2', zip: '72762', city: 'Reutlingen' },
+    { name: 'Hoffmann Sanitär', street: 'Rosenstraße 15', zip: '71634', city: 'Ludwigsburg' },
+    { name: 'Weber Logistik GmbH', street: 'Speditionsweg 6', zip: '74072', city: 'Heilbronn' },
+    { name: 'Klein Werkzeugtechnik', street: 'Werkstattgasse 3', zip: '78462', city: 'Konstanz' }
   ];
 
   function nextFreeTestShipmentNumber(used){
@@ -4739,12 +4915,15 @@
         docNumber: number,
         date,
         customerName: customer.name,
-        customerAddress: customer.address,
+        customerStreet: customer.street,
+        customerZip: customer.zip,
+        customerCity: customer.city,
         reference: '',
         carrier: i % 3 === 0 ? 'DHL' : (i % 3 === 1 ? 'Selbstabholung' : 'Spedition'),
         trackingNumber: '',
         notes: '',
         orderId: null,
+        completed: false,
         items: [{ description: product, quantity, code: articleCode, picked: 0 }]
       };
       shipments.push(shipment);
@@ -4789,7 +4968,12 @@
     switchPage('shipping');
     currentVersandOrderId = order.id;
     $('versandCustomerName').value = order.customerName || '';
-    $('versandCustomerAddress').value = order.customerAddress || '';
+    // Aus dem Auftrag kommt die Adresse noch als freier Text (Rechnung/
+    // Angebot im Kalkulator) – für die DHL-konformen Felder hier auftrennen.
+    const parsedAddress = splitLegacyAddress(order.customerAddress);
+    $('versandCustomerStreet').value = parsedAddress.street;
+    $('versandCustomerZip').value = parsedAddress.zip;
+    $('versandCustomerCity').value = parsedAddress.city;
     $('versandDate').value = todayISO();
     $('versandReference').value = order.docNumber || '';
     $('versandCarrier').value = '';

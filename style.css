@@ -511,7 +511,7 @@
   .order-actions .order-delete:hover{ color: var(--margin-c); }
 
   /* Listen dürfen im Notfall in sich scrollen statt die Seite zu sprengen */
-  #orderListWrap, #versandHistoryWrap, #quoteListWrap, #orderArchiveWrap{
+  #orderListWrap, #versandHistoryWrap, #versandCompletedWrap, #quoteListWrap, #orderArchiveWrap{
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -522,7 +522,8 @@
     #orderListBody .btn-label,
     #orderArchiveBody .btn-label,
     #quoteListBody .btn-label,
-    #versandHistoryBody .btn-label{ display:none; }
+    #versandHistoryBody .btn-label,
+    #versandCompletedBody .btn-label{ display:none; }
     .order-actions .btn-secondary,
     .order-actions .btn-primary{ padding: 6px 10px; margin-left: 4px; }
     #orderListWrap .col-date,
@@ -533,11 +534,15 @@
     #orderArchiveWrap .col-customer,
     #versandHistoryWrap .col-date,
     #versandHistoryWrap .col-order,
-    #versandHistoryWrap .col-customer{ display:none; }
+    #versandHistoryWrap .col-customer,
+    #versandCompletedWrap .col-date,
+    #versandCompletedWrap .col-order,
+    #versandCompletedWrap .col-customer{ display:none; }
     #orderListWrap .order-sub.only-narrow,
     #quoteListWrap .order-sub.only-narrow,
     #orderArchiveWrap .order-sub.only-narrow,
-    #versandHistoryWrap .order-sub.only-narrow{ display:block; }
+    #versandHistoryWrap .order-sub.only-narrow,
+    #versandCompletedWrap .order-sub.only-narrow{ display:block; }
     #orderListWrap table.inv-table thead th,
     #orderListWrap table.inv-table tbody td,
     #quoteListWrap table.inv-table thead th,
@@ -545,7 +550,9 @@
     #orderArchiveWrap table.inv-table thead th,
     #orderArchiveWrap table.inv-table tbody td,
     #versandHistoryWrap table.inv-table thead th,
-    #versandHistoryWrap table.inv-table tbody td{ padding-left: 4px; padding-right: 4px; }
+    #versandHistoryWrap table.inv-table tbody td,
+    #versandCompletedWrap table.inv-table thead th,
+    #versandCompletedWrap table.inv-table tbody td{ padding-left: 4px; padding-right: 4px; }
   }
 
   .order-banner{
