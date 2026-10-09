@@ -1568,6 +1568,7 @@
       <div class="section-label">🧪 Testdaten</div>
       <p class="note" style="margin-top:0;">Legt einen vollst&auml;ndigen Beispielauftrag in der Auftragslage an, um den Ablauf bis zum Lieferschein auszuprobieren. Vorhandene Daten bleiben unber&uuml;hrt &ndash; den Testauftrag entfernst du jederzeit im Reiter <b>📋 Auftr&auml;ge</b> &uuml;ber das ✕.</p>
       <button type="button" id="btnCreateTestOrder" class="btn-secondary" style="margin-top:0;">🧪 Testauftrag anlegen</button>
+      <button type="button" id="btnCreateTestShipments" class="btn-secondary" style="margin-top:8px;">📦 20 Beispiel-Lieferscheine anlegen</button>
       <p class="note" id="testDataStatus"></p>
     </div>
 
@@ -4328,6 +4329,77 @@
     $('testDataStatus').style.color = 'var(--energy)';
     $('settingsOverlay').classList.remove('open');
     switchPage('orders');
+  });
+
+  // 20 Beispiel-Lieferscheine mit 20 unterschiedlichen Produkten, um Liste,
+  // Suche und Barcode-Scan mit etwas Füllmenge auszuprobieren. Jeder
+  // Lieferschein steht für sich (ohne Auftragsbezug), wie beim Knopf
+  // "Lieferschein ohne Auftrag erstellen".
+  const TEST_SHIPMENT_PRODUCTS = [
+    'Gehäusedeckel Steuerungsbox', 'Lüfterhalterung 40 mm', 'Kabelclip universal',
+    'Scharnierhalterung Tür', 'Werkzeughalter Wandmontage', 'Zahnrad Modul 1,5',
+    'Spulenhalter für Filament', 'Montagewinkel 90°', 'Adapterring DN50',
+    'Schutzkappe Gewindestange', 'Steckverbinder-Gehäuse', 'Halteklotz Sensor',
+    'Rohrschelle 32 mm', 'Kabelkanal-Abdeckung', 'Montageplatte Raspberry Pi',
+    'Verschlussdeckel Tonne', 'Winkelhalter Regal', 'Steckfuß Möbel',
+    'Dichtring Pumpengehäuse', 'Ersatzgriff Schublade'
+  ];
+  const TEST_SHIPMENT_CUSTOMERS = [
+    { name: 'Mayer Metallbau GmbH', address: 'Industriering 4\n73033 Göppingen' },
+    { name: 'Fischer Elektrotechnik', address: 'Hauptstraße 21\n70173 Stuttgart' },
+    { name: 'Schmidt & Söhne OHG', address: 'Amselweg 9\n89073 Ulm' },
+    { name: 'Becker Maschinenbau', address: 'Gewerbepark 2\n72762 Reutlingen' },
+    { name: 'Hoffmann Sanitär', address: 'Rosenstraße 15\n71634 Ludwigsburg' },
+    { name: 'Weber Logistik GmbH', address: 'Speditionsweg 6\n74072 Heilbronn' },
+    { name: 'Klein Werkzeugtechnik', address: 'Werkstattgasse 3\n78462 Konstanz' }
+  ];
+
+  function nextFreeTestShipmentNumber(used){
+    let n = 1;
+    let number;
+    do {
+      number = 'LS-DEMO-' + String(n).padStart(3, '0');
+      n++;
+    } while (used.has(number.toLowerCase()) || shipments.some(s => (s.docNumber || '').toLowerCase() === number.toLowerCase()));
+    return number;
+  }
+
+  $('btnCreateTestShipments').addEventListener('click', () => {
+    const used = new Set();
+    const created = [];
+
+    TEST_SHIPMENT_PRODUCTS.forEach((product, i) => {
+      const number = nextFreeTestShipmentNumber(used);
+      used.add(number.toLowerCase());
+
+      const customer = TEST_SHIPMENT_CUSTOMERS[i % TEST_SHIPMENT_CUSTOMERS.length];
+      const quantity = (i % 6) + 1;
+      const date = addDaysISO(todayISO(), -(TEST_SHIPMENT_PRODUCTS.length - 1 - i));
+
+      const shipment = {
+        id: Date.now() + '-' + i + '-' + Math.random().toString(36).slice(2, 7),
+        docNumber: number,
+        date,
+        customerName: customer.name,
+        customerAddress: customer.address,
+        reference: '',
+        carrier: i % 3 === 0 ? 'DHL' : (i % 3 === 1 ? 'Selbstabholung' : 'Spedition'),
+        trackingNumber: '',
+        notes: '',
+        orderId: null,
+        items: [{ description: product, quantity }]
+      };
+      shipments.push(shipment);
+      created.push(shipment);
+    });
+
+    saveShipments();
+    renderVersandHistory();
+
+    $('testDataStatus').textContent = '✓ ' + created.length + ' Beispiel-Lieferscheine angelegt (' + created[0].docNumber + ' – ' + created[created.length - 1].docNumber + ').';
+    $('testDataStatus').style.color = 'var(--energy)';
+    $('settingsOverlay').classList.remove('open');
+    switchPage('shipping');
   });
 
   function updateVersandOrderBanner(){
