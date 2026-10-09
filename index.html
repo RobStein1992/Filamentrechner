@@ -1376,6 +1376,32 @@
   </div>
 </div>
 
+<div class="invoice-overlay" id="pickCompleteOverlay" style="z-index:1000;">
+  <div class="invoice-toolbar">
+    <button class="btn-secondary" id="btnPickCompleteClose" type="button">✕ Schließen</button>
+    <button class="btn-primary" id="btnPickCompleteSave" type="button">💾 Speichern</button>
+  </div>
+  <div style="max-width:480px; margin:0 auto; background:var(--card); border-radius:8px; padding:24px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'IBM Plex Sans',sans-serif;">
+    <h2 style="font-family:'IBM Plex Sans',sans-serif; font-size:20px; margin:0 0 4px;">✓ Alles gepickt</h2>
+    <p class="note" id="pickCompleteSubline" style="margin-top:4px;">Lieferschein —</p>
+    <p class="note" style="margin-top:10px;">Bitte Lieferadresse vor dem Versand pr&uuml;fen und bei Bedarf korrigieren.</p>
+
+    <div class="section-label" style="margin-top:14px;">Kunde</div>
+    <div class="field">
+      <label for="pickCompleteName">Name</label>
+      <input type="text" id="pickCompleteName" placeholder="Max Mustermann / Firma GmbH">
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label for="pickCompleteAddress">Lieferadresse</label>
+      <textarea id="pickCompleteAddress" placeholder="Musterstra&szlig;e 1&#10;12345 Musterstadt"></textarea>
+    </div>
+
+    <p class="note" id="pickCompleteStatus" style="margin-top:10px;"></p>
+
+    <button type="button" id="btnPickCompleteShowSheet" class="btn-secondary" style="margin-top:4px;">🖨️ Lieferschein anzeigen</button>
+  </div>
+</div>
+
 <div class="invoice-overlay" id="invoiceOverlay">
   <div class="invoice-toolbar">
     <button class="btn-secondary" id="btnCloseInvoice" type="button">✕ Schließen</button>
@@ -4045,6 +4071,11 @@
     return Math.max(0, (parseInt(item.quantity, 10) || 0) - (parseInt(item.picked, 10) || 0));
   }
 
+  function isShipmentFullyPicked(shipment){
+    const items = (shipment && shipment.items) || [];
+    return items.length > 0 && items.every(it => itemRemaining(it) <= 0);
+  }
+
   function renderPickingList(){
     if (!currentPickingShipment) return;
     const items = currentPickingShipment.items || [];
@@ -4069,18 +4100,22 @@
         const i = parseInt(btn.dataset.index, 10);
         const item = items[i];
         if (!item) return;
+        const wasAllDone = isShipmentFullyPicked(currentPickingShipment);
         item.picked = parseInt(item.quantity, 10) || 0;
         saveShipments();
         renderPickingList();
         renderVersandHistory();
         $('pickingStatusNote').textContent = '✓ ' + (item.description || 'Position') + ' komplett gepickt.';
         $('pickingStatusNote').style.color = 'var(--energy)';
+        if (!wasAllDone && isShipmentFullyPicked(currentPickingShipment)) {
+          openPickCompleteDialog(currentPickingShipment);
+        }
       });
     });
 
     const totalQty = items.reduce((sum, it) => sum + (parseInt(it.quantity, 10) || 0), 0);
     const totalPicked = items.reduce((sum, it) => sum + Math.min(parseInt(it.picked, 10) || 0, parseInt(it.quantity, 10) || 0), 0);
-    const allDone = items.length > 0 && items.every(it => itemRemaining(it) <= 0);
+    const allDone = isShipmentFullyPicked(currentPickingShipment);
 
     $('pickingSummary').textContent = allDone
       ? '✓ Alle Positionen vollständig kommissioniert.'
@@ -4123,6 +4158,7 @@
       return;
     }
 
+    const wasAllDone = isShipmentFullyPicked(currentPickingShipment);
     match.picked = (parseInt(match.picked, 10) || 0) + 1;
     saveShipments();
     renderPickingList();
@@ -4133,6 +4169,10 @@
       ? '✓ ' + match.description + ' gepickt (noch ' + remaining + ').'
       : '✓ ' + match.description + ' vollständig gepickt.';
     $('pickingStatusNote').style.color = 'var(--energy)';
+
+    if (!wasAllDone && isShipmentFullyPicked(currentPickingShipment)) {
+      openPickCompleteDialog(currentPickingShipment);
+    }
   }
 
   $('pickingScanInput').addEventListener('keydown', (e) => {
@@ -4145,6 +4185,40 @@
 
   $('btnPickingScanCamera').addEventListener('click', () => {
     startCameraScan('Artikel-Barcode vor die Kamera halten.', pickItemByCode, 'pickingStatusNote');
+  });
+
+  // Sind alle Positionen gepickt, Lieferadresse vor dem Versand zur
+  // Kontrolle (und ggf. Korrektur) vorlegen.
+  function openPickCompleteDialog(shipment){
+    $('pickCompleteSubline').textContent = 'Lieferschein ' + shipment.docNumber;
+    $('pickCompleteName').value = shipment.customerName || '';
+    $('pickCompleteAddress').value = shipment.customerAddress || '';
+    $('pickCompleteStatus').textContent = '';
+    $('pickCompleteOverlay').classList.add('open');
+  }
+
+  $('btnPickCompleteSave').addEventListener('click', () => {
+    if (!currentPickingShipment) return;
+    currentPickingShipment.customerName = $('pickCompleteName').value.trim();
+    currentPickingShipment.customerAddress = $('pickCompleteAddress').value.trim();
+    saveShipments();
+    renderVersandHistory();
+    $('pickingSubline').textContent = 'Lieferschein ' + currentPickingShipment.docNumber +
+      (currentPickingShipment.customerName ? ' · ' + currentPickingShipment.customerName : '');
+    $('pickCompleteStatus').textContent = '✓ Gespeichert.';
+    $('pickCompleteStatus').style.color = 'var(--energy)';
+  });
+
+  $('btnPickCompleteShowSheet').addEventListener('click', () => {
+    if (!currentPickingShipment) return;
+    $('pickCompleteOverlay').classList.remove('open');
+    $('pickingOverlay').classList.remove('open');
+    openVersandSheet(currentPickingShipment);
+  });
+
+  $('btnPickCompleteClose').addEventListener('click', () => $('pickCompleteOverlay').classList.remove('open'));
+  $('pickCompleteOverlay').addEventListener('click', (e) => {
+    if (e.target === $('pickCompleteOverlay')) $('pickCompleteOverlay').classList.remove('open');
   });
 
   $('btnPickingReset').addEventListener('click', () => {
