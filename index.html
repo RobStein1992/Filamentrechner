@@ -1360,10 +1360,11 @@
     <table class="inv-table" style="margin-bottom:0;">
       <thead>
         <tr>
-          <th style="width:10%;">Pos.</th>
+          <th style="width:8%;">Pos.</th>
           <th>Bezeichnung</th>
-          <th class="num" style="width:18%;">Menge</th>
-          <th class="num" style="width:18%;">Offen</th>
+          <th class="num" style="width:16%;">Menge</th>
+          <th class="num" style="width:16%;">Offen</th>
+          <th style="width:40px;"></th>
         </tr>
       </thead>
       <tbody id="pickingItemsBody"></tbody>
@@ -4047,8 +4048,25 @@
           (item.code ? '<span class="inv-item-sub">Artikel-Nr. ' + escapeHtml(item.code) + '</span>' : '') + '</td>' +
         '<td class="num">' + (parseInt(item.quantity, 10) || 0) + '</td>' +
         '<td class="num">' + (done ? '✓' : remaining) + '</td>' +
+        '<td class="num">' +
+          (done ? '' : '<button type="button" class="picking-pick-all" data-index="' + i + '" title="Komplette Menge picken">✅</button>') +
+        '</td>' +
       '</tr>';
     }).join('');
+
+    $('pickingItemsBody').querySelectorAll('.picking-pick-all').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = parseInt(btn.dataset.index, 10);
+        const item = items[i];
+        if (!item) return;
+        item.picked = parseInt(item.quantity, 10) || 0;
+        saveShipments();
+        renderPickingList();
+        renderVersandHistory();
+        $('pickingStatusNote').textContent = '✓ ' + (item.description || 'Position') + ' komplett gepickt.';
+        $('pickingStatusNote').style.color = 'var(--energy)';
+      });
+    });
 
     const totalQty = items.reduce((sum, it) => sum + (parseInt(it.quantity, 10) || 0), 0);
     const totalPicked = items.reduce((sum, it) => sum + Math.min(parseInt(it.picked, 10) || 0, parseInt(it.quantity, 10) || 0), 0);
