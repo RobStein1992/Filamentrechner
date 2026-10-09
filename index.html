@@ -1337,6 +1337,43 @@
   </div>
 </div>
 
+<div class="invoice-overlay" id="pickingOverlay">
+  <div class="invoice-toolbar">
+    <button class="btn-secondary" id="btnClosePicking" type="button">✕ Schließen</button>
+    <button class="btn-secondary" id="btnPickingShowSheet" type="button">🖨️ Lieferschein anzeigen</button>
+  </div>
+  <div style="max-width:620px; margin:0 auto; background:var(--card); border-radius:8px; padding:24px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'IBM Plex Sans',sans-serif;">
+    <h2 style="font-family:'IBM Plex Sans',sans-serif; font-size:20px; margin:0 0 4px;">Kommissionierung</h2>
+    <p class="note" id="pickingSubline" style="margin-top:4px;">Lieferschein —</p>
+
+    <div class="field" style="margin-top:14px;">
+      <label for="pickingScanInput">Artikel-Barcode scannen</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="pickingScanInput" placeholder="Scanner benutzen oder Artikel-Code eingeben" autocomplete="off" style="flex:1;">
+        <button type="button" id="btnPickingScanCamera" class="btn-secondary" style="width:auto; margin-top:0; padding:0 16px; flex-shrink:0;" title="Mit Kamera scannen">📷</button>
+      </div>
+      <span class="note" id="pickingStatusNote" style="display:block; margin-top:6px;"></span>
+    </div>
+
+    <div class="section-label" style="margin-top:18px;">Positionen</div>
+    <table class="inv-table" style="margin-bottom:0;">
+      <thead>
+        <tr>
+          <th style="width:10%;">Pos.</th>
+          <th>Bezeichnung</th>
+          <th class="num" style="width:18%;">Menge</th>
+          <th class="num" style="width:18%;">Offen</th>
+        </tr>
+      </thead>
+      <tbody id="pickingItemsBody"></tbody>
+    </table>
+
+    <p class="note" id="pickingSummary" style="margin-top:14px;"></p>
+
+    <button type="button" id="btnPickingReset" class="btn-secondary" style="margin-top:4px;">↺ Picking zurücksetzen</button>
+  </div>
+</div>
+
 <div class="invoice-overlay" id="invoiceOverlay">
   <div class="invoice-toolbar">
     <button class="btn-secondary" id="btnCloseInvoice" type="button">✕ Schließen</button>
@@ -3707,12 +3744,22 @@
   let orders = [];
   let versandItems = [];
   let currentVersandOrderId = null;
+  let currentPickingShipment = null;
 
   async function loadShipments(){
     try {
       const value = await storageGet(SHIPMENTS_KEY);
       if (value) shipments = JSON.parse(value);
     } catch (err) {}
+    // Ältere Lieferscheine kennen Artikel-Code und Picking-Fortschritt noch
+    // nicht – beim Laden ergänzen, statt die Kommissionierung daran scheitern
+    // zu lassen.
+    shipments.forEach(s => {
+      (s.items || []).forEach(it => {
+        if (typeof it.code !== 'string') it.code = '';
+        if (typeof it.picked !== 'number' || it.picked < 0) it.picked = 0;
+      });
+    });
     renderVersandHistory();
   }
 
@@ -3733,9 +3780,15 @@
           <label>Bezeichnung</label>
           <input type="text" class="vs-field" data-index="${i}" data-key="description" value="${escapeHtml(item.description)}" placeholder="z. B. Gehäuse Halterung, schwarz">
         </div>
-        <div class="field" style="margin-bottom:0; max-width:160px;">
-          <label>Menge</label>
-          <input type="number" class="vs-field" data-index="${i}" data-key="quantity" value="${item.quantity}" min="1" step="1">
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <div class="field" style="margin-bottom:0; max-width:120px;">
+            <label>Menge</label>
+            <input type="number" class="vs-field" data-index="${i}" data-key="quantity" value="${item.quantity}" min="1" step="1">
+          </div>
+          <div class="field" style="margin-bottom:0; flex:1; min-width:160px;">
+            <label>Artikel-Code <span class="hint">optional, zum Kommissionieren</span></label>
+            <input type="text" class="vs-field" data-index="${i}" data-key="code" value="${escapeHtml(item.code || '')}" placeholder="z. B. Barcode/Artikelnummer">
+          </div>
         </div>
       </div>
     `).join('');
@@ -3755,7 +3808,7 @@
   }
 
   $('btnAddVersandRow').addEventListener('click', () => {
-    versandItems.push({ description: '', quantity: 1 });
+    versandItems.push({ description: '', quantity: 1, code: '' });
     renderVersandItems();
   });
 
@@ -3768,7 +3821,7 @@
     $('versandCarrier').value = '';
     $('versandTracking').value = '';
     $('versandNotes').value = '';
-    versandItems = [{ description: '', quantity: 1 }];
+    versandItems = [{ description: '', quantity: 1, code: '' }];
     renderVersandItems();
     $('versandStatus').textContent = '';
   }
@@ -3795,7 +3848,10 @@
         '<td class="col-order">' + escapeHtml(s.reference || '—') + '</td>' +
         '<td class="col-customer">' + escapeHtml(s.customerName || '—') + '</td>' +
         '<td class="num">' + itemCount + '</td>' +
-        '<td class="num"><button type="button" class="btn-secondary versand-reopen" data-id="' + s.id + '" title="Lieferschein öffnen" style="width:auto; margin-top:0; padding:6px 12px; font-size:12px;">🖨️<span class="btn-label"> Öffnen</span></button></td>' +
+        '<td class="num" style="white-space:nowrap;">' +
+          '<button type="button" class="btn-secondary versand-pick" data-id="' + s.id + '" title="Kommissionieren" style="width:auto; margin:0 6px 0 0; padding:6px 12px; font-size:12px;">📦<span class="btn-label"> Picken</span></button>' +
+          '<button type="button" class="btn-secondary versand-reopen" data-id="' + s.id + '" title="Lieferschein öffnen" style="width:auto; margin-top:0; padding:6px 12px; font-size:12px;">🖨️<span class="btn-label"> Öffnen</span></button>' +
+        '</td>' +
         '</tr>';
     }).join('');
 
@@ -3803,6 +3859,12 @@
       btn.addEventListener('click', () => {
         const shipment = shipments.find(s => s.id === btn.dataset.id);
         if (shipment) openVersandSheet(shipment);
+      });
+    });
+    $('versandHistoryBody').querySelectorAll('.versand-pick').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const shipment = shipments.find(s => s.id === btn.dataset.id);
+        if (shipment) openPickingSheet(shipment);
       });
     });
   }
@@ -3879,7 +3941,7 @@
 
     $('versandScanStatusNote').textContent = '✓ ' + shipment.docNumber + ' gefunden.';
     $('versandScanStatusNote').style.color = 'var(--energy)';
-    openVersandSheet(shipment);
+    openPickingSheet(shipment);
   }
 
   $('versandScanInput').addEventListener('keydown', (e) => {
@@ -3898,9 +3960,128 @@
     );
   });
 
+  /* ---------- Kommissionierung: Positionen eines Lieferscheins abhaken ---------- */
+
+  function itemRemaining(item){
+    return Math.max(0, (parseInt(item.quantity, 10) || 0) - (parseInt(item.picked, 10) || 0));
+  }
+
+  function renderPickingList(){
+    if (!currentPickingShipment) return;
+    const items = currentPickingShipment.items || [];
+
+    $('pickingItemsBody').innerHTML = items.map((item, i) => {
+      const remaining = itemRemaining(item);
+      const done = remaining <= 0;
+      return '<tr class="' + (done ? 'picking-done' : '') + '">' +
+        '<td>' + (i + 1) + '</td>' +
+        '<td>' + escapeHtml(item.description || '—') +
+          (item.code ? '<span class="inv-item-sub">Code: ' + escapeHtml(item.code) + '</span>' : '') + '</td>' +
+        '<td class="num">' + (parseInt(item.quantity, 10) || 0) + '</td>' +
+        '<td class="num">' + (done ? '✓' : remaining) + '</td>' +
+      '</tr>';
+    }).join('');
+
+    const totalQty = items.reduce((sum, it) => sum + (parseInt(it.quantity, 10) || 0), 0);
+    const totalPicked = items.reduce((sum, it) => sum + Math.min(parseInt(it.picked, 10) || 0, parseInt(it.quantity, 10) || 0), 0);
+    const allDone = items.length > 0 && items.every(it => itemRemaining(it) <= 0);
+
+    $('pickingSummary').textContent = allDone
+      ? '✓ Alle Positionen vollständig kommissioniert.'
+      : totalPicked + ' von ' + totalQty + ' Stück gepickt.';
+    $('pickingSummary').style.color = allDone ? 'var(--energy)' : 'var(--ink-soft)';
+  }
+
+  function openPickingSheet(shipment){
+    currentPickingShipment = shipment;
+    $('pickingSubline').textContent = 'Lieferschein ' + shipment.docNumber + (shipment.customerName ? ' · ' + shipment.customerName : '');
+    $('pickingStatusNote').textContent = '';
+    renderPickingList();
+    $('pickingOverlay').classList.add('open');
+  }
+
+  // Scan/Eingabe gegen die Positionen des aktuell geöffneten Lieferscheins
+  // abgleichen: zuerst über den hinterlegten Artikel-Code, sonst über die
+  // Bezeichnung – so funktioniert es auch ohne eigens angelegte Codes, wenn
+  // z. B. ein Barcode die Produktbezeichnung selbst enthält.
+  function pickItemByCode(rawCode){
+    if (!currentPickingShipment) return;
+    const code = (rawCode || '').trim();
+    if (!code) return;
+    const lower = code.toLowerCase();
+    const items = currentPickingShipment.items || [];
+
+    let match = items.find(it => it.code && it.code.toLowerCase() === lower && itemRemaining(it) > 0);
+    if (!match) match = items.find(it => (it.description || '').toLowerCase() === lower && itemRemaining(it) > 0);
+
+    if (!match) {
+      const alreadyDone = items.find(it =>
+        (it.code && it.code.toLowerCase() === lower) || (it.description || '').toLowerCase() === lower);
+      if (alreadyDone) {
+        $('pickingStatusNote').textContent = '⚠ "' + alreadyDone.description + '" ist bereits vollständig gepickt.';
+        $('pickingStatusNote').style.color = 'var(--margin-c)';
+      } else {
+        $('pickingStatusNote').textContent = 'Kein Artikel mit "' + code + '" auf diesem Lieferschein gefunden.';
+        $('pickingStatusNote').style.color = 'var(--filament)';
+      }
+      return;
+    }
+
+    match.picked = (parseInt(match.picked, 10) || 0) + 1;
+    saveShipments();
+    renderPickingList();
+    renderVersandHistory();
+
+    const remaining = itemRemaining(match);
+    $('pickingStatusNote').textContent = remaining > 0
+      ? '✓ ' + match.description + ' gepickt (noch ' + remaining + ').'
+      : '✓ ' + match.description + ' vollständig gepickt.';
+    $('pickingStatusNote').style.color = 'var(--energy)';
+  }
+
+  $('pickingScanInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      pickItemByCode($('pickingScanInput').value);
+      $('pickingScanInput').value = '';
+    }
+  });
+
+  $('btnPickingScanCamera').addEventListener('click', () => {
+    startCameraScan('Artikel-Barcode vor die Kamera halten.', pickItemByCode, 'pickingStatusNote');
+  });
+
+  $('btnPickingReset').addEventListener('click', () => {
+    if (!currentPickingShipment) return;
+    if (!confirm('Picking-Fortschritt für diesen Lieferschein zurücksetzen?')) return;
+    (currentPickingShipment.items || []).forEach(it => { it.picked = 0; });
+    saveShipments();
+    renderPickingList();
+    $('pickingStatusNote').textContent = 'Zurückgesetzt.';
+    $('pickingStatusNote').style.color = 'var(--ink-soft)';
+  });
+
+  $('btnPickingShowSheet').addEventListener('click', () => {
+    if (!currentPickingShipment) return;
+    // Nur ein Overlay gleichzeitig offen halten, sonst blockiert die
+    // Kommissionierung im Hintergrund die Druckansicht darüber.
+    $('pickingOverlay').classList.remove('open');
+    openVersandSheet(currentPickingShipment);
+  });
+
+  $('btnClosePicking').addEventListener('click', () => $('pickingOverlay').classList.remove('open'));
+  $('pickingOverlay').addEventListener('click', (e) => {
+    if (e.target === $('pickingOverlay')) $('pickingOverlay').classList.remove('open');
+  });
+
   $('btnCreateVersand').addEventListener('click', () => {
     const validItems = versandItems
-      .map(it => ({ description: (it.description || '').trim(), quantity: Math.max(1, parseInt(it.quantity, 10) || 0) }))
+      .map(it => ({
+        description: (it.description || '').trim(),
+        quantity: Math.max(1, parseInt(it.quantity, 10) || 0),
+        code: (it.code || '').trim(),
+        picked: 0
+      }))
       .filter(it => it.description);
 
     if (validItems.length === 0) {
@@ -4375,6 +4556,7 @@
       const customer = TEST_SHIPMENT_CUSTOMERS[i % TEST_SHIPMENT_CUSTOMERS.length];
       const quantity = (i % 6) + 1;
       const date = addDaysISO(todayISO(), -(TEST_SHIPMENT_PRODUCTS.length - 1 - i));
+      const articleCode = 'ART-' + String(i + 1).padStart(3, '0');
 
       const shipment = {
         id: Date.now() + '-' + i + '-' + Math.random().toString(36).slice(2, 7),
@@ -4387,7 +4569,7 @@
         trackingNumber: '',
         notes: '',
         orderId: null,
-        items: [{ description: product, quantity }]
+        items: [{ description: product, quantity, code: articleCode, picked: 0 }]
       };
       shipments.push(shipment);
       created.push(shipment);
@@ -4441,8 +4623,8 @@
 
     const source = (order.items || []).filter(it => it && it.description);
     versandItems = source.length
-      ? source.map(it => ({ description: it.description, quantity: Math.max(1, parseInt(it.quantity, 10) || 1) }))
-      : [{ description: '', quantity: 1 }];
+      ? source.map(it => ({ description: it.description, quantity: Math.max(1, parseInt(it.quantity, 10) || 1), code: it.code || '' }))
+      : [{ description: '', quantity: 1, code: '' }];
     renderVersandItems();
 
     showVersandForm();
