@@ -4822,9 +4822,14 @@
     $('dashOpenCount').textContent = openOrders.length;
     $('dashOpenValue').textContent = fmtEUR(sum(openOrders)) + ' Auftragswert';
 
+    const openShipmentsValue = openShipments.reduce((s, sh) => {
+      const linkedOrder = orders.find(o => o.id === sh.orderId);
+      return s + (linkedOrder ? (parseFloat(linkedOrder.total) || 0) : 0);
+    }, 0);
+
     $('dashOpenShipmentsCount').textContent = openShipments.length;
     $('dashOpenShipmentsSub').textContent = openShipments.length
-      ? (openShipments.reduce((s, sh) => s + (sh.items || []).length, 0) + ' Position(en) in Kommissionierung')
+      ? (openShipments.reduce((s, sh) => s + (sh.items || []).length, 0) + ' Position(en) · ' + fmtEUR(openShipmentsValue) + ' Warenwert')
       : 'Noch keine Sendungen';
   }
 
