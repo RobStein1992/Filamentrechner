@@ -9,6 +9,10 @@ ausschließlich im Browser deiner Geräte (AES-256-GCM, Schlüssel aus deinem
 Zugangsschlüssel abgeleitet). Auf dem Worker liegt nur Geheimtext; der
 Zugangsschlüssel selbst wird nie übertragen.
 
+> **Lieber Schritt für Schritt?** Dieselbe Einrichtung ohne Fachbegriffe, mit
+> jedem Klick einzeln beschrieben, steht in
+> [`ANLEITUNG-iPhone-iPad.md`](../ANLEITUNG-iPhone-iPad.md).
+
 Kostenlos im Cloudflare-Gratis-Tarif (100.000 Aufrufe und 1 GB KV-Speicher pro
 Tag) – für einen Betrieb mit ein paar Geräten weit mehr als genug.
 

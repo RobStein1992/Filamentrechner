@@ -16,8 +16,9 @@ auf ein anderes Gerät dient die Sicherungsdatei unter
 ⚙️ Firmen-Einstellungen → Daten & Geräte lassen sich alle Geräte auf denselben
 Datenstand bringen. Auf Windows, Mac und Android schreibt die App dazu direkt
 in eine Datei im Cloud-Ordner; für iPhone und iPad gibt es den verschlüsselten
-Cloud-Tresor im eigenen Cloudflare-Worker
-([`worker/README-sync.md`](worker/README-sync.md)).
+Cloud-Tresor im eigenen Cloudflare-Worker. Schritt-für-Schritt-Anleitung dazu:
+[`ANLEITUNG-iPhone-iPad.md`](ANLEITUNG-iPhone-iPad.md) (technische Fassung:
+[`worker/README-sync.md`](worker/README-sync.md)).
 
 **Als Desktop-App** – speichert jede Änderung sofort in eine Datei. Liegt diese
 in einem Cloud-Ordner (iCloud Drive, OneDrive, Google Drive, Dropbox …),
