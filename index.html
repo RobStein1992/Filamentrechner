@@ -1450,9 +1450,11 @@
 <div class="invoice-overlay" id="versandLabelOverlay" style="z-index:1001;">
   <div class="invoice-toolbar">
     <button class="btn-secondary" id="btnCloseVersandLabel" type="button">✕ Schließen</button>
+    <button class="btn-secondary" id="btnNiimbotVersandLabel" type="button">📲 An NIIMBOT senden</button>
     <button class="btn-primary" id="btnPrintVersandLabel" type="button">🖨️ Label drucken</button>
   </div>
   <p class="note no-print" id="versandLabelSubline" style="text-align:center; margin:-8px auto 4px; color:var(--ink);">Lieferschein —</p>
+  <p class="note no-print" id="versandLabelNiimbotHint" style="text-align:center; margin:0 auto 4px; font-size:12px; color:var(--ink-soft);">„An NIIMBOT senden" öffnet die Teilen-Funktion deines iPhones – dort NIIMBOT auswählen. Ist das nicht möglich, wird das Label als Bild gespeichert, das sich in der NIIMBOT-App über „Galerie"/Bild-Import öffnen lässt.</p>
 
   <div class="label-preview-zoom versand-label-zoom">
     <div id="versandLabelSheet">
@@ -4424,7 +4426,10 @@
       .filter(Boolean).join('\n');
   }
 
+  let currentLabelShipment = null;
+
   function openVersandLabel(shipment){
+    currentLabelShipment = shipment;
     $('versandLabelSubline').textContent = 'Lieferschein ' + shipment.docNumber;
 
     $('vlLogoWatermark').src = activeLogoDataUrl;
@@ -4440,6 +4445,137 @@
   $('btnPrintVersandLabel').addEventListener('click', () => {
     $('dynamicPageStyle').textContent = '@page{ size: A4; margin: 0; }';
     window.print();
+  });
+
+  function loadImageAsync(src){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  function wrapTextLines(ctx, text, maxWidth){
+    if (!text) return [''];
+    const words = text.split(' ');
+    const lines = [];
+    let current = '';
+    for (const word of words){
+      const test = current ? current + ' ' + word : word;
+      if (ctx.measureText(test).width > maxWidth && current){
+        lines.push(current);
+        current = word;
+      } else {
+        current = test;
+      }
+    }
+    if (current) lines.push(current);
+    return lines;
+  }
+
+  async function buildVersandLabelCanvas(){
+    const pxPerMm = 8; // ~203 dpi, übliche Auflösung von Bluetooth-Labeldruckern
+    const w = 30 * pxPerMm, h = 50 * pxPerMm;
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, w, h);
+
+    if (activeLogoDataUrl){
+      try{
+        const img = await loadImageAsync(activeLogoDataUrl);
+        const inset = 3 * pxPerMm;
+        const boxW = w - inset * 2, boxH = h - inset * 2;
+        const scale = Math.min(boxW / img.width, boxH / img.height);
+        const dw = img.width * scale, dh = img.height * scale;
+        const dx = inset + (boxW - dw) / 2, dy = inset + (boxH - dh) / 2;
+        ctx.globalAlpha = 0.14;
+        ctx.drawImage(img, dx, dy, dw, dh);
+        ctx.globalAlpha = 1;
+      } catch(e){ /* Logo optional – Label funktioniert auch ohne */ }
+    }
+
+    const padX = 2 * pxPerMm, padY = 2.2 * pxPerMm;
+    const maxW = w - padX * 2;
+    let y = padY;
+    ctx.textBaseline = 'top';
+
+    ctx.fillStyle = '#9299A6';
+    ctx.font = `700 ${0.75 * pxPerMm}px 'IBM Plex Sans', sans-serif`;
+    ctx.fillText('VON', padX, y);
+    y += 0.75 * pxPerMm * 1.3 + 0.5 * pxPerMm;
+
+    ctx.fillStyle = '#3A3F4D';
+    ctx.font = `400 ${1.9 * pxPerMm}px 'IBM Plex Sans', sans-serif`;
+    const senderLines = ($('vlSender').textContent || '').split('\n').flatMap(l => wrapTextLines(ctx, l, maxW));
+    for (const line of senderLines){ ctx.fillText(line, padX, y); y += 1.9 * pxPerMm * 1.4; }
+
+    y += 2 * pxPerMm;
+
+    ctx.fillStyle = '#9299A6';
+    ctx.font = `700 ${0.75 * pxPerMm}px 'IBM Plex Sans', sans-serif`;
+    ctx.fillText('AN', padX, y);
+    y += 0.75 * pxPerMm * 1.3 + 0.5 * pxPerMm;
+
+    ctx.fillStyle = '#121212';
+    ctx.font = `700 ${2.9 * pxPerMm}px 'IBM Plex Sans', sans-serif`;
+    const nameLines = wrapTextLines(ctx, $('vlRecipientName').textContent || '—', maxW);
+    for (const line of nameLines){ ctx.fillText(line, padX, y); y += 2.9 * pxPerMm * 1.3; }
+    y += 1.6 * pxPerMm;
+
+    ctx.font = `400 ${2.6 * pxPerMm}px 'IBM Plex Sans', sans-serif`;
+    const addrLines = ($('vlRecipientAddress').textContent || '').split('\n').flatMap(l => wrapTextLines(ctx, l, maxW));
+    for (const line of addrLines){ ctx.fillText(line, padX, y); y += 2.6 * pxPerMm * 1.45; }
+
+    ctx.font = `400 ${1.7 * pxPerMm}px 'IBM Plex Sans', sans-serif`;
+    const footerLines = wrapTextLines(ctx, $('vlReference').textContent || '', maxW);
+    const footerLineHeight = 1.7 * pxPerMm * 1.3;
+    let footerY = h - padY - footerLines.length * footerLineHeight;
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = Math.max(1, 0.25 * pxPerMm);
+    ctx.beginPath();
+    ctx.moveTo(padX, footerY - 1.2 * pxPerMm);
+    ctx.lineTo(w - padX, footerY - 1.2 * pxPerMm);
+    ctx.stroke();
+    ctx.fillStyle = '#777';
+    for (const line of footerLines){ ctx.fillText(line, padX, footerY); footerY += footerLineHeight; }
+
+    return canvas;
+  }
+
+  $('btnNiimbotVersandLabel').addEventListener('click', async () => {
+    const btn = $('btnNiimbotVersandLabel');
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ Wird erstellt …';
+    try {
+      const canvas = await buildVersandLabelCanvas();
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const filename = 'Adresslabel-' + (currentLabelShipment ? currentLabelShipment.docNumber : 'Label') + '.png';
+      const file = new File([blob], filename, { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })){
+        try {
+          await navigator.share({ files: [file], title: 'Adresslabel', text: 'Adresslabel für NIIMBOT' });
+        } catch(shareErr){
+          if (shareErr.name !== 'AbortError') throw shareErr;
+        }
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+        alert('Teilen wird in diesem Browser nicht unterstützt. Das Label wurde als Bild gespeichert – in der NIIMBOT-App über „Galerie"/Bild-Import öffnen.');
+      }
+    } catch(err){
+      alert('Export für NIIMBOT ist fehlgeschlagen: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+    }
   });
 
   $('btnCloseVersandLabel').addEventListener('click', () => {
