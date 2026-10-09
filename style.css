@@ -1091,6 +1091,21 @@
     transition: color .15s ease, background .15s ease;
   }
   .picking-pick-all:hover{ color: var(--energy); background: rgba(255,255,255,0.06); }
+
+  /* Kurzer, auffälliger Hinweis am Scan-Feld, wenn ein gescannter Code
+     keiner offenen Position zugeordnet werden konnte. */
+  .scan-input-error{
+    animation: scanInputShake .4s ease;
+    border-color: var(--danger) !important;
+    box-shadow: 0 0 0 4px rgba(229,72,77,0.22) !important;
+  }
+  @keyframes scanInputShake{
+    0%, 100%{ transform: translateX(0); }
+    20%{ transform: translateX(-6px); }
+    40%{ transform: translateX(5px); }
+    60%{ transform: translateX(-3px); }
+    80%{ transform: translateX(2px); }
+  }
   .inv-recipient{ font-size:12.5px; line-height:1.55; white-space:pre-line; margin-bottom: 26px; min-height: 50px; }
   .inv-recipient .inv-recipient-tag{ font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:#8890A8; display:block; margin-bottom:5px; font-family:'IBM Plex Sans', sans-serif; }
   /* .inv-table wird sowohl im gedruckten Rechnungspapier (#invoiceSheet, immer hell)
