@@ -1012,6 +1012,24 @@
     outline:none; border-color: var(--filament); background:var(--card-focus); box-shadow: 0 0 0 4px var(--accent-glow);
   }
   input[type="color"]{ border-radius: var(--radius-sm); }
+
+  /* Automatisch vergebene Artikelnummer im Versand-Positionsfeld: wie ein
+     normales Eingabefeld, aber erkennbar nicht editierbar. */
+  .vs-article-no{
+    width:100%;
+    padding: 12px 14px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 13.5px;
+    font-weight:500;
+    letter-spacing:0.01em;
+    border: 1.5px dashed rgba(255,255,255,0.16);
+    border-radius: var(--radius-sm);
+    background: var(--card-2);
+    color: var(--ink-soft);
+    cursor: default;
+  }
+  .vs-article-no::placeholder{ color: var(--ink-soft); opacity:.65; }
+  .vs-article-no:focus{ outline:none; }
   .vat-row{ display:flex; align-items:center; gap:10px; }
   .vat-row input[type="checkbox"]{ width:17px; height:17px; accent-color: var(--filament); cursor:pointer; }
   .vat-row label{ font-size:13px; font-weight:500; color:var(--ink); cursor:pointer; margin:0; }

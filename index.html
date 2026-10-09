@@ -1321,9 +1321,10 @@
     <table class="inv-table">
       <thead>
         <tr>
-          <th style="width:10%;">Pos.</th>
+          <th style="width:8%;">Pos.</th>
           <th>Bezeichnung</th>
-          <th class="num" style="width:20%;">Menge</th>
+          <th style="width:18%;">Artikel-Nr.</th>
+          <th class="num" style="width:16%;">Menge</th>
         </tr>
       </thead>
       <tbody id="versSheetItems"></tbody>
@@ -1652,7 +1653,7 @@
     if (!ok) throw new Error('storage unavailable');
     markLocalChange();
   }
-  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders', 'lieferschein-worker-url'];
+  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders', 'lieferschein-worker-url', 'product-catalog'];
 
   // Zustand der Geräte-Synchronisierung (siehe weiter unten). Hier oben
   // deklariert, weil storageSet() darauf zugreift.
@@ -3738,6 +3739,50 @@
   loadStock();
   loadMovements();
 
+  /* ---------- Artikelstamm: feste Artikelnummer je Produktname ---------- */
+
+  const PRODUCT_CATALOG_KEY = 'product-catalog';
+  let productCatalog = [];   // { articleNo, description }
+
+  async function loadProductCatalog(){
+    try {
+      const value = await storageGet(PRODUCT_CATALOG_KEY);
+      if (value) productCatalog = JSON.parse(value);
+    } catch (err) {}
+  }
+
+  async function saveProductCatalog(){
+    try { await storageSet(PRODUCT_CATALOG_KEY, JSON.stringify(productCatalog)); } catch (err) {}
+  }
+
+  function nextProductArticleNumber(){
+    let max = 0;
+    productCatalog.forEach(p => {
+      const m = /^ART-(\d+)$/.exec(p.articleNo || '');
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    });
+    return 'ART-' + String(max + 1).padStart(4, '0');
+  }
+
+  // Liefert die Artikelnummer zu einer Produktbezeichnung. Gab es das
+  // Produkt schon einmal (gleicher Name, Groß-/Kleinschreibung egal), wird
+  // dessen Nummer wiederverwendet; sonst wird eine neue vergeben und
+  // dauerhaft gemerkt. So behält ein Artikel über mehrere Lieferscheine
+  // hinweg immer dieselbe Nummer.
+  function getOrCreateArticleNumber(description){
+    const name = (description || '').trim();
+    if (!name) return '';
+    const key = name.toLowerCase();
+
+    let entry = productCatalog.find(p => (p.description || '').trim().toLowerCase() === key);
+    if (!entry) {
+      entry = { articleNo: nextProductArticleNumber(), description: name };
+      productCatalog.push(entry);
+      saveProductCatalog();
+    }
+    return entry.articleNo;
+  }
+
   const SHIPMENTS_KEY = 'shipments';
   const ORDERS_KEY = 'orders';
   let shipments = [];
@@ -3751,15 +3796,21 @@
       const value = await storageGet(SHIPMENTS_KEY);
       if (value) shipments = JSON.parse(value);
     } catch (err) {}
-    // Ältere Lieferscheine kennen Artikel-Code und Picking-Fortschritt noch
-    // nicht – beim Laden ergänzen, statt die Kommissionierung daran scheitern
-    // zu lassen.
+    // Ältere Lieferscheine kennen Picking-Fortschritt noch nicht – beim Laden
+    // ergänzen, statt die Kommissionierung daran scheitern zu lassen. Fehlt
+    // eine Artikelnummer (z. B. noch aus der Zeit vor der automatischen
+    // Vergabe), wird sie jetzt genauso nachträglich aus dem Artikelstamm
+    // geholt bzw. neu angelegt – jeder Artikel soll eine Nummer haben. Die
+    // Migration wird direkt gespeichert, sonst würde sie bei jedem erneuten
+    // Laden unbemerkt wiederholt, ohne je im Datenbestand anzukommen.
+    let migrated = false;
     shipments.forEach(s => {
       (s.items || []).forEach(it => {
-        if (typeof it.code !== 'string') it.code = '';
-        if (typeof it.picked !== 'number' || it.picked < 0) it.picked = 0;
+        if (typeof it.picked !== 'number' || it.picked < 0) { it.picked = 0; migrated = true; }
+        if (!it.code) { it.code = getOrCreateArticleNumber(it.description); migrated = true; }
       });
     });
+    if (migrated) await saveShipments();
     renderVersandHistory();
   }
 
@@ -3786,8 +3837,8 @@
             <input type="number" class="vs-field" data-index="${i}" data-key="quantity" value="${item.quantity}" min="1" step="1">
           </div>
           <div class="field" style="margin-bottom:0; flex:1; min-width:160px;">
-            <label>Artikel-Code <span class="hint">optional, zum Kommissionieren</span></label>
-            <input type="text" class="vs-field" data-index="${i}" data-key="code" value="${escapeHtml(item.code || '')}" placeholder="z. B. Barcode/Artikelnummer">
+            <label>Artikelnummer <span class="hint">automatisch vergeben</span></label>
+            <input type="text" class="vs-article-no" data-index="${i}" value="${escapeHtml(item.code || '')}" placeholder="wird beim Verlassen des Feldes vergeben" readonly>
           </div>
         </div>
       </div>
@@ -3799,6 +3850,22 @@
         versandItems[i][input.dataset.key] = input.value;
       });
     });
+
+    // Artikelnummer automatisch vergeben, sobald eine Bezeichnung feststeht
+    // (beim Verlassen des Feldes, nicht bei jedem Tastendruck). Gab es das
+    // Produkt schon, wird dieselbe Nummer wie zuvor wiederverwendet.
+    $('versandItemsWrap').querySelectorAll('.vs-field[data-key="description"]').forEach(input => {
+      input.addEventListener('blur', () => {
+        const i = parseInt(input.dataset.index, 10);
+        const item = versandItems[i];
+        if (!item) return;
+        const articleNo = getOrCreateArticleNumber(item.description);
+        item.code = articleNo;
+        const display = $('versandItemsWrap').querySelector('.vs-article-no[data-index="' + i + '"]');
+        if (display) display.value = articleNo;
+      });
+    });
+
     $('versandItemsWrap').querySelectorAll('.vs-item-remove').forEach(btn => {
       btn.addEventListener('click', () => {
         versandItems.splice(parseInt(btn.dataset.index, 10), 1);
@@ -3891,6 +3958,7 @@
     let pos = 1;
     $('versSheetItems').innerHTML = shipment.items.map(item =>
       '<tr><td>' + (pos++) + '</td><td>' + escapeHtml(item.description || '—') + '</td>' +
+      '<td>' + escapeHtml(item.code || '—') + '</td>' +
       '<td class="num">' + escapeHtml(String(item.quantity || 0)) + '</td></tr>'
     ).join('');
 
@@ -3976,7 +4044,7 @@
       return '<tr class="' + (done ? 'picking-done' : '') + '">' +
         '<td>' + (i + 1) + '</td>' +
         '<td>' + escapeHtml(item.description || '—') +
-          (item.code ? '<span class="inv-item-sub">Code: ' + escapeHtml(item.code) + '</span>' : '') + '</td>' +
+          (item.code ? '<span class="inv-item-sub">Artikel-Nr. ' + escapeHtml(item.code) + '</span>' : '') + '</td>' +
         '<td class="num">' + (parseInt(item.quantity, 10) || 0) + '</td>' +
         '<td class="num">' + (done ? '✓' : remaining) + '</td>' +
       '</tr>';
@@ -4076,12 +4144,18 @@
 
   $('btnCreateVersand').addEventListener('click', () => {
     const validItems = versandItems
-      .map(it => ({
-        description: (it.description || '').trim(),
-        quantity: Math.max(1, parseInt(it.quantity, 10) || 0),
-        code: (it.code || '').trim(),
-        picked: 0
-      }))
+      .map(it => {
+        const description = (it.description || '').trim();
+        return {
+          description,
+          quantity: Math.max(1, parseInt(it.quantity, 10) || 0),
+          // Normalerweise schon beim Verlassen des Bezeichnungsfelds vergeben;
+          // hier zur Sicherheit nochmal auflösen (z. B. falls direkt per
+          // Enter abgeschickt wurde, ohne das Feld zu verlassen).
+          code: description ? getOrCreateArticleNumber(description) : '',
+          picked: 0
+        };
+      })
       .filter(it => it.description);
 
     if (validItems.length === 0) {
@@ -4556,7 +4630,7 @@
       const customer = TEST_SHIPMENT_CUSTOMERS[i % TEST_SHIPMENT_CUSTOMERS.length];
       const quantity = (i % 6) + 1;
       const date = addDaysISO(todayISO(), -(TEST_SHIPMENT_PRODUCTS.length - 1 - i));
-      const articleCode = 'ART-' + String(i + 1).padStart(3, '0');
+      const articleCode = getOrCreateArticleNumber(product);
 
       const shipment = {
         id: Date.now() + '-' + i + '-' + Math.random().toString(36).slice(2, 7),
@@ -4623,7 +4697,11 @@
 
     const source = (order.items || []).filter(it => it && it.description);
     versandItems = source.length
-      ? source.map(it => ({ description: it.description, quantity: Math.max(1, parseInt(it.quantity, 10) || 1), code: it.code || '' }))
+      ? source.map(it => ({
+          description: it.description,
+          quantity: Math.max(1, parseInt(it.quantity, 10) || 1),
+          code: getOrCreateArticleNumber(it.description)
+        }))
       : [{ description: '', quantity: 1, code: '' }];
     renderVersandItems();
 
@@ -4642,7 +4720,11 @@
 
   $('orderShowAll').addEventListener('change', renderOrders);
 
-  loadShipments();
+  // Erst den Artikelstamm laden, dann die Lieferscheine migrieren/anzeigen –
+  // sonst könnte die Nummern-Vergabe für ältere Positionen auf einem noch
+  // leeren Artikelstamm laufen und unnötig neue Nummern statt der
+  // vorhandenen vergeben.
+  loadProductCatalog().then(loadShipments);
   loadOrders();
 
   function parseCSV(text, delimiter){
