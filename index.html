@@ -5178,9 +5178,10 @@
     $(id).addEventListener('input', updateReturnAddressDisplay);
   });
 
-  // Positionen des gefundenen Lieferscheins/Auftrags einzeln an-/abwählbar
-  // machen; der Erstattungsbetrag wird anteilig nach Menge neu berechnet,
-  // da es keine Einzelpreise je Position gibt, nur einen Gesamtwert.
+  // Positionen des gefundenen Lieferscheins/Auftrags mit frei einstellbarer
+  // Rückgabemenge je Position; der Erstattungsbetrag wird anteilig nach
+  // zurückgegebener Menge neu berechnet, da es keine Einzelpreise je
+  // Position gibt, nur einen Gesamtwert je Beleg.
   function renderReturnPositions(){
     const items = currentReturnMatch ? currentReturnMatch.items : [];
     if (!items.length) {
@@ -5189,15 +5190,23 @@
       return;
     }
     $('returnPositionsField').style.display = 'block';
-    $('returnPositionsList').innerHTML = items.map((it, i) =>
-      '<label class="return-position-row">' +
-        '<input type="checkbox" class="return-position-checkbox" data-index="' + i + '" checked>' +
+    $('returnPositionsList').innerHTML = items.map((it, i) => {
+      const qty = parseInt(it.quantity, 10) || 1;
+      return '<div class="return-position-row">' +
         '<span class="return-position-desc">' + escapeHtml(it.description || '—') + '</span>' +
-        '<span class="return-position-qty">' + (parseInt(it.quantity, 10) || 1) + ' Stk.</span>' +
-      '</label>'
-    ).join('');
-    $('returnPositionsList').querySelectorAll('.return-position-checkbox').forEach(cb => {
-      cb.addEventListener('change', recalcReturnRefundFromPositions);
+        '<input type="number" class="return-position-qty-input" data-index="' + i + '" min="0" max="' + qty + '" step="1" value="' + qty + '">' +
+        '<span class="return-position-qty-max">/ ' + qty + ' Stk.</span>' +
+      '</div>';
+    }).join('');
+    $('returnPositionsList').querySelectorAll('.return-position-qty-input').forEach(input => {
+      input.addEventListener('input', () => {
+        const max = parseInt(input.max, 10) || 0;
+        let val = parseInt(input.value, 10);
+        if (isNaN(val) || val < 0) val = 0;
+        if (val > max) val = max;
+        input.value = val;
+        recalcReturnRefundFromPositions();
+      });
     });
     recalcReturnRefundFromPositions();
   }
@@ -5207,16 +5216,13 @@
     const totalQty = currentReturnMatch.items.reduce((s, it) => s + (parseInt(it.quantity, 10) || 1), 0);
     if (!totalQty) return;
 
-    let selectedQty = 0;
-    $('returnPositionsList').querySelectorAll('.return-position-checkbox').forEach(cb => {
-      if (cb.checked) {
-        const it = currentReturnMatch.items[parseInt(cb.dataset.index, 10)];
-        selectedQty += parseInt(it.quantity, 10) || 1;
-      }
+    let returnedQty = 0;
+    $('returnPositionsList').querySelectorAll('.return-position-qty-input').forEach(input => {
+      returnedQty += parseInt(input.value, 10) || 0;
     });
 
     const unitValue = currentReturnMatch.fullValue / totalQty;
-    $('returnRefund').value = (unitValue * selectedQty).toFixed(2);
+    $('returnRefund').value = (unitValue * returnedQty).toFixed(2);
   }
 
   $('returnLookup').addEventListener('input', () => {
@@ -5243,10 +5249,13 @@
     const type = $('returnType').value === 'reklamation' ? 'reklamation' : 'retoure';
 
     const selectedItems = currentReturnMatch
-      ? currentReturnMatch.items.filter((it, i) => {
-          const cb = $('returnPositionsList').querySelector('.return-position-checkbox[data-index="' + i + '"]');
-          return cb ? cb.checked : true;
-        })
+      ? currentReturnMatch.items
+          .map((it, i) => {
+            const input = $('returnPositionsList').querySelector('.return-position-qty-input[data-index="' + i + '"]');
+            const qty = input ? (parseInt(input.value, 10) || 0) : (parseInt(it.quantity, 10) || 1);
+            return qty > 0 ? Object.assign({}, it, { quantity: qty }) : null;
+          })
+          .filter(Boolean)
       : [];
 
     returnsList.push({

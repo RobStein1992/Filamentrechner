@@ -819,14 +819,25 @@
     align-items:center;
     gap:10px;
     padding: 8px 6px;
-    cursor:pointer;
     font-size:13.5px;
     border-bottom: 1px solid var(--paper-line);
   }
   .return-position-row:last-child{ border-bottom:none; }
-  .return-position-row input[type="checkbox"]{ width:auto; flex:none; accent-color: var(--filament); }
   .return-position-desc{ flex:1; color: var(--ink); }
-  .return-position-qty{ color: var(--ink-soft); font-size:12.5px; white-space:nowrap; font-family:'IBM Plex Mono', monospace; }
+  .return-positions-list input.return-position-qty-input{
+    width: 64px;
+    flex:none;
+    padding: 6px 8px;
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    border: 1px solid var(--field-border);
+    border-radius: 8px;
+    background: var(--card-2);
+    color: var(--ink);
+  }
+  .return-positions-list input.return-position-qty-input:focus{ outline:none; border-color: var(--filament); }
+  .return-position-qty-max{ color: var(--ink-soft); font-size:12.5px; white-space:nowrap; font-family:'IBM Plex Mono', monospace; }
 
   .input-row{ position:relative; display:flex; align-items:center; }
   .input-row.compact{ max-width: 148px; }
