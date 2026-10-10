@@ -210,7 +210,17 @@
     text-align:left;
     border-radius: var(--radius-sm);
   }
+  .side-nav .side-nav-refresh{
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
   @media(max-width: 760px){
+    .side-nav .side-nav-refresh{
+      margin-top: 0;
+      padding-top: 12px;
+      border-top: none;
+    }
     .app-shell{ flex-direction: column; gap:0; }
     .side-nav{
       position: static;

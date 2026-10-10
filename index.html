@@ -36,6 +36,7 @@
   <button type="button" class="page-switch-btn" id="btnPageBooking" data-page="booking">📦 Filament buchen</button>
   <button type="button" class="page-switch-btn" id="btnPageVersand" data-page="shipping">🚚 Versand</button>
   <button type="button" class="page-switch-btn" id="btnPageReturns" data-page="returns">↩️ Retouren/Reklamationen</button>
+  <button type="button" class="page-switch-btn side-nav-refresh" id="btnRefreshPage">🔄 Aktualisieren</button>
 </nav>
 <div class="app-main">
 <div class="app-toolbar" id="appToolbar">
@@ -6019,6 +6020,7 @@
   $('btnPageBooking').addEventListener('click', () => switchPage('booking'));
   $('btnPageVersand').addEventListener('click', () => switchPage('shipping'));
   $('btnPageReturns').addEventListener('click', () => switchPage('returns'));
+  $('btnRefreshPage').addEventListener('click', () => window.location.reload());
 
   let currentDetailPositionId = null;
 
