@@ -534,6 +534,12 @@
     background: rgba(255,255,255,0.05);
     border-color: var(--paper-line);
   }
+  .order-badge.is-action{
+    color: var(--margin-c);
+    background: rgba(224,167,46,0.14);
+    border-color: rgba(224,167,46,0.35);
+    margin-left: 6px;
+  }
   .order-actions{
     white-space: nowrap;
   }
