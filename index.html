@@ -36,6 +36,7 @@
   <button type="button" class="page-switch-btn" id="btnPageBooking" data-page="booking">📦 Filament buchen</button>
   <button type="button" class="page-switch-btn" id="btnPageVersand" data-page="shipping">🚚 Versand</button>
   <button type="button" class="page-switch-btn" id="btnPageReturns" data-page="returns">↩️ Retouren/Reklamationen</button>
+  <button type="button" class="page-switch-btn" id="btnPageArticles" data-page="articles">🏷️ Artikel</button>
   <button type="button" class="page-switch-btn side-nav-refresh" id="btnRefreshPage">🔄 Aktualisieren</button>
 </nav>
 <div class="app-main">
@@ -1176,6 +1177,57 @@
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
       <button class="btn-primary" id="btnCreateReturn" type="button">📥 Erfassen</button>
       <button class="btn-secondary" id="btnCancelReturn" type="button">✕ Abbrechen</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="wrap" id="pageArticles" style="display:none;">
+
+  <header>
+    <div class="eyebrow"><span class="dot"></span><span>ARTIKELSTAMM · VERSAND</span></div>
+    <h1>Artikel</h1>
+    <p>Alle Artikel, die in Lieferscheinen zum Versand verwendet werden, mit ihrem aktuellen Lagerbestand.</p>
+  </header>
+
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--energy)"></span><span>Artikel</span></h2>
+    </div>
+
+    <div id="articlesListWrap" style="display:none;">
+      <table class="inv-table" style="margin-bottom:0;">
+        <thead>
+          <tr>
+            <th>Artikelnummer</th>
+            <th>Bezeichnung</th>
+            <th class="num">Bestand</th>
+          </tr>
+        </thead>
+        <tbody id="articlesListBody"></tbody>
+      </table>
+    </div>
+    <p class="note" id="articlesEmptyNote">Noch keine Artikel vorhanden. Artikel werden automatisch angelegt, sobald eine Position in einem Lieferschein erfasst wird, oder lassen sich unten manuell hinzufügen.</p>
+
+    <button class="btn-secondary" id="btnNewArticle" type="button" style="margin-top:14px;">+ Neuen Artikel anlegen</button>
+  </div>
+
+  <div class="card" id="articleFormCard" style="max-width: 500px; margin: 16px auto 0; display:none;">
+    <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--filament)"></span><span>Artikel anlegen</span></h2>
+    </div>
+    <div class="field">
+      <label for="articleDescription">Bezeichnung</label>
+      <input type="text" id="articleDescription" placeholder="z. B. Gehäusedeckel rund" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="articleInitialStock">Anfangsbestand <span class="hint">optional</span></label>
+      <input type="number" id="articleInitialStock" placeholder="0" min="0" step="1" inputmode="numeric">
+    </div>
+    <p class="note" id="articleFormStatus"></p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn-primary" id="btnCreateArticle" type="button">💾 Anlegen</button>
+      <button class="btn-secondary" id="btnCancelArticle" type="button">✕ Abbrechen</button>
     </div>
   </div>
 
@@ -4013,6 +4065,7 @@
       const value = await storageGet(PRODUCT_CATALOG_KEY);
       if (value) productCatalog = JSON.parse(value);
     } catch (err) {}
+    renderArticles();
   }
 
   async function saveProductCatalog(){
@@ -4040,11 +4093,86 @@
 
     let entry = productCatalog.find(p => (p.description || '').trim().toLowerCase() === key);
     if (!entry) {
-      entry = { articleNo: nextProductArticleNumber(), description: name };
+      entry = { articleNo: nextProductArticleNumber(), description: name, stock: 0 };
       productCatalog.push(entry);
       saveProductCatalog();
+      renderArticles();
     }
     return entry.articleNo;
+  }
+
+  /* ---------- Artikel-Seite: Artikelstamm mit Lagerbestand ---------- */
+
+  function renderArticles(){
+    const list = [...productCatalog].sort((a, b) => (a.articleNo || '').localeCompare(b.articleNo || ''));
+
+    if (!list.length) {
+      $('articlesListWrap').style.display = 'none';
+      $('articlesEmptyNote').style.display = 'block';
+      $('articlesListBody').innerHTML = '';
+      return;
+    }
+    $('articlesListWrap').style.display = 'block';
+    $('articlesEmptyNote').style.display = 'none';
+
+    $('articlesListBody').innerHTML = list.map(p =>
+      '<tr>' +
+        '<td>' + escapeHtml(p.articleNo || '—') + '</td>' +
+        '<td>' + escapeHtml(p.description || '—') + '</td>' +
+        '<td class="num"><input type="number" class="article-stock-input" data-articleno="' + escapeHtml(p.articleNo || '') + '" min="0" step="1" value="' + (parseInt(p.stock, 10) || 0) + '"></td>' +
+      '</tr>'
+    ).join('');
+
+    $('articlesListBody').querySelectorAll('.article-stock-input').forEach(input => {
+      input.addEventListener('change', () => {
+        const entry = productCatalog.find(p => p.articleNo === input.dataset.articleno);
+        if (!entry) return;
+        let val = parseInt(input.value, 10);
+        if (isNaN(val) || val < 0) val = 0;
+        input.value = val;
+        entry.stock = val;
+        saveProductCatalog();
+      });
+    });
+  }
+
+  $('btnNewArticle').addEventListener('click', () => {
+    $('articleDescription').value = '';
+    $('articleInitialStock').value = '';
+    $('articleFormStatus').textContent = '';
+    $('articleFormCard').style.display = 'block';
+  });
+  $('btnCancelArticle').addEventListener('click', () => {
+    $('articleFormCard').style.display = 'none';
+  });
+  $('btnCreateArticle').addEventListener('click', () => {
+    const description = $('articleDescription').value.trim();
+    if (!description) {
+      $('articleFormStatus').textContent = '✕ Bitte eine Bezeichnung angeben.';
+      $('articleFormStatus').style.color = 'var(--danger)';
+      return;
+    }
+    const articleNo = getOrCreateArticleNumber(description);
+    const entry = productCatalog.find(p => p.articleNo === articleNo);
+    const initialStock = parseInt($('articleInitialStock').value, 10);
+    if (entry && !isNaN(initialStock) && initialStock > 0) entry.stock = (entry.stock || 0) + initialStock;
+    saveProductCatalog();
+    renderArticles();
+    $('articleFormCard').style.display = 'none';
+  });
+
+  // Wird aufgerufen, wenn eine Retoure mit "Wieder Einlagerung" abgeschlossen
+  // wird: die zurückgegebenen Positionen landen wieder im Artikel-Bestand.
+  function restockReturnItems(entry){
+    (entry.items || []).forEach(it => {
+      const qty = parseInt(it.quantity, 10) || 0;
+      if (!it.description || qty <= 0) return;
+      const articleNo = getOrCreateArticleNumber(it.description);
+      const catalogEntry = productCatalog.find(p => p.articleNo === articleNo);
+      if (catalogEntry) catalogEntry.stock = (parseInt(catalogEntry.stock, 10) || 0) + qty;
+    });
+    saveProductCatalog();
+    renderArticles();
   }
 
   /* ---------- Lieferadresse im DIN-5008-/DHL-Format ---------- */
@@ -5036,6 +5164,7 @@
         if (!entry) return;
         entry.resolved = true;
         entry.resolvedAt = new Date().toISOString();
+        if (entry.nextAction === 'restock') restockReturnItems(entry);
         saveReturns();
         renderReturns();
       });
@@ -6119,6 +6248,7 @@
     $('pageBooking').style.display = page === 'booking' ? '' : 'none';
     $('pageVersand').style.display = page === 'shipping' ? '' : 'none';
     $('pageReturns').style.display = page === 'returns' ? '' : 'none';
+    $('pageArticles').style.display = page === 'articles' ? '' : 'none';
     $('pagePositionDetail').style.display = 'none';
     $('modeBarRow').style.display = page === 'calculator' ? '' : 'none';
     $('sideNav').style.display = '';
@@ -6128,7 +6258,9 @@
     $('btnPageBooking').classList.toggle('active', page === 'booking');
     $('btnPageVersand').classList.toggle('active', page === 'shipping');
     $('btnPageReturns').classList.toggle('active', page === 'returns');
+    $('btnPageArticles').classList.toggle('active', page === 'articles');
     if (page === 'dashboard') renderDashboard();
+    if (page === 'articles') renderArticles();
     window.scrollTo(0, 0);
   }
   $('btnPageDashboard').addEventListener('click', () => switchPage('dashboard'));
@@ -6136,6 +6268,7 @@
   $('btnPageOrders').addEventListener('click', () => switchPage('orders'));
   $('btnPageBooking').addEventListener('click', () => switchPage('booking'));
   $('btnPageVersand').addEventListener('click', () => switchPage('shipping'));
+  $('btnPageArticles').addEventListener('click', () => switchPage('articles'));
   $('btnPageReturns').addEventListener('click', () => switchPage('returns'));
   $('btnRefreshPage').addEventListener('click', () => window.location.reload());
 
