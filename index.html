@@ -1136,18 +1136,6 @@
       <input type="text" id="returnCustomerName" placeholder="Max Mustermann / Firma GmbH" autocomplete="off">
     </div>
     <div class="field">
-      <label for="returnReference">Bezug <span class="hint">optional</span></label>
-      <input type="text" id="returnReference" placeholder="z. B. Lieferschein- oder Rechnungsnummer" autocomplete="off">
-    </div>
-    <div class="field">
-      <label for="returnReason">Grund / Beschreibung</label>
-      <textarea id="returnReason" placeholder="z. B. Teil beim Transport beschädigt"></textarea>
-    </div>
-    <div class="field">
-      <label for="returnRefund">Erstattungsbetrag (€) <span class="hint">optional</span></label>
-      <input type="number" id="returnRefund" placeholder="0,00" min="0" step="0.01" inputmode="decimal">
-    </div>
-    <div class="field">
       <label for="returnNextAction">Weiteres Vorgehen <span class="hint">optional</span></label>
       <select id="returnNextAction">
         <option value="">— bitte wählen —</option>
@@ -1155,6 +1143,33 @@
         <option value="replacement">Ersatzlieferung</option>
         <option value="restock">Wieder Einlagerung</option>
       </select>
+    </div>
+    <div class="field">
+      <label>Adresse</label>
+      <div id="returnAddressDisplay" style="white-space:pre-line; font-size:13.5px; color:var(--ink); padding:11px 14px; border:1px solid var(--field-border); border-radius:var(--radius-sm); background:rgba(255,255,255,0.03);">—</div>
+      <div id="returnAddressEditGroup" style="display:none;">
+        <input type="text" id="returnAddressStreet" placeholder="Straße und Hausnummer" autocomplete="off" style="margin-bottom:10px;">
+        <div class="subgrid">
+          <input type="text" id="returnAddressZip" placeholder="PLZ" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" autocomplete="off">
+          <input type="text" id="returnAddressCity" placeholder="Ort" autocomplete="off">
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label for="returnReference">Bezug <span class="hint">optional</span></label>
+      <input type="text" id="returnReference" placeholder="z. B. Lieferschein- oder Rechnungsnummer" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="returnReason">Grund / Beschreibung</label>
+      <textarea id="returnReason" placeholder="z. B. Teil beim Transport beschädigt"></textarea>
+    </div>
+    <div class="field" id="returnPositionsField" style="display:none;">
+      <label>Positionen <span class="hint">nur ausgewählte werden retourniert</span></label>
+      <div id="returnPositionsList" class="return-positions-list"></div>
+    </div>
+    <div class="field">
+      <label for="returnRefund">Erstattungsbetrag (€) <span class="hint">optional</span></label>
+      <input type="number" id="returnRefund" placeholder="0,00" min="0" step="0.01" inputmode="decimal">
     </div>
 
     <p class="note" id="returnStatus"></p>
@@ -4943,6 +4958,7 @@
   /* ---------- Retouren / Reklamationen ---------- */
   const RETURNS_KEY = 'returns';
   let returnsList = [];
+  let currentReturnMatch = null;
 
   async function loadReturns(){
     try {
@@ -5047,6 +5063,13 @@
     $('returnRefund').value = '';
     $('returnNextAction').value = '';
     $('returnStatus').textContent = '';
+    $('returnAddressStreet').value = '';
+    $('returnAddressZip').value = '';
+    $('returnAddressCity').value = '';
+    currentReturnMatch = null;
+    updateReturnAddressDisplay();
+    syncReturnAddressMode();
+    renderReturnPositions();
     $('returnFormCard').style.display = 'block';
     $('returnFormCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
     $('returnLookup').focus();
@@ -5076,7 +5099,9 @@
           customerName: s.customerName,
           date: s.date,
           reference: s.docNumber,
-          refundAmount
+          refundAmount,
+          items: s.items || [],
+          address: { street: s.customerStreet || '', zip: s.customerZip || '', city: s.customerCity || '' }
         });
       }
     });
@@ -5088,7 +5113,9 @@
           customerName: o.customerName,
           date: o.date,
           reference: o.docNumber,
-          refundAmount: o.total || 0
+          refundAmount: o.total || 0,
+          items: o.items || [],
+          address: splitLegacyAddress(o.customerAddress)
         });
       }
     });
@@ -5120,9 +5147,76 @@
   function applyReturnLookupMatch(match){
     $('returnCustomerName').value = match.customerName || '';
     $('returnReference').value = match.docNumber || '';
-    $('returnRefund').value = match.refundAmount || 0;
     $('returnLookup').value = match.docNumber || match.customerName || '';
     hideReturnLookupResults();
+
+    const address = match.address || { street: '', zip: '', city: '' };
+    $('returnAddressStreet').value = address.street || '';
+    $('returnAddressZip').value = address.zip || '';
+    $('returnAddressCity').value = address.city || '';
+    updateReturnAddressDisplay();
+
+    currentReturnMatch = {
+      fullValue: match.refundAmount || 0,
+      items: (match.items || []).filter(it => it && it.description)
+    };
+    renderReturnPositions();
+  }
+
+  function updateReturnAddressDisplay(){
+    const text = formatShippingAddress($('returnAddressStreet').value, $('returnAddressZip').value, $('returnAddressCity').value);
+    $('returnAddressDisplay').textContent = text || '—';
+  }
+
+  function syncReturnAddressMode(){
+    const editing = $('returnNextAction').value === 'address';
+    $('returnAddressDisplay').style.display = editing ? 'none' : 'block';
+    $('returnAddressEditGroup').style.display = editing ? 'block' : 'none';
+  }
+  $('returnNextAction').addEventListener('change', syncReturnAddressMode);
+  ['returnAddressStreet', 'returnAddressZip', 'returnAddressCity'].forEach(id => {
+    $(id).addEventListener('input', updateReturnAddressDisplay);
+  });
+
+  // Positionen des gefundenen Lieferscheins/Auftrags einzeln an-/abwählbar
+  // machen; der Erstattungsbetrag wird anteilig nach Menge neu berechnet,
+  // da es keine Einzelpreise je Position gibt, nur einen Gesamtwert.
+  function renderReturnPositions(){
+    const items = currentReturnMatch ? currentReturnMatch.items : [];
+    if (!items.length) {
+      $('returnPositionsField').style.display = 'none';
+      $('returnPositionsList').innerHTML = '';
+      return;
+    }
+    $('returnPositionsField').style.display = 'block';
+    $('returnPositionsList').innerHTML = items.map((it, i) =>
+      '<label class="return-position-row">' +
+        '<input type="checkbox" class="return-position-checkbox" data-index="' + i + '" checked>' +
+        '<span class="return-position-desc">' + escapeHtml(it.description || '—') + '</span>' +
+        '<span class="return-position-qty">' + (parseInt(it.quantity, 10) || 1) + ' Stk.</span>' +
+      '</label>'
+    ).join('');
+    $('returnPositionsList').querySelectorAll('.return-position-checkbox').forEach(cb => {
+      cb.addEventListener('change', recalcReturnRefundFromPositions);
+    });
+    recalcReturnRefundFromPositions();
+  }
+
+  function recalcReturnRefundFromPositions(){
+    if (!currentReturnMatch || !currentReturnMatch.items.length) return;
+    const totalQty = currentReturnMatch.items.reduce((s, it) => s + (parseInt(it.quantity, 10) || 1), 0);
+    if (!totalQty) return;
+
+    let selectedQty = 0;
+    $('returnPositionsList').querySelectorAll('.return-position-checkbox').forEach(cb => {
+      if (cb.checked) {
+        const it = currentReturnMatch.items[parseInt(cb.dataset.index, 10)];
+        selectedQty += parseInt(it.quantity, 10) || 1;
+      }
+    });
+
+    const unitValue = currentReturnMatch.fullValue / totalQty;
+    $('returnRefund').value = (unitValue * selectedQty).toFixed(2);
   }
 
   $('returnLookup').addEventListener('input', () => {
@@ -5147,6 +5241,14 @@
     }
 
     const type = $('returnType').value === 'reklamation' ? 'reklamation' : 'retoure';
+
+    const selectedItems = currentReturnMatch
+      ? currentReturnMatch.items.filter((it, i) => {
+          const cb = $('returnPositionsList').querySelector('.return-position-checkbox[data-index="' + i + '"]');
+          return cb ? cb.checked : true;
+        })
+      : [];
+
     returnsList.push({
       id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
       docNumber: nextReturnNumber(type),
@@ -5157,6 +5259,12 @@
       reason,
       refundAmount: parseFloat($('returnRefund').value) || 0,
       nextAction: $('returnNextAction').value || '',
+      items: selectedItems,
+      address: {
+        street: $('returnAddressStreet').value.trim(),
+        zip: $('returnAddressZip').value.trim(),
+        city: $('returnAddressCity').value.trim()
+      },
       resolved: false,
       resolvedAt: null
     });
