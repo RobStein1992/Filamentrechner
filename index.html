@@ -5094,7 +5094,7 @@
   function applyReturnLookupMatch(match){
     $('returnCustomerName').value = match.customerName || '';
     $('returnReference').value = match.docNumber || '';
-    if (match.refundAmount) $('returnRefund').value = match.refundAmount;
+    $('returnRefund').value = match.refundAmount || 0;
     $('returnLookup').value = match.docNumber || match.customerName || '';
     hideReturnLookupResults();
   }
