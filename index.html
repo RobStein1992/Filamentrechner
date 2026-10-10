@@ -1110,6 +1110,12 @@
       <h2 class="card-title"><span class="swatch" style="background:var(--energy)"></span><span>Retoure/Reklamation erfassen</span></h2>
     </div>
 
+    <div class="field" style="position:relative;">
+      <label for="returnLookup">Lieferschein-Nr. oder Kundenname <span class="hint">lädt passenden Auftrag automatisch</span></label>
+      <input type="text" id="returnLookup" placeholder="z. B. LS-20261009-001 oder Müller GmbH" autocomplete="off">
+      <div id="returnLookupResults" class="autocomplete-results"></div>
+    </div>
+
     <div class="subgrid">
       <div class="field">
         <label for="returnType">Art</label>
@@ -5010,6 +5016,8 @@
   $('returnsShowAll').addEventListener('change', renderReturns);
 
   function openReturnForm(){
+    $('returnLookup').value = '';
+    hideReturnLookupResults();
     $('returnType').value = 'retoure';
     $('returnDate').value = todayISO();
     $('returnCustomerName').value = '';
@@ -5019,11 +5027,88 @@
     $('returnStatus').textContent = '';
     $('returnFormCard').style.display = 'block';
     $('returnFormCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('returnLookup').focus();
   }
 
   $('btnNewReturn').addEventListener('click', openReturnForm);
   $('btnCancelReturn').addEventListener('click', () => {
     $('returnFormCard').style.display = 'none';
+  });
+
+  // Live-Suche nach Lieferschein-Nr. oder Kundenname, die beim Tippen schon
+  // passende Vorgänge (Lieferschein oder Auftrag/Rechnung) vorschlägt.
+  function searchReturnLookup(query){
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    const results = [];
+
+    shipments.forEach(s => {
+      if ((s.docNumber || '').toLowerCase().includes(q) || (s.customerName || '').toLowerCase().includes(q)) {
+        results.push({
+          kind: 'Lieferschein',
+          docNumber: s.docNumber,
+          customerName: s.customerName,
+          date: s.date,
+          reference: s.docNumber,
+          refundAmount: s.value || 0
+        });
+      }
+    });
+    orders.forEach(o => {
+      if ((o.docNumber || '').toLowerCase().includes(q) || (o.customerName || '').toLowerCase().includes(q)) {
+        results.push({
+          kind: orderTypeLabel(o),
+          docNumber: o.docNumber,
+          customerName: o.customerName,
+          date: o.date,
+          reference: o.docNumber,
+          refundAmount: o.total || 0
+        });
+      }
+    });
+
+    return results.slice(0, 8);
+  }
+
+  function hideReturnLookupResults(){
+    $('returnLookupResults').style.display = 'none';
+    $('returnLookupResults').innerHTML = '';
+  }
+
+  function renderReturnLookupResults(matches){
+    if (!matches.length) { hideReturnLookupResults(); return; }
+
+    $('returnLookupResults').innerHTML = matches.map((m, i) =>
+      '<div class="autocomplete-item" data-index="' + i + '">' +
+        '<strong>' + escapeHtml(m.customerName || 'ohne Kunde') + '<span class="ac-tag">' + escapeHtml(m.kind) + '</span></strong>' +
+        '<span>' + escapeHtml(m.docNumber || '—') + (m.date ? ' · ' + fmtDateShortDE(m.date) : '') + '</span>' +
+      '</div>'
+    ).join('');
+    $('returnLookupResults').style.display = 'block';
+
+    $('returnLookupResults').querySelectorAll('.autocomplete-item').forEach(item => {
+      item.addEventListener('click', () => applyReturnLookupMatch(matches[parseInt(item.dataset.index, 10)]));
+    });
+  }
+
+  function applyReturnLookupMatch(match){
+    $('returnCustomerName').value = match.customerName || '';
+    $('returnReference').value = match.docNumber || '';
+    if (match.refundAmount) $('returnRefund').value = match.refundAmount;
+    $('returnLookup').value = match.docNumber || match.customerName || '';
+    hideReturnLookupResults();
+  }
+
+  $('returnLookup').addEventListener('input', () => {
+    renderReturnLookupResults(searchReturnLookup($('returnLookup').value));
+  });
+  $('returnLookup').addEventListener('focus', () => {
+    if ($('returnLookup').value.trim()) renderReturnLookupResults(searchReturnLookup($('returnLookup').value));
+  });
+  document.addEventListener('click', (e) => {
+    if (e.target !== $('returnLookup') && !$('returnLookupResults').contains(e.target)) {
+      hideReturnLookupResults();
+    }
   });
 
   $('btnCreateReturn').addEventListener('click', () => {
