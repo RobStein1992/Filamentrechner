@@ -837,6 +837,19 @@
     color: var(--ink);
   }
   .return-positions-list input.return-position-qty-input:focus{ outline:none; border-color: var(--filament); }
+
+  #articlesListBody input.article-stock-input{
+    width: 80px;
+    padding: 6px 8px;
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    border: 1px solid var(--field-border);
+    border-radius: 8px;
+    background: var(--card-2);
+    color: var(--ink);
+  }
+  #articlesListBody input.article-stock-input:focus{ outline:none; border-color: var(--filament); }
   .return-position-qty-max{ color: var(--ink-soft); font-size:12.5px; white-space:nowrap; font-family:'IBM Plex Mono', monospace; }
 
   .input-row{ position:relative; display:flex; align-items:center; }
