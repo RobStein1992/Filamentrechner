@@ -24,6 +24,17 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<script>
+  // So fr&uuml;h wie m&ouml;glich anwenden, damit die Seite nicht erst hell
+  // aufblitzt, bevor auf Dunkel umgeschaltet wird.
+  (function(){
+    try {
+      if (window.localStorage.getItem('druckrechner:theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+      }
+    } catch (err) {}
+  })();
+</script>
 <style id="dynamicPageStyle">@page{ size: A4; margin: 0; }</style>
 <div class="page-bg"></div>
 <div class="app-shell">
@@ -707,7 +718,7 @@
       </div>
       <div class="field">
         <label for="bookColorHex">Farbmuster</label>
-        <input type="color" id="bookColorHex" value="#1b2430" style="width:100%; height:44px; padding:4px; border:1.5px solid rgba(0,0,0,0.18); border-radius:4px; cursor:pointer;">
+        <input type="color" id="bookColorHex" value="#1b2430" style="width:100%; height:44px; padding:4px; border:1.5px solid var(--ov18); border-radius:4px; cursor:pointer;">
       </div>
     </div>
 
@@ -1145,7 +1156,7 @@
     </div>
     <div class="field">
       <label>Adresse</label>
-      <div id="returnAddressDisplay" style="white-space:pre-line; font-size:13.5px; color:var(--ink); padding:11px 14px; border:1px solid var(--field-border); border-radius:var(--radius-sm); background:rgba(0,0,0,0.03);">—</div>
+      <div id="returnAddressDisplay" style="white-space:pre-line; font-size:13.5px; color:var(--ink); padding:11px 14px; border:1px solid var(--field-border); border-radius:var(--radius-sm); background:var(--ov03);">—</div>
       <div id="returnAddressEditGroup" style="display:none;">
         <input type="text" id="returnAddressStreet" placeholder="Straße und Hausnummer" autocomplete="off" style="margin-bottom:10px;">
         <div class="subgrid">
@@ -1747,8 +1758,17 @@
 
     <div class="page-switch-bar" style="max-width:100%; margin:18px 0 20px;">
       <button type="button" class="page-switch-btn settings-tab-btn active" id="btnSettingsTabCompany" data-tab="company">🏢 Firmendaten</button>
+      <button type="button" class="page-switch-btn settings-tab-btn" id="btnSettingsTabAppearance" data-tab="appearance">🎨 Darstellung</button>
       <button type="button" class="page-switch-btn settings-tab-btn" id="btnSettingsTabLocations" data-tab="locations">📦 Lagerplätze</button>
       <button type="button" class="page-switch-btn settings-tab-btn" id="btnSettingsTabData" data-tab="data">💾 Daten &amp; Geräte</button>
+    </div>
+
+    <div id="settingsTabAppearance" style="display:none;">
+      <p class="note" style="margin-top:0;">Legt fest, ob die Anwendung mit hellem oder dunklem Hintergrund angezeigt wird. Rechnungen, Lieferscheine und Etiketten werden unabh&auml;ngig davon immer auf wei&szlig;em Papier gedruckt.</p>
+      <div class="mode-toggle" id="themeToggle" role="tablist" style="max-width:320px;">
+        <button type="button" class="mode-toggle-btn" id="themeBtnLight" data-theme="light" role="tab" aria-selected="false">☀️ Hell</button>
+        <button type="button" class="mode-toggle-btn" id="themeBtnDark" data-theme="dark" role="tab" aria-selected="false">🌙 Dunkel</button>
+      </div>
     </div>
 
     <div id="settingsTabCompany">
@@ -1778,7 +1798,7 @@
       <div class="field" style="margin-top:8px;">
         <label>Firmenlogo</label>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-          <img id="setLogoPreview" src="" alt="Logo-Vorschau" style="width:80px;height:auto;border:1px solid rgba(0,0,0,0.14);border-radius:4px;padding:4px;background:#fff;">
+          <img id="setLogoPreview" src="" alt="Logo-Vorschau" style="width:80px;height:auto;border:1px solid var(--ov14);border-radius:4px;padding:4px;background:#fff;">
           <div style="display:flex;flex-direction:column;gap:8px;">
             <input type="file" id="setLogoUpload" accept="image/*" style="font-size:12.5px;">
             <button class="btn-secondary" id="btnResetLogo" type="button" style="margin-top:0;width:auto;padding:8px 12px;">Standard-Logo verwenden</button>
@@ -1797,7 +1817,7 @@
         </div>
       </div>
       <div id="locationListWrap" style="margin-top:14px; display:none;">
-        <ul id="locationList" style="list-style:none; padding:0; margin:0; border-top:1px solid rgba(0,0,0,0.14);"></ul>
+        <ul id="locationList" style="list-style:none; padding:0; margin:0; border-top:1px solid var(--ov14);"></ul>
       </div>
       <p class="note" id="locationEmptyNote" style="margin-top:14px;">Noch keine Lagerplätze angelegt.</p>
     </div>
@@ -2754,7 +2774,7 @@
     $('locationListWrap').style.display = 'block';
     $('locationEmptyNote').style.display = 'none';
     list.innerHTML = storageLocations.map((loc, i) => (
-      '<li style="display:flex; justify-content:space-between; align-items:center; padding:10px 4px; border-bottom:1px solid rgba(0,0,0,0.14);">' +
+      '<li style="display:flex; justify-content:space-between; align-items:center; padding:10px 4px; border-bottom:1px solid var(--ov14);">' +
         '<span style="font-family:\'72\',\'72override\',Arial,Helvetica,sans-serif; font-size:13.5px; color:var(--ink);">' + escapeHtml(loc) + '</span>' +
         '<button type="button" class="location-delete" data-index="' + i + '" title="Lagerplatz löschen" style="border:none;background:none;color:var(--ink-soft);cursor:pointer;font-size:15px;">✕</button>' +
       '</li>'
@@ -2807,16 +2827,45 @@
 
   function switchSettingsTab(tab){
     $('settingsTabCompany').style.display = tab === 'company' ? '' : 'none';
+    $('settingsTabAppearance').style.display = tab === 'appearance' ? '' : 'none';
     $('settingsTabLocations').style.display = tab === 'locations' ? '' : 'none';
     $('settingsTabData').style.display = tab === 'data' ? '' : 'none';
     $('btnSettingsTabCompany').classList.toggle('active', tab === 'company');
+    $('btnSettingsTabAppearance').classList.toggle('active', tab === 'appearance');
     $('btnSettingsTabLocations').classList.toggle('active', tab === 'locations');
     $('btnSettingsTabData').classList.toggle('active', tab === 'data');
     if (tab === 'data') { refreshSyncTimestamps(); }
   }
   $('btnSettingsTabCompany').addEventListener('click', () => switchSettingsTab('company'));
+  $('btnSettingsTabAppearance').addEventListener('click', () => switchSettingsTab('appearance'));
   $('btnSettingsTabLocations').addEventListener('click', () => switchSettingsTab('locations'));
   $('btnSettingsTabData').addEventListener('click', () => switchSettingsTab('data'));
+
+  const THEME_KEY = 'theme';
+  let currentTheme = 'light';
+  function applyTheme(theme){
+    currentTheme = theme === 'dark' ? 'dark' : 'light';
+    document.body.classList.toggle('dark-mode', currentTheme === 'dark');
+    $('themeBtnLight').classList.toggle('active', currentTheme === 'light');
+    $('themeBtnLight').setAttribute('aria-selected', currentTheme === 'light' ? 'true' : 'false');
+    $('themeBtnDark').classList.toggle('active', currentTheme === 'dark');
+    $('themeBtnDark').setAttribute('aria-selected', currentTheme === 'dark' ? 'true' : 'false');
+  }
+  function setTheme(theme){
+    applyTheme(theme);
+    storageSet(THEME_KEY, currentTheme).catch(() => {});
+  }
+  $('themeBtnLight').addEventListener('click', () => setTheme('light'));
+  $('themeBtnDark').addEventListener('click', () => setTheme('dark'));
+  async function loadTheme(){
+    try {
+      const saved = await storageGet(THEME_KEY);
+      applyTheme(saved);
+    } catch (err) {
+      applyTheme(document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+    }
+  }
+  loadTheme();
 
   function fmtDateTimeShortDE(iso){
     const d = new Date(iso);
@@ -3717,7 +3766,7 @@
         if (p.color) subParts.push(p.color);
         if (tempParts.length) subParts.push(tempParts.join(' · '));
         const sub = subParts.length ? '<span class="inv-item-sub">' + escapeHtml(subParts.join(' · ')) + '</span>' : '';
-        const dot = '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + (p.colorHex || '#ccc') + ';border:1px solid rgba(0,0,0,0.3);margin-right:5px;vertical-align:middle;"></span>';
+        const dot = '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + (p.colorHex || '#ccc') + ';border:1px solid var(--ov30);margin-right:5px;vertical-align:middle;"></span>';
         return '<tr class="stock-row" data-id="' + p.id + '" style="cursor:pointer;' + (empty ? 'opacity:0.45;' : '') + '" title="Klicken für Ausbuchungs-Details">' +
           '<td>' + escapeHtml(p.articleNo) + '<span class="inv-item-sub">' + escapeHtml(p.manufacturer || '—') + '</span></td>' +
           '<td>' + dot + escapeHtml(label) + sub + '</td>' +
@@ -6307,7 +6356,7 @@
 
     $('detailArticleNo').textContent = pos.articleNo;
     $('detailArticleNoInput').value = pos.articleNo;
-    const dot = pos.colorHex ? '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + pos.colorHex + ';border:1px solid rgba(0,0,0,0.3);margin-right:6px;vertical-align:middle;"></span>' : '';
+    const dot = pos.colorHex ? '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + pos.colorHex + ';border:1px solid var(--ov30);margin-right:6px;vertical-align:middle;"></span>' : '';
     $('detailSubline').innerHTML = dot + escapeHtml(label + (pos.color ? ' · ' + pos.color : '') + (pos.manufacturer ? ' · ' + pos.manufacturer : ''));
 
     $('detailMaterial').value = pos.material;
