@@ -1229,7 +1229,7 @@
     background: rgba(8,10,20,0.66);
     backdrop-filter: blur(6px);
     z-index: 999;
-    padding: 28px 14px;
+    padding: max(28px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
     overflow-y:auto;
   }
   .invoice-overlay.open{ display:block; animation: overlayIn .2s ease both; }
