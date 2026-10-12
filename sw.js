@@ -1,4 +1,4 @@
-const CACHE_NAME = 'druckrechner-cache-v4';
+const CACHE_NAME = 'druckrechner-cache-v5';
 const CACHE_FILES = [
   './index.html',
   './style.css',
