@@ -6,8 +6,8 @@
 <title>Druckkosten-Rechner · FDM &amp; Resin</title>
 
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0B0E17">
-<meta name="background-color" content="#0B0E17">
+<meta name="theme-color" content="#F5F6F7">
+<meta name="background-color" content="#F5F6F7">
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -21,8 +21,6 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -581,7 +579,7 @@
 
         <ul class="breakdown">
           <li><span class="lhs"><span class="swatch" style="background:var(--filament)"></span><span id="lblBdFilament">Filament</span></span><span class="val" id="outFilament">0,00 €</span></li>
-          <li><span class="lhs"><span class="swatch" style="background:var(--energy)"></span><span id="lblBdEnergy">Strom</span> <span class="hint" id="outKwh" style="font-family:'IBM Plex Mono';color:var(--ink-soft);"></span></span><span class="val" id="outEnergy">0,00 €</span></li>
+          <li><span class="lhs"><span class="swatch" style="background:var(--energy)"></span><span id="lblBdEnergy">Strom</span> <span class="hint" id="outKwh" style="font-family:'72','72override',Arial,Helvetica,sans-serif;color:var(--ink-soft);"></span></span><span class="val" id="outEnergy">0,00 €</span></li>
           <li><span class="lhs"><span class="swatch" style="background:var(--extra)"></span><span id="lblBdExtra">Sonstige</span></span><span class="val" id="outExtra">0,00 €</span></li>
           <li><span class="lhs"><span class="swatch" style="background:var(--margin-c)"></span><span id="lblBdMargin">Aufschlag</span></span><span class="val" id="outMargin">0,00 €</span></li>
         </ul>
@@ -709,7 +707,7 @@
       </div>
       <div class="field">
         <label for="bookColorHex">Farbmuster</label>
-        <input type="color" id="bookColorHex" value="#1b2430" style="width:100%; height:44px; padding:4px; border:1.5px solid rgba(255,255,255,0.18); border-radius:4px; cursor:pointer;">
+        <input type="color" id="bookColorHex" value="#1b2430" style="width:100%; height:44px; padding:4px; border:1.5px solid rgba(0,0,0,0.18); border-radius:4px; cursor:pointer;">
       </div>
     </div>
 
@@ -815,7 +813,7 @@
       </table>
       <div style="display:flex; justify-content:space-between; font-size:13px; padding:8px 6px 0; border-top:2px solid var(--ink);">
         <span style="font-weight:600;">Restbestand gesamt</span>
-        <span id="bookingTotalWeight" style="font-family:'IBM Plex Mono', monospace; font-weight:600;">0 g</span>
+        <span id="bookingTotalWeight" style="font-family:'72','72override',Arial,Helvetica,sans-serif; font-weight:600;">0 g</span>
       </div>
     </div>
     <p class="note" id="bookingEmptyNote">Noch keine Lagerpositionen vorhanden. Buche oben einen Wareneingang, um zu starten.</p>
@@ -1147,7 +1145,7 @@
     </div>
     <div class="field">
       <label>Adresse</label>
-      <div id="returnAddressDisplay" style="white-space:pre-line; font-size:13.5px; color:var(--ink); padding:11px 14px; border:1px solid var(--field-border); border-radius:var(--radius-sm); background:rgba(255,255,255,0.03);">—</div>
+      <div id="returnAddressDisplay" style="white-space:pre-line; font-size:13.5px; color:var(--ink); padding:11px 14px; border:1px solid var(--field-border); border-radius:var(--radius-sm); background:rgba(0,0,0,0.03);">—</div>
       <div id="returnAddressEditGroup" style="display:none;">
         <input type="text" id="returnAddressStreet" placeholder="Straße und Hausnummer" autocomplete="off" style="margin-bottom:10px;">
         <div class="subgrid">
@@ -1312,11 +1310,11 @@
     <div class="subgrid">
       <div class="field">
         <label>Wareneingang</label>
-        <div id="detailDateIn" style="font-family:'IBM Plex Mono', monospace; font-weight:500;">—</div>
+        <div id="detailDateIn" style="font-family:'72','72override',Arial,Helvetica,sans-serif; font-weight:500;">—</div>
       </div>
       <div class="field">
         <label>Rest / Gesamt</label>
-        <div id="detailWeights" style="font-family:'IBM Plex Mono', monospace; font-weight:500;">—</div>
+        <div id="detailWeights" style="font-family:'72','72override',Arial,Helvetica,sans-serif; font-weight:500;">—</div>
       </div>
     </div>
 
@@ -1349,7 +1347,7 @@
       </table>
       <div style="display:flex; justify-content:space-between; font-size:13px; padding:8px 6px 0; border-top:2px solid var(--ink);">
         <span style="font-weight:600;">Gesamt ausgebucht</span>
-        <span id="detailMovementTotal" style="font-family:'IBM Plex Mono', monospace; font-weight:600;">0 g</span>
+        <span id="detailMovementTotal" style="font-family:'72','72override',Arial,Helvetica,sans-serif; font-weight:600;">0 g</span>
       </div>
     </div>
     <p class="note" id="detailMovementEmptyNote">Für diese Position wurde bisher nichts ausgebucht.</p>
@@ -1397,8 +1395,8 @@
   <div class="invoice-toolbar">
     <button class="btn-secondary" id="btnCloseCsvImport" type="button">✕ Schließen</button>
   </div>
-  <div style="max-width:720px; margin:0 auto; background:var(--card); border-radius:8px; padding:24px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'IBM Plex Sans',sans-serif;">
-    <h2 style="font-family:'IBM Plex Sans',sans-serif; font-size:20px; margin:0 0 6px;">CSV-Import</h2>
+  <div style="max-width:720px; margin:0 auto; background:var(--card); border-radius:8px; padding:24px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'72','72override',Arial,Helvetica,sans-serif;">
+    <h2 style="font-family:'72','72override',Arial,Helvetica,sans-serif; font-size:20px; margin:0 0 6px;">CSV-Import</h2>
     <p class="note" style="margin-top:4px;">Wähle eine CSV-Datei aus Spool Buddy oder einer anderen Filament-App. Spalten werden automatisch erkannt – prüfe die Zuordnung unten vor dem Import.</p>
 
     <div class="field">
@@ -1464,8 +1462,8 @@
   <div class="invoice-toolbar">
     <button class="btn-secondary" id="btnCloseLieferschein" type="button">✕ Schließen</button>
   </div>
-  <div style="max-width:760px; margin:0 auto; background:var(--card); border-radius:8px; padding:24px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'IBM Plex Sans',sans-serif;">
-    <h2 style="font-family:'IBM Plex Sans',sans-serif; font-size:20px; margin:0 0 6px;">Lieferschein hochladen</h2>
+  <div style="max-width:760px; margin:0 auto; background:var(--card); border-radius:8px; padding:24px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'72','72override',Arial,Helvetica,sans-serif;">
+    <h2 style="font-family:'72','72override',Arial,Helvetica,sans-serif; font-size:20px; margin:0 0 6px;">Lieferschein hochladen</h2>
     <p class="note" style="margin-top:4px;">PDF auswählen – die KI liest Lieferant und Positionen automatisch aus. Prüfe das Ergebnis unten, bevor du bucht.</p>
 
     <p class="note" id="lieferscheinNoConfigNote" style="display:none; color:var(--filament);">Noch keine Proxy-Adresse hinterlegt. Bitte zuerst unter ⚙️ Firmen-Einstellungen → Daten &amp; Geräte → KI-Lieferschein-Erkennung einrichten.</p>
@@ -1503,8 +1501,8 @@
   <div class="invoice-toolbar">
     <button class="btn-secondary" id="btnPrintBookCancel" type="button">✕ Abbrechen</button>
   </div>
-  <div style="max-width:460px; margin:0 auto; background:var(--card); border-radius:8px; padding:22px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'IBM Plex Sans',sans-serif;">
-    <h2 style="font-family:'IBM Plex Sans',sans-serif; font-size:19px; margin:0 0 8px;">Filament ausbuchen?</h2>
+  <div style="max-width:460px; margin:0 auto; background:var(--card); border-radius:8px; padding:22px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'72','72override',Arial,Helvetica,sans-serif;">
+    <h2 style="font-family:'72','72override',Arial,Helvetica,sans-serif; font-size:19px; margin:0 0 8px;">Filament ausbuchen?</h2>
     <p class="note" id="printBookIntro" style="margin-top:0;">Für diese Rechnung werden voraussichtlich 0 g benötigt.</p>
 
     <div class="field" id="printBookPositionField">
@@ -1583,8 +1581,8 @@
     <button class="btn-secondary" id="btnClosePicking" type="button">✕ Schließen</button>
     <button class="btn-secondary" id="btnPickingShowSheet" type="button">🖨️ Lieferschein anzeigen</button>
   </div>
-  <div style="max-width:620px; margin:0 auto; background:var(--card); border-radius:8px; padding:24px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'IBM Plex Sans',sans-serif;">
-    <h2 style="font-family:'IBM Plex Sans',sans-serif; font-size:20px; margin:0 0 4px;">Kommissionierung</h2>
+  <div style="max-width:620px; margin:0 auto; background:var(--card); border-radius:8px; padding:24px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'72','72override',Arial,Helvetica,sans-serif;">
+    <h2 style="font-family:'72','72override',Arial,Helvetica,sans-serif; font-size:20px; margin:0 0 4px;">Kommissionierung</h2>
     <p class="note" id="pickingSubline" style="margin-top:4px;">Lieferschein —</p>
 
     <div class="field" style="margin-top:14px;">
@@ -1621,8 +1619,8 @@
     <button class="btn-secondary" id="btnPickCompleteClose" type="button">✕ Schließen</button>
     <button class="btn-primary" id="btnPickCompleteSave" type="button">💾 Speichern</button>
   </div>
-  <div style="max-width:480px; margin:0 auto; background:var(--card); border-radius:8px; padding:24px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'IBM Plex Sans',sans-serif;">
-    <h2 style="font-family:'IBM Plex Sans',sans-serif; font-size:20px; margin:0 0 4px;">✓ Alles gepickt</h2>
+  <div style="max-width:480px; margin:0 auto; background:var(--card); border-radius:8px; padding:24px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'72','72override',Arial,Helvetica,sans-serif;">
+    <h2 style="font-family:'72','72override',Arial,Helvetica,sans-serif; font-size:20px; margin:0 0 4px;">✓ Alles gepickt</h2>
     <p class="note" id="pickCompleteSubline" style="margin-top:4px;">Lieferschein —</p>
     <p class="note" style="margin-top:10px;">Bitte Lieferadresse vor dem Versand pr&uuml;fen und bei Bedarf korrigieren.</p>
 
@@ -1743,8 +1741,8 @@
     <button class="btn-secondary" id="btnCloseSettings" type="button">✕ Schließen</button>
     <button class="btn-primary" id="btnSaveSettings" type="button">💾 Speichern</button>
   </div>
-  <div id="settingsSheet" style="width:210mm;max-width:100%;margin:0 auto;background:var(--card);color:var(--ink);padding:28px 26px 30px;border-radius:6px;box-shadow:0 24px 60px -20px rgba(0,0,0,0.6);box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif;">
-    <h2 style="font-family:'IBM Plex Sans',sans-serif;font-size:22px;margin:0 0 4px;">Firmen-Einstellungen</h2>
+  <div id="settingsSheet" style="width:210mm;max-width:100%;margin:0 auto;background:var(--card);color:var(--ink);padding:28px 26px 30px;border-radius:6px;box-shadow:0 24px 60px -20px rgba(0,0,0,0.6);box-sizing:border-box;font-family:'72','72override',Arial,Helvetica,sans-serif;">
+    <h2 style="font-family:'72','72override',Arial,Helvetica,sans-serif;font-size:22px;margin:0 0 4px;">Firmen-Einstellungen</h2>
     <p class="note" style="margin-top:4px;">Diese Angaben werden einmalig gespeichert und automatisch verwendet.</p>
 
     <div class="page-switch-bar" style="max-width:100%; margin:18px 0 20px;">
@@ -1780,7 +1778,7 @@
       <div class="field" style="margin-top:8px;">
         <label>Firmenlogo</label>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-          <img id="setLogoPreview" src="" alt="Logo-Vorschau" style="width:80px;height:auto;border:1px solid rgba(255,255,255,0.14);border-radius:4px;padding:4px;background:#fff;">
+          <img id="setLogoPreview" src="" alt="Logo-Vorschau" style="width:80px;height:auto;border:1px solid rgba(0,0,0,0.14);border-radius:4px;padding:4px;background:#fff;">
           <div style="display:flex;flex-direction:column;gap:8px;">
             <input type="file" id="setLogoUpload" accept="image/*" style="font-size:12.5px;">
             <button class="btn-secondary" id="btnResetLogo" type="button" style="margin-top:0;width:auto;padding:8px 12px;">Standard-Logo verwenden</button>
@@ -1799,7 +1797,7 @@
         </div>
       </div>
       <div id="locationListWrap" style="margin-top:14px; display:none;">
-        <ul id="locationList" style="list-style:none; padding:0; margin:0; border-top:1px solid rgba(255,255,255,0.14);"></ul>
+        <ul id="locationList" style="list-style:none; padding:0; margin:0; border-top:1px solid rgba(0,0,0,0.14);"></ul>
       </div>
       <p class="note" id="locationEmptyNote" style="margin-top:14px;">Noch keine Lagerplätze angelegt.</p>
     </div>
@@ -1870,7 +1868,7 @@
         <p class="note" style="margin-top:0;">Wähle einen Ordner, in dem alle Daten dieser App als Datei gespeichert werden. Liegt der Ordner z.&nbsp;B. in <b>OneDrive</b>, <b>Google Drive</b>, <b>Dropbox</b> oder dem lokalen <b>iCloud-Drive-Ordner von "iCloud für Windows"</b>, synchronisiert dein Cloud-Anbieter die Daten automatisch auf alle deine Geräte – ganz ohne Anmeldung in dieser App.</p>
         <div class="field">
           <label>Aktueller Speicherort</label>
-          <div id="desktopDataPath" style="font-family:'IBM Plex Mono', monospace; font-size:12.5px; word-break:break-all; background:var(--card-2); border-radius:var(--radius-sm); padding:10px 12px;">—</div>
+          <div id="desktopDataPath" style="font-family:'72','72override',Arial,Helvetica,sans-serif; font-size:12.5px; word-break:break-all; background:var(--card-2); border-radius:var(--radius-sm); padding:10px 12px;">—</div>
         </div>
         <div class="btn-row">
           <button type="button" id="btnChooseFolder" class="btn-primary">📁 Speicherort wählen …</button>
@@ -2756,8 +2754,8 @@
     $('locationListWrap').style.display = 'block';
     $('locationEmptyNote').style.display = 'none';
     list.innerHTML = storageLocations.map((loc, i) => (
-      '<li style="display:flex; justify-content:space-between; align-items:center; padding:10px 4px; border-bottom:1px solid rgba(255,255,255,0.14);">' +
-        '<span style="font-family:\'IBM Plex Sans\', sans-serif; font-size:13.5px; color:var(--ink);">' + escapeHtml(loc) + '</span>' +
+      '<li style="display:flex; justify-content:space-between; align-items:center; padding:10px 4px; border-bottom:1px solid rgba(0,0,0,0.14);">' +
+        '<span style="font-family:\'72\',\'72override\',Arial,Helvetica,sans-serif; font-size:13.5px; color:var(--ink);">' + escapeHtml(loc) + '</span>' +
         '<button type="button" class="location-delete" data-index="' + i + '" title="Lagerplatz löschen" style="border:none;background:none;color:var(--ink-soft);cursor:pointer;font-size:15px;">✕</button>' +
       '</li>'
     )).join('');
@@ -3719,7 +3717,7 @@
         if (p.color) subParts.push(p.color);
         if (tempParts.length) subParts.push(tempParts.join(' · '));
         const sub = subParts.length ? '<span class="inv-item-sub">' + escapeHtml(subParts.join(' · ')) + '</span>' : '';
-        const dot = '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + (p.colorHex || '#ccc') + ';border:1px solid rgba(255,255,255,0.3);margin-right:5px;vertical-align:middle;"></span>';
+        const dot = '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + (p.colorHex || '#ccc') + ';border:1px solid rgba(0,0,0,0.3);margin-right:5px;vertical-align:middle;"></span>';
         return '<tr class="stock-row" data-id="' + p.id + '" style="cursor:pointer;' + (empty ? 'opacity:0.45;' : '') + '" title="Klicken für Ausbuchungs-Details">' +
           '<td>' + escapeHtml(p.articleNo) + '<span class="inv-item-sub">' + escapeHtml(p.manufacturer || '—') + '</span></td>' +
           '<td>' + dot + escapeHtml(label) + sub + '</td>' +
@@ -4796,33 +4794,33 @@
     ctx.textBaseline = 'top';
 
     ctx.fillStyle = '#9299A6';
-    ctx.font = `700 ${0.75 * pxPerMm}px 'IBM Plex Sans', sans-serif`;
+    ctx.font = `700 ${0.75 * pxPerMm}px '72','72override',Arial,Helvetica,sans-serif`;
     ctx.fillText('VON', padX, y);
     y += 0.75 * pxPerMm * 1.3 + 0.5 * pxPerMm;
 
     ctx.fillStyle = '#3A3F4D';
-    ctx.font = `400 ${1.9 * pxPerMm}px 'IBM Plex Sans', sans-serif`;
+    ctx.font = `400 ${1.9 * pxPerMm}px '72','72override',Arial,Helvetica,sans-serif`;
     const senderLines = ($('vlSender').textContent || '').split('\n').flatMap(l => wrapTextLines(ctx, l, maxW));
     for (const line of senderLines){ ctx.fillText(line, padX, y); y += 1.9 * pxPerMm * 1.4; }
 
     y += 2 * pxPerMm;
 
     ctx.fillStyle = '#9299A6';
-    ctx.font = `700 ${0.75 * pxPerMm}px 'IBM Plex Sans', sans-serif`;
+    ctx.font = `700 ${0.75 * pxPerMm}px '72','72override',Arial,Helvetica,sans-serif`;
     ctx.fillText('AN', padX, y);
     y += 0.75 * pxPerMm * 1.3 + 0.5 * pxPerMm;
 
     ctx.fillStyle = '#121212';
-    ctx.font = `700 ${2.9 * pxPerMm}px 'IBM Plex Sans', sans-serif`;
+    ctx.font = `700 ${2.9 * pxPerMm}px '72','72override',Arial,Helvetica,sans-serif`;
     const nameLines = wrapTextLines(ctx, $('vlRecipientName').textContent || '—', maxW);
     for (const line of nameLines){ ctx.fillText(line, padX, y); y += 2.9 * pxPerMm * 1.3; }
     y += 1.6 * pxPerMm;
 
-    ctx.font = `400 ${2.6 * pxPerMm}px 'IBM Plex Sans', sans-serif`;
+    ctx.font = `400 ${2.6 * pxPerMm}px '72','72override',Arial,Helvetica,sans-serif`;
     const addrLines = ($('vlRecipientAddress').textContent || '').split('\n').flatMap(l => wrapTextLines(ctx, l, maxW));
     for (const line of addrLines){ ctx.fillText(line, padX, y); y += 2.6 * pxPerMm * 1.45; }
 
-    ctx.font = `400 ${1.7 * pxPerMm}px 'IBM Plex Sans', sans-serif`;
+    ctx.font = `400 ${1.7 * pxPerMm}px '72','72override',Arial,Helvetica,sans-serif`;
     const footerLines = wrapTextLines(ctx, $('vlReference').textContent || '', maxW);
     const footerLineHeight = 1.7 * pxPerMm * 1.3;
     let footerY = h - padY - footerLines.length * footerLineHeight;
@@ -6309,7 +6307,7 @@
 
     $('detailArticleNo').textContent = pos.articleNo;
     $('detailArticleNoInput').value = pos.articleNo;
-    const dot = pos.colorHex ? '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + pos.colorHex + ';border:1px solid rgba(255,255,255,0.3);margin-right:6px;vertical-align:middle;"></span>' : '';
+    const dot = pos.colorHex ? '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + pos.colorHex + ';border:1px solid rgba(0,0,0,0.3);margin-right:6px;vertical-align:middle;"></span>' : '';
     $('detailSubline').innerHTML = dot + escapeHtml(label + (pos.color ? ' · ' + pos.color : '') + (pos.manufacturer ? ' · ' + pos.manufacturer : ''));
 
     $('detailMaterial').value = pos.material;
