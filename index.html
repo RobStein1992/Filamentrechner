@@ -44,6 +44,7 @@
       <option value="dashboard">📊 Dashboard</option>
       <option value="calculator" selected>🧮 Kalkulator</option>
       <option value="booking">📦 Filament buchen</option>
+      <option value="production">🏭 Produktion</option>
       <option value="orders">📋 Aufträge</option>
       <option value="shipping">🚚 Versand</option>
       <option value="returns">↩️ Retouren/Reklamationen</option>
@@ -53,6 +54,7 @@
   <button type="button" class="page-switch-btn" id="btnPageDashboard" data-page="dashboard">📊 Dashboard</button>
   <button type="button" class="page-switch-btn active" id="btnPageCalculator" data-page="calculator">🧮 Kalkulator</button>
   <button type="button" class="page-switch-btn" id="btnPageBooking" data-page="booking">📦 Filament buchen</button>
+  <button type="button" class="page-switch-btn" id="btnPageProduction" data-page="production">🏭 Produktion</button>
   <button type="button" class="page-switch-btn" id="btnPageOrders" data-page="orders">📋 Aufträge</button>
   <button type="button" class="page-switch-btn" id="btnPageVersand" data-page="shipping">🚚 Versand</button>
   <button type="button" class="page-switch-btn" id="btnPageReturns" data-page="returns">↩️ Retouren/Reklamationen</button>
@@ -865,6 +867,47 @@
 
 </div>
 
+<div class="wrap" id="pageProduction" style="display:none;">
+
+  <header>
+    <div class="eyebrow"><span class="dot"></span><span>FERTIGUNG · PRODUKTION</span></div>
+    <h1>Produktion</h1>
+    <p>Laufende Fertigungsaufträge im Blick behalten und neue Produktionen anlegen.</p>
+  </header>
+
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--extra)"></span><span>Offene Produktionen</span></h2>
+    </div>
+
+    <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:500; margin-bottom:12px; cursor:pointer;">
+      <input type="checkbox" id="productionShowAll" style="width:auto;"> Abgeschlossene einblenden
+    </label>
+
+    <div id="productionListWrap" style="display:none;">
+      <table class="inv-table" style="margin-bottom:0;">
+        <thead>
+          <tr>
+            <th>Produktions-Nr.</th>
+            <th>Produkt</th>
+            <th>Charge</th>
+            <th class="num">Druckzeit</th>
+            <th class="num">Rüstzeit</th>
+            <th class="num">Material</th>
+            <th class="col-date">Erstellt</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="productionListBody"></tbody>
+      </table>
+    </div>
+    <p class="note" id="productionEmptyNote">Noch keine Produktionen angelegt.</p>
+
+    <button class="btn-primary" id="btnNewProduction" type="button" style="margin-top:14px;">+ Neue Produktion anlegen</button>
+  </div>
+
+</div>
+
 <div class="wrap" id="pageOrders" style="display:none;">
 
   <header>
@@ -1222,6 +1265,10 @@
             <th>Artikelnummer</th>
             <th>Bezeichnung</th>
             <th class="num">Bestand</th>
+            <th class="num">Druckzeit (Std.)</th>
+            <th class="num">Rüstzeit (Min.)</th>
+            <th>Material</th>
+            <th class="num">Materialbedarf (g)</th>
           </tr>
         </thead>
         <tbody id="articlesListBody"></tbody>
@@ -1243,6 +1290,42 @@
     <div class="field">
       <label for="articleInitialStock">Anfangsbestand <span class="hint">optional</span></label>
       <input type="number" id="articleInitialStock" placeholder="0" min="0" step="1" inputmode="numeric">
+    </div>
+    <div class="subgrid">
+      <div class="field">
+        <label for="articlePrintHours">Druckzeit (Std.) <span class="hint">optional</span></label>
+        <input type="number" id="articlePrintHours" placeholder="0" min="0" step="0.1" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label for="articleSetupMinutes">Rüstzeit (Min.) <span class="hint">optional</span></label>
+        <input type="number" id="articleSetupMinutes" placeholder="0" min="0" step="1" inputmode="numeric">
+      </div>
+    </div>
+    <div class="subgrid">
+      <div class="field">
+        <label for="articleMaterialType">Material <span class="hint">optional</span></label>
+        <select id="articleMaterialType">
+          <option value="">—</option>
+          <option value="PLA">PLA</option>
+          <option value="PLA_MATT">PLA Matt</option>
+          <option value="HOLZ_PLA">PLA Holz (Wood)</option>
+          <option value="PETG">PET-G</option>
+          <option value="PCTG">PCTG</option>
+          <option value="ABS">ABS</option>
+          <option value="ASA">ASA</option>
+          <option value="TPU">TPU (flexibel)</option>
+          <option value="PA">PA (Nylon)</option>
+          <option value="PA_CF">PA-CF (Carbon)</option>
+          <option value="PC">PC (Polycarbonat)</option>
+          <option value="PVA">PVA (Stützmaterial)</option>
+          <option value="RESIN">Resin</option>
+          <option value="SONSTIGES">Sonstiges</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="articleMaterialWeight">Materialbedarf (g) <span class="hint">optional</span></label>
+        <input type="number" id="articleMaterialWeight" placeholder="0" min="0" step="0.1" inputmode="decimal">
+      </div>
     </div>
     <p class="note" id="articleFormStatus"></p>
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -1949,6 +2032,42 @@
   </div>
 </div>
 
+<div class="invoice-overlay" id="productionOverlay" style="z-index:1000;">
+  <div class="invoice-toolbar">
+    <button class="btn-secondary" id="btnCancelProduction" type="button">✕ Abbrechen</button>
+  </div>
+  <div style="max-width:460px; margin:0 auto; background:var(--card); border-radius:8px; padding:22px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'72','72override',Arial,Helvetica,sans-serif;">
+    <h2 style="font-family:'72','72override',Arial,Helvetica,sans-serif; font-size:19px; margin:0 0 8px;">Neue Produktion anlegen</h2>
+
+    <div class="field">
+      <label for="productionNumberDisplay">Produktionsnummer</label>
+      <input type="text" id="productionNumberDisplay" readonly>
+    </div>
+
+    <div class="field">
+      <label for="productionProductSelect">Produkt</label>
+      <select id="productionProductSelect">
+        <option value="">— bitte wählen —</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="productionCharge">Charge</label>
+      <input type="text" id="productionCharge" placeholder="z. B. CH-2026-10-13" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label>Zeiten &amp; Materialbedarf <span class="hint">je Stück, aus dem Artikelstamm</span></label>
+      <div id="productionProductInfo" style="font-size:13.5px; color:var(--ink); padding:11px 14px; border:1px solid var(--field-border); border-radius:var(--radius-sm); background:var(--ov03); line-height:1.7;">Bitte zuerst ein Produkt wählen.</div>
+    </div>
+
+    <p class="note" id="productionFormStatus"></p>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn-primary" id="btnCreateProduction" type="button">💾 Anlegen</button>
+    </div>
+  </div>
+</div>
+
 <div class="sync-banner" id="syncReloadBanner">
   <span id="syncBannerText">Die Daten wurden auf einem anderen Ger&auml;t ge&auml;ndert.</span>
   <button type="button" class="btn-primary" id="btnSyncReload">Neu laden</button>
@@ -1988,7 +2107,7 @@
     if (!ok) throw new Error('storage unavailable');
     markLocalChange();
   }
-  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders', 'returns', 'lieferschein-worker-url', 'product-catalog'];
+  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders', 'returns', 'lieferschein-worker-url', 'product-catalog', 'productions'];
 
   // Zustand der Geräte-Synchronisierung (siehe weiter unten). Hier oben
   // deklariert, weil storageSet() darauf zugreift.
@@ -4126,7 +4245,7 @@
   /* ---------- Artikelstamm: feste Artikelnummer je Produktname ---------- */
 
   const PRODUCT_CATALOG_KEY = 'product-catalog';
-  let productCatalog = [];   // { articleNo, description }
+  let productCatalog = [];   // { articleNo, description, stock, prodPrintHours, prodSetupMinutes, prodMaterialType, prodMaterialWeight }
 
   async function loadProductCatalog(){
     try {
@@ -4183,13 +4302,22 @@
     $('articlesListWrap').style.display = 'block';
     $('articlesEmptyNote').style.display = 'none';
 
-    $('articlesListBody').innerHTML = list.map(p =>
+    $('articlesListBody').innerHTML = list.map(p => {
+      const materialOptions = Object.keys(bookMaterialLabels).map(code =>
+        '<option value="' + code + '"' + (p.prodMaterialType === code ? ' selected' : '') + '>' + escapeHtml(bookMaterialLabels[code]) + '</option>'
+      ).join('');
+      return (
       '<tr>' +
         '<td>' + escapeHtml(p.articleNo || '—') + '</td>' +
         '<td>' + escapeHtml(p.description || '—') + '</td>' +
         '<td class="num"><input type="number" class="article-stock-input" data-articleno="' + escapeHtml(p.articleNo || '') + '" min="0" step="1" value="' + (parseInt(p.stock, 10) || 0) + '"></td>' +
+        '<td class="num"><input type="number" class="article-printhours-input" data-articleno="' + escapeHtml(p.articleNo || '') + '" min="0" step="0.1" value="' + (parseFloat(p.prodPrintHours) || 0) + '"></td>' +
+        '<td class="num"><input type="number" class="article-setupmin-input" data-articleno="' + escapeHtml(p.articleNo || '') + '" min="0" step="1" value="' + (parseFloat(p.prodSetupMinutes) || 0) + '"></td>' +
+        '<td><select class="article-materialtype-input" data-articleno="' + escapeHtml(p.articleNo || '') + '"><option value="">—</option>' + materialOptions + '</select></td>' +
+        '<td class="num"><input type="number" class="article-materialweight-input" data-articleno="' + escapeHtml(p.articleNo || '') + '" min="0" step="0.1" value="' + (parseFloat(p.prodMaterialWeight) || 0) + '"></td>' +
       '</tr>'
-    ).join('');
+      );
+    }).join('');
 
     $('articlesListBody').querySelectorAll('.article-stock-input').forEach(input => {
       input.addEventListener('change', () => {
@@ -4202,11 +4330,56 @@
         saveProductCatalog();
       });
     });
+    $('articlesListBody').querySelectorAll('.article-printhours-input').forEach(input => {
+      input.addEventListener('change', () => {
+        const entry = productCatalog.find(p => p.articleNo === input.dataset.articleno);
+        if (!entry) return;
+        let val = parseFloat(input.value);
+        if (isNaN(val) || val < 0) val = 0;
+        input.value = val;
+        entry.prodPrintHours = val;
+        saveProductCatalog();
+      });
+    });
+    $('articlesListBody').querySelectorAll('.article-setupmin-input').forEach(input => {
+      input.addEventListener('change', () => {
+        const entry = productCatalog.find(p => p.articleNo === input.dataset.articleno);
+        if (!entry) return;
+        let val = parseFloat(input.value);
+        if (isNaN(val) || val < 0) val = 0;
+        input.value = val;
+        entry.prodSetupMinutes = val;
+        saveProductCatalog();
+      });
+    });
+    $('articlesListBody').querySelectorAll('.article-materialtype-input').forEach(select => {
+      select.addEventListener('change', () => {
+        const entry = productCatalog.find(p => p.articleNo === select.dataset.articleno);
+        if (!entry) return;
+        entry.prodMaterialType = select.value;
+        saveProductCatalog();
+      });
+    });
+    $('articlesListBody').querySelectorAll('.article-materialweight-input').forEach(input => {
+      input.addEventListener('change', () => {
+        const entry = productCatalog.find(p => p.articleNo === input.dataset.articleno);
+        if (!entry) return;
+        let val = parseFloat(input.value);
+        if (isNaN(val) || val < 0) val = 0;
+        input.value = val;
+        entry.prodMaterialWeight = val;
+        saveProductCatalog();
+      });
+    });
   }
 
   $('btnNewArticle').addEventListener('click', () => {
     $('articleDescription').value = '';
     $('articleInitialStock').value = '';
+    $('articlePrintHours').value = '';
+    $('articleSetupMinutes').value = '';
+    $('articleMaterialType').value = '';
+    $('articleMaterialWeight').value = '';
     $('articleFormStatus').textContent = '';
     $('articleFormCard').style.display = 'block';
   });
@@ -4224,6 +4397,15 @@
     const entry = productCatalog.find(p => p.articleNo === articleNo);
     const initialStock = parseInt($('articleInitialStock').value, 10);
     if (entry && !isNaN(initialStock) && initialStock > 0) entry.stock = (entry.stock || 0) + initialStock;
+    if (entry) {
+      const printHours = parseFloat($('articlePrintHours').value);
+      const setupMinutes = parseFloat($('articleSetupMinutes').value);
+      const materialWeight = parseFloat($('articleMaterialWeight').value);
+      entry.prodPrintHours = isNaN(printHours) ? 0 : printHours;
+      entry.prodSetupMinutes = isNaN(setupMinutes) ? 0 : setupMinutes;
+      entry.prodMaterialType = $('articleMaterialType').value;
+      entry.prodMaterialWeight = isNaN(materialWeight) ? 0 : materialWeight;
+    }
     saveProductCatalog();
     renderArticles();
     $('articleFormCard').style.display = 'none';
@@ -4242,6 +4424,149 @@
     saveProductCatalog();
     renderArticles();
   }
+
+  /* ---------- Produktion: Fertigungsaufträge ---------- */
+
+  const PRODUCTIONS_KEY = 'productions';
+  let productions = []; // { id, prodNumber, articleNo, productDescription, charge, printHours, setupMinutes, materialType, materialWeight, status, createdAt, completedAt }
+
+  async function loadProductions(){
+    try {
+      const value = await storageGet(PRODUCTIONS_KEY);
+      if (value) productions = JSON.parse(value);
+    } catch (err) {}
+    renderProductions();
+  }
+
+  async function saveProductions(){
+    try { await storageSet(PRODUCTIONS_KEY, JSON.stringify(productions)); } catch (err) {}
+  }
+
+  function nextProductionNumber(){
+    let max = 0;
+    productions.forEach(p => {
+      const m = /^PROD-(\d+)$/.exec(p.prodNumber || '');
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    });
+    return 'PROD-' + String(max + 1).padStart(4, '0');
+  }
+
+  function fmtProdHours(h){
+    return (parseFloat(h) || 0).toLocaleString('de-DE', {maximumFractionDigits:2}) + ' Std.';
+  }
+  function fmtProdMinutes(m){
+    return (parseFloat(m) || 0).toLocaleString('de-DE', {maximumFractionDigits:0}) + ' Min.';
+  }
+
+  function renderProductions(){
+    const showAll = $('productionShowAll').checked;
+    const list = productions
+      .filter(p => showAll || p.status !== 'done')
+      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+    if (!list.length) {
+      $('productionListWrap').style.display = 'none';
+      $('productionEmptyNote').style.display = 'block';
+      $('productionListBody').innerHTML = '';
+      return;
+    }
+    $('productionListWrap').style.display = 'block';
+    $('productionEmptyNote').style.display = 'none';
+
+    $('productionListBody').innerHTML = list.map(p => {
+      const materialLabel = p.materialType ? (bookMaterialLabels[p.materialType] || p.materialType) : '';
+      const materialInfo = p.materialWeight
+        ? (parseFloat(p.materialWeight).toLocaleString('de-DE', {maximumFractionDigits:2}) + ' g' + (materialLabel ? ' ' + materialLabel : ''))
+        : '—';
+      const createdLabel = p.createdAt ? new Date(p.createdAt).toLocaleDateString('de-DE') : '—';
+      const actionCell = p.status === 'done'
+        ? '<span class="note" style="color:var(--energy);">✓ Abgeschlossen</span>'
+        : '<button type="button" class="btn-secondary production-complete-btn" data-id="' + p.id + '" style="margin-top:0; width:auto; padding:8px 12px;">✓ Abschließen</button>';
+      return (
+        '<tr>' +
+          '<td>' + escapeHtml(p.prodNumber || '—') + '</td>' +
+          '<td>' + escapeHtml(p.productDescription || '—') + '</td>' +
+          '<td>' + escapeHtml(p.charge || '—') + '</td>' +
+          '<td class="num">' + fmtProdHours(p.printHours) + '</td>' +
+          '<td class="num">' + fmtProdMinutes(p.setupMinutes) + '</td>' +
+          '<td class="num">' + escapeHtml(materialInfo) + '</td>' +
+          '<td class="col-date">' + createdLabel + '</td>' +
+          '<td>' + actionCell + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+
+    $('productionListBody').querySelectorAll('.production-complete-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const entry = productions.find(p => p.id === btn.dataset.id);
+        if (!entry) return;
+        entry.status = 'done';
+        entry.completedAt = new Date().toISOString();
+        saveProductions();
+        renderProductions();
+      });
+    });
+  }
+  $('productionShowAll').addEventListener('change', renderProductions);
+
+  function updateProductionProductInfo(){
+    const articleNo = $('productionProductSelect').value;
+    const entry = productCatalog.find(p => p.articleNo === articleNo);
+    if (!entry) {
+      $('productionProductInfo').textContent = 'Bitte zuerst ein Produkt wählen.';
+      return;
+    }
+    const materialLabel = entry.prodMaterialType ? (bookMaterialLabels[entry.prodMaterialType] || entry.prodMaterialType) : '—';
+    $('productionProductInfo').innerHTML =
+      'Druckzeit: <b>' + fmtProdHours(entry.prodPrintHours) + '</b><br>' +
+      'Rüstzeit: <b>' + fmtProdMinutes(entry.prodSetupMinutes) + '</b><br>' +
+      'Materialbedarf: <b>' + (parseFloat(entry.prodMaterialWeight) || 0).toLocaleString('de-DE', {maximumFractionDigits:2}) + ' g ' + escapeHtml(materialLabel) + '</b>';
+  }
+
+  $('btnNewProduction').addEventListener('click', () => {
+    $('productionNumberDisplay').value = nextProductionNumber();
+    $('productionCharge').value = '';
+    $('productionFormStatus').textContent = '';
+
+    const options = [...productCatalog].sort((a, b) => (a.description || '').localeCompare(b.description || ''));
+    $('productionProductSelect').innerHTML = '<option value="">— bitte wählen —</option>' +
+      options.map(p => '<option value="' + escapeHtml(p.articleNo) + '">' + escapeHtml(p.description || p.articleNo) + '</option>').join('');
+    $('productionProductSelect').value = '';
+    updateProductionProductInfo();
+
+    $('productionOverlay').classList.add('open');
+  });
+  $('btnCancelProduction').addEventListener('click', () => $('productionOverlay').classList.remove('open'));
+  $('productionOverlay').addEventListener('click', (e) => {
+    if (e.target === $('productionOverlay')) $('productionOverlay').classList.remove('open');
+  });
+  $('productionProductSelect').addEventListener('change', updateProductionProductInfo);
+
+  $('btnCreateProduction').addEventListener('click', () => {
+    const articleNo = $('productionProductSelect').value;
+    const entry = productCatalog.find(p => p.articleNo === articleNo);
+    if (!entry) {
+      $('productionFormStatus').textContent = '✕ Bitte ein Produkt wählen.';
+      $('productionFormStatus').style.color = 'var(--danger)';
+      return;
+    }
+    productions.push({
+      id: 'prod-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+      prodNumber: $('productionNumberDisplay').value,
+      articleNo: entry.articleNo,
+      productDescription: entry.description,
+      charge: $('productionCharge').value.trim(),
+      printHours: parseFloat(entry.prodPrintHours) || 0,
+      setupMinutes: parseFloat(entry.prodSetupMinutes) || 0,
+      materialType: entry.prodMaterialType || '',
+      materialWeight: parseFloat(entry.prodMaterialWeight) || 0,
+      status: 'open',
+      createdAt: new Date().toISOString()
+    });
+    saveProductions();
+    renderProductions();
+    $('productionOverlay').classList.remove('open');
+  });
 
   /* ---------- Lieferadresse im DIN-5008-/DHL-Format ---------- */
   // Anschriftenfeld für Brief/Paket: Name, dann Straße + Hausnummer, dann
@@ -5924,6 +6249,7 @@
   // vorhandenen vergeben.
   loadProductCatalog().then(loadShipments);
   loadOrders();
+  loadProductions();
 
   function parseCSV(text, delimiter){
     const rows = [];
@@ -6314,6 +6640,7 @@
     $('pageCalculator').style.display = page === 'calculator' ? '' : 'none';
     $('pageOrders').style.display = page === 'orders' ? '' : 'none';
     $('pageBooking').style.display = page === 'booking' ? '' : 'none';
+    $('pageProduction').style.display = page === 'production' ? '' : 'none';
     $('pageVersand').style.display = page === 'shipping' ? '' : 'none';
     $('pageReturns').style.display = page === 'returns' ? '' : 'none';
     $('pageArticles').style.display = page === 'articles' ? '' : 'none';
@@ -6324,18 +6651,21 @@
     $('btnPageCalculator').classList.toggle('active', page === 'calculator');
     $('btnPageOrders').classList.toggle('active', page === 'orders');
     $('btnPageBooking').classList.toggle('active', page === 'booking');
+    $('btnPageProduction').classList.toggle('active', page === 'production');
     $('btnPageVersand').classList.toggle('active', page === 'shipping');
     $('btnPageReturns').classList.toggle('active', page === 'returns');
     $('btnPageArticles').classList.toggle('active', page === 'articles');
     $('sideNavSelect').value = page;
     if (page === 'dashboard') renderDashboard();
     if (page === 'articles') renderArticles();
+    if (page === 'production') renderProductions();
     window.scrollTo(0, 0);
   }
   $('btnPageDashboard').addEventListener('click', () => switchPage('dashboard'));
   $('btnPageCalculator').addEventListener('click', () => switchPage('calculator'));
   $('btnPageOrders').addEventListener('click', () => switchPage('orders'));
   $('btnPageBooking').addEventListener('click', () => switchPage('booking'));
+  $('btnPageProduction').addEventListener('click', () => switchPage('production'));
   $('btnPageVersand').addEventListener('click', () => switchPage('shipping'));
   $('btnPageArticles').addEventListener('click', () => switchPage('articles'));
   $('btnPageReturns').addEventListener('click', () => switchPage('returns'));
