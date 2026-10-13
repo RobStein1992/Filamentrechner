@@ -660,6 +660,12 @@
       <div class="dash-tile-sub" id="dashOpenShipmentsSub">Noch keine Sendungen</div>
     </div>
 
+    <div class="card dash-tile">
+      <div class="dash-tile-head"><span class="swatch" style="background:var(--margin-c)"></span><span class="dash-tile-label">🏭 Offene Produktionen</span></div>
+      <div class="dash-tile-value" id="dashOpenProductionsCount">0</div>
+      <div class="dash-tile-sub" id="dashOpenProductionsSub">Noch keine Produktionen</div>
+    </div>
+
   </div>
 </div>
 
@@ -4557,6 +4563,13 @@
       renderMovements();
     }
 
+    const articleEntry = productCatalog.find(p => p.articleNo === entry.articleNo);
+    if (articleEntry) {
+      articleEntry.stock = (parseInt(articleEntry.stock, 10) || 0) + quantity;
+      saveProductCatalog();
+      renderArticles();
+    }
+
     entry.status = 'done';
     entry.completedAt = new Date().toISOString();
     saveProductions();
@@ -5535,6 +5548,13 @@
     $('dashOpenShipmentsSub').textContent = openShipments.length
       ? (openShipments.reduce((s, sh) => s + (sh.items || []).length, 0) + ' Position(en) · ' + fmtEUR(openShipmentsValue) + ' Warenwert')
       : 'Noch keine Sendungen';
+
+    const openProductions = productions.filter(p => p.status !== 'done');
+    const openProductionsPieces = openProductions.reduce((s, p) => s + (parseInt(p.quantity, 10) || 1), 0);
+    $('dashOpenProductionsCount').textContent = openProductions.length;
+    $('dashOpenProductionsSub').textContent = openProductions.length
+      ? (openProductionsPieces + ' Stück insgesamt')
+      : 'Noch keine Produktionen';
   }
 
   /* ---------- Retouren / Reklamationen ---------- */
