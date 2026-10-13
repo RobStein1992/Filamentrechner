@@ -2025,6 +2025,7 @@
       <p class="note" style="margin-top:0;">Legt einen vollst&auml;ndigen Beispielauftrag in der Auftragslage an, um den Ablauf bis zum Lieferschein auszuprobieren. Vorhandene Daten bleiben unber&uuml;hrt &ndash; den Testauftrag entfernst du jederzeit im Reiter <b>📋 Auftr&auml;ge</b> &uuml;ber das ✕.</p>
       <button type="button" id="btnCreateTestOrder" class="btn-secondary" style="margin-top:0;">🧪 Testauftrag anlegen</button>
       <button type="button" id="btnCreateTestShipments" class="btn-secondary" style="margin-top:8px;">📦 20 Beispiel-Lieferscheine anlegen</button>
+      <button type="button" id="btnCreateTestProducts" class="btn-secondary" style="margin-top:8px;">🏭 10 Beispiel-Produkte anlegen</button>
       <p class="note" id="testDataStatus"></p>
     </div>
 
@@ -6173,6 +6174,39 @@
     $('testDataStatus').style.color = 'var(--energy)';
     $('settingsOverlay').classList.remove('open');
     switchPage('shipping');
+  });
+
+  const TEST_PRODUCTION_PRODUCTS = [
+    { name: 'Gehäusedeckel rund',          material: 'PLA',   printHours: 2.0, setupMinutes: 8,  weight: 35,  stock: 10 },
+    { name: 'Lüfterhalterung 60 mm',       material: 'PETG',  printHours: 1.0, setupMinutes: 5,  weight: 18,  stock: 15 },
+    { name: 'Kabelhalter klein',           material: 'PLA',   printHours: 0.5, setupMinutes: 3,  weight: 8,   stock: 25 },
+    { name: 'Montagewinkel groß',          material: 'ABS',   printHours: 3.5, setupMinutes: 12, weight: 65,  stock: 8  },
+    { name: 'Scharnier verstärkt',         material: 'PA_CF', printHours: 4.0, setupMinutes: 15, weight: 90,  stock: 5  },
+    { name: 'Schutzkappe Sensor',          material: 'TPU',   printHours: 0.8, setupMinutes: 5,  weight: 12,  stock: 20 },
+    { name: 'Adapterplatte CNC',           material: 'PC',    printHours: 5.0, setupMinutes: 20, weight: 120, stock: 3  },
+    { name: 'Rahmenverstärkung',           material: 'ASA',   printHours: 6.5, setupMinutes: 18, weight: 150, stock: 4  },
+    { name: 'Werkzeuggriff Ersatzteil',    material: 'PETG',  printHours: 1.5, setupMinutes: 7,  weight: 28,  stock: 12 },
+    { name: 'Zahnrad Antrieb',             material: 'PA',    printHours: 2.8, setupMinutes: 10, weight: 45,  stock: 6  }
+  ];
+
+  $('btnCreateTestProducts').addEventListener('click', () => {
+    TEST_PRODUCTION_PRODUCTS.forEach(p => {
+      const articleNo = getOrCreateArticleNumber(p.name);
+      const entry = productCatalog.find(e => e.articleNo === articleNo);
+      if (!entry) return;
+      entry.stock = p.stock;
+      entry.prodPrintHours = p.printHours;
+      entry.prodSetupMinutes = p.setupMinutes;
+      entry.prodMaterialType = p.material;
+      entry.prodMaterialWeight = p.weight;
+    });
+    saveProductCatalog();
+    renderArticles();
+
+    $('testDataStatus').textContent = '✓ ' + TEST_PRODUCTION_PRODUCTS.length + ' Beispiel-Produkte angelegt (mit Druckzeit, Rüstzeit und Materialbedarf).';
+    $('testDataStatus').style.color = 'var(--energy)';
+    $('settingsOverlay').classList.remove('open');
+    switchPage('articles');
   });
 
   function updateVersandOrderBanner(){
