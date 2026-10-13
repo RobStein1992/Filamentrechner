@@ -891,6 +891,7 @@
             <th>Produktions-Nr.</th>
             <th>Produkt</th>
             <th>Charge</th>
+            <th class="num">Stück</th>
             <th class="num">Druckzeit</th>
             <th class="num">Rüstzeit</th>
             <th class="num">Material</th>
@@ -2058,7 +2059,12 @@
     </div>
 
     <div class="field">
-      <label>Zeiten &amp; Materialbedarf <span class="hint">je Stück, aus dem Artikelstamm</span></label>
+      <label for="productionQuantity">Stückzahl</label>
+      <input type="number" id="productionQuantity" value="1" min="1" step="1" inputmode="numeric">
+    </div>
+
+    <div class="field">
+      <label>Zeiten &amp; Materialbedarf <span class="hint">aus dem Artikelstamm</span></label>
       <div id="productionProductInfo" style="font-size:13.5px; color:var(--ink); padding:11px 14px; border:1px solid var(--field-border); border-radius:var(--radius-sm); background:var(--ov03); line-height:1.7;">Bitte zuerst ein Produkt wählen.</div>
     </div>
 
@@ -4429,7 +4435,7 @@
   /* ---------- Produktion: Fertigungsaufträge ---------- */
 
   const PRODUCTIONS_KEY = 'productions';
-  let productions = []; // { id, prodNumber, articleNo, productDescription, charge, printHours, setupMinutes, materialType, materialWeight, status, createdAt, completedAt }
+  let productions = []; // { id, prodNumber, articleNo, productDescription, charge, quantity, printHours, setupMinutes, materialType, materialWeight (je Stück), status, createdAt, completedAt }
 
   async function loadProductions(){
     try {
@@ -4476,8 +4482,9 @@
 
     $('productionListBody').innerHTML = list.map(p => {
       const materialLabel = p.materialType ? (bookMaterialLabels[p.materialType] || p.materialType) : '';
-      const materialInfo = p.materialWeight
-        ? (parseFloat(p.materialWeight).toLocaleString('de-DE', {maximumFractionDigits:2}) + ' g' + (materialLabel ? ' ' + materialLabel : ''))
+      const totalWeight = (parseFloat(p.materialWeight) || 0) * (parseInt(p.quantity, 10) || 1);
+      const materialInfo = totalWeight
+        ? (totalWeight.toLocaleString('de-DE', {maximumFractionDigits:2}) + ' g' + (materialLabel ? ' ' + materialLabel : ''))
         : '—';
       const createdLabel = p.createdAt ? new Date(p.createdAt).toLocaleDateString('de-DE') : '—';
       const actionCell = p.status === 'done'
@@ -4488,6 +4495,7 @@
           '<td>' + escapeHtml(p.prodNumber || '—') + '</td>' +
           '<td>' + escapeHtml(p.productDescription || '—') + '</td>' +
           '<td>' + escapeHtml(p.charge || '—') + '</td>' +
+          '<td class="num">' + (parseInt(p.quantity, 10) || 1) + '</td>' +
           '<td class="num">' + fmtProdHours(p.printHours) + '</td>' +
           '<td class="num">' + fmtProdMinutes(p.setupMinutes) + '</td>' +
           '<td class="num">' + escapeHtml(materialInfo) + '</td>' +
@@ -4501,14 +4509,59 @@
       btn.addEventListener('click', () => {
         const entry = productions.find(p => p.id === btn.dataset.id);
         if (!entry) return;
-        entry.status = 'done';
-        entry.completedAt = new Date().toISOString();
-        saveProductions();
-        renderProductions();
+        completeProduction(entry);
       });
     });
   }
   $('productionShowAll').addEventListener('change', renderProductions);
+
+  // Sucht die am besten passende Lagerposition für den Materialbedarf einer
+  // Produktion: gleicher Filamenttyp und genug Restbestand, bevorzugt die
+  // Position mit dem geringsten ausreichenden Restbestand (verbraucht
+  // angebrochene Spulen zuerst, statt eine volle Spule anzubrechen).
+  function findStockPositionForMaterial(material, neededWeight){
+    const candidates = stockPositions.filter(p => p.material === material && p.remainingWeight >= neededWeight);
+    if (!candidates.length) return null;
+    return candidates.sort((a, b) => a.remainingWeight - b.remainingWeight)[0];
+  }
+
+  // Bucht beim Abschließen einer Produktion automatisch das benötigte
+  // Filament aus dem Lager aus (Menge je Stück × Stückzahl) und markiert die
+  // Produktion erst dann als abgeschlossen, wenn das Ausbuchen auch wirklich
+  // gelungen ist. Ist kein Materialbedarf hinterlegt, wird ohne Buchung
+  // direkt abgeschlossen.
+  function completeProduction(entry){
+    const quantity = parseInt(entry.quantity, 10) || 1;
+    const neededWeight = (parseFloat(entry.materialWeight) || 0) * quantity;
+
+    if (neededWeight > 0 && entry.materialType) {
+      const pos = findStockPositionForMaterial(entry.materialType, neededWeight);
+      if (!pos) {
+        const label = bookMaterialLabels[entry.materialType] || entry.materialType;
+        alert('Nicht genug ' + label + ' im Lager, um ' + fmtGrams(neededWeight) + ' auszubuchen. Bitte zuerst Filament nachbuchen.');
+        return;
+      }
+      pos.remainingWeight -= neededWeight;
+      saveStock();
+      renderStock();
+
+      stockMovements.push({
+        id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+        date: todayISO(),
+        positionId: pos.id,
+        articleNo: pos.articleNo,
+        weight: neededWeight,
+        reference: entry.prodNumber + (entry.charge ? ' · Charge ' + entry.charge : '')
+      });
+      saveMovements();
+      renderMovements();
+    }
+
+    entry.status = 'done';
+    entry.completedAt = new Date().toISOString();
+    saveProductions();
+    renderProductions();
+  }
 
   function updateProductionProductInfo(){
     const articleNo = $('productionProductSelect').value;
@@ -4517,16 +4570,20 @@
       $('productionProductInfo').textContent = 'Bitte zuerst ein Produkt wählen.';
       return;
     }
+    const quantity = Math.max(1, parseInt($('productionQuantity').value, 10) || 1);
     const materialLabel = entry.prodMaterialType ? (bookMaterialLabels[entry.prodMaterialType] || entry.prodMaterialType) : '—';
+    const weightPerUnit = parseFloat(entry.prodMaterialWeight) || 0;
     $('productionProductInfo').innerHTML =
-      'Druckzeit: <b>' + fmtProdHours(entry.prodPrintHours) + '</b><br>' +
+      'Druckzeit: <b>' + fmtProdHours(entry.prodPrintHours) + '</b> je Stück<br>' +
       'Rüstzeit: <b>' + fmtProdMinutes(entry.prodSetupMinutes) + '</b><br>' +
-      'Materialbedarf: <b>' + (parseFloat(entry.prodMaterialWeight) || 0).toLocaleString('de-DE', {maximumFractionDigits:2}) + ' g ' + escapeHtml(materialLabel) + '</b>';
+      'Materialbedarf: <b>' + weightPerUnit.toLocaleString('de-DE', {maximumFractionDigits:2}) + ' g ' + escapeHtml(materialLabel) + '</b> je Stück<br>' +
+      'Gesamt bei ' + quantity + ' Stück: <b>' + (weightPerUnit * quantity).toLocaleString('de-DE', {maximumFractionDigits:2}) + ' g ' + escapeHtml(materialLabel) + '</b>';
   }
 
   $('btnNewProduction').addEventListener('click', () => {
     $('productionNumberDisplay').value = nextProductionNumber();
     $('productionCharge').value = '';
+    $('productionQuantity').value = '1';
     $('productionFormStatus').textContent = '';
 
     const options = [...productCatalog].sort((a, b) => (a.description || '').localeCompare(b.description || ''));
@@ -4542,6 +4599,7 @@
     if (e.target === $('productionOverlay')) $('productionOverlay').classList.remove('open');
   });
   $('productionProductSelect').addEventListener('change', updateProductionProductInfo);
+  $('productionQuantity').addEventListener('input', updateProductionProductInfo);
 
   $('btnCreateProduction').addEventListener('click', () => {
     const articleNo = $('productionProductSelect').value;
@@ -4551,12 +4609,14 @@
       $('productionFormStatus').style.color = 'var(--danger)';
       return;
     }
+    const quantity = Math.max(1, parseInt($('productionQuantity').value, 10) || 1);
     productions.push({
       id: 'prod-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
       prodNumber: $('productionNumberDisplay').value,
       articleNo: entry.articleNo,
       productDescription: entry.description,
       charge: $('productionCharge').value.trim(),
+      quantity,
       printHours: parseFloat(entry.prodPrintHours) || 0,
       setupMinutes: parseFloat(entry.prodSetupMinutes) || 0,
       materialType: entry.prodMaterialType || '',
