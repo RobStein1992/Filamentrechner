@@ -44,21 +44,21 @@
       <option value="dashboard">📊 Dashboard</option>
       <option value="calculator" selected>🧮 Kalkulator</option>
       <option value="booking">📦 Filament buchen</option>
+      <option value="articles">🏷️ Artikel</option>
       <option value="production">🏭 Produktion</option>
       <option value="orders">📋 Aufträge</option>
       <option value="shipping">🚚 Versand</option>
       <option value="returns">↩️ Retouren/Reklamationen</option>
-      <option value="articles">🏷️ Artikel</option>
     </select>
   </div>
   <button type="button" class="page-switch-btn" id="btnPageDashboard" data-page="dashboard">📊 Dashboard</button>
   <button type="button" class="page-switch-btn active" id="btnPageCalculator" data-page="calculator">🧮 Kalkulator</button>
   <button type="button" class="page-switch-btn" id="btnPageBooking" data-page="booking">📦 Filament buchen</button>
+  <button type="button" class="page-switch-btn" id="btnPageArticles" data-page="articles">🏷️ Artikel</button>
   <button type="button" class="page-switch-btn" id="btnPageProduction" data-page="production">🏭 Produktion</button>
   <button type="button" class="page-switch-btn" id="btnPageOrders" data-page="orders">📋 Aufträge</button>
   <button type="button" class="page-switch-btn" id="btnPageVersand" data-page="shipping">🚚 Versand</button>
   <button type="button" class="page-switch-btn" id="btnPageReturns" data-page="returns">↩️ Retouren/Reklamationen</button>
-  <button type="button" class="page-switch-btn" id="btnPageArticles" data-page="articles">🏷️ Artikel</button>
   <button type="button" class="page-switch-btn side-nav-refresh" id="btnRefreshPage" title="Aktualisieren">🔄<span class="side-nav-refresh-label"> Aktualisieren</span></button>
 </nav>
 <div class="app-main">
@@ -551,7 +551,7 @@
           </div>
         </div>
         <div class="field" style="margin-top:14px;">
-          <div class="vat-row">
+          <div class="checkbox-row">
             <input type="checkbox" id="invVatEnabled">
             <label for="invVatEnabled">Umsatzsteuer ausweisen</label>
             <div class="input-row">
@@ -637,7 +637,7 @@
   <header>
     <div class="eyebrow"><span class="dot"></span><span>ÜBERBLICK · OFFENE VORGÄNGE</span></div>
     <h1>Dashboard</h1>
-    <p>Alle offenen Angebote, Aufträge und Sendungen auf einen Blick.</p>
+    <p>Alle offenen Angebote, Aufträge, Sendungen, Produktionen und Retouren auf einen Blick.</p>
   </header>
 
   <div class="dash-grid">
@@ -664,6 +664,12 @@
       <div class="dash-tile-head"><span class="swatch" style="background:var(--margin-c)"></span><span class="dash-tile-label">🏭 Offene Produktionen</span></div>
       <div class="dash-tile-value" id="dashOpenProductionsCount">0</div>
       <div class="dash-tile-sub" id="dashOpenProductionsSub">Noch keine Produktionen</div>
+    </div>
+
+    <div class="card dash-tile">
+      <div class="dash-tile-head"><span class="swatch" style="background:var(--danger)"></span><span class="dash-tile-label">↩️ Offene Retouren</span></div>
+      <div class="dash-tile-value" id="dashOpenReturnsCount">0</div>
+      <div class="dash-tile-sub" id="dashOpenReturnsSub">Noch keine Retouren</div>
     </div>
 
   </div>
@@ -789,6 +795,7 @@
     <div class="card-head">
       <h2 class="card-title"><span class="swatch" style="background:var(--filament)"></span><span>Filament ausbuchen</span></h2>
     </div>
+    <p class="note" style="margin-top:0;">Für Material, das in einer <b>🏭 Produktion</b> verbraucht wird, nichts hier manuell ausbuchen – das erledigt die Produktion beim „✓ Abschließen" automatisch, sonst wird doppelt gebucht. Dieses Formular ist für sonstigen Verbrauch außerhalb der Produktion.</p>
 
     <div class="field">
       <label for="outBarcodeSearch">Barcode suchen</label>
@@ -894,14 +901,14 @@
       <table class="inv-table" style="margin-bottom:0;">
         <thead>
           <tr>
-            <th>Produktions-Nr.</th>
+            <th class="prod-col-narrow">Produktions-Nr.</th>
             <th>Produkt</th>
-            <th>Charge</th>
+            <th class="prod-col-narrow">Charge</th>
             <th class="num">Stück</th>
-            <th class="num">Druckzeit</th>
-            <th class="num">Rüstzeit</th>
-            <th class="num">Material</th>
-            <th class="col-date">Erstellt</th>
+            <th class="num prod-col-narrow">Druckzeit</th>
+            <th class="num prod-col-narrow">Rüstzeit</th>
+            <th class="num prod-col-narrow">Material</th>
+            <th class="col-date prod-col-narrow">Erstellt</th>
             <th>Status</th>
             <th></th>
           </tr>
@@ -919,7 +926,7 @@
 <div class="wrap" id="pageOrders" style="display:none;">
 
   <header>
-    <div class="eyebrow"><span class="dot"></span><span>AUFTRAGSVERWALTUNG</span></div>
+    <div class="eyebrow"><span class="dot"></span><span>AUFTRAGSVERWALTUNG · ANGEBOTE &amp; AUFTRÄGE</span></div>
     <h1>Auftr&auml;ge</h1>
     <p>Alle Angebote und Auftr&auml;ge an einem Ort. Ein best&auml;tigtes Angebot wird zum Auftrag &ndash; die Auftragsnummer bleibt die Angebotsnummer.</p>
   </header>
@@ -953,7 +960,7 @@
     </div>
     <p class="note" style="margin-top:0;">Best&auml;tigte Angebote und direkt erstellte Rechnungen. Von hier geht es mit einem Klick zum Lieferschein im Versandbereich.</p>
 
-    <div class="vat-row" style="margin:14px 0 4px;">
+    <div class="checkbox-row" style="margin:14px 0 4px;">
       <input type="checkbox" id="orderArchiveShowAll">
       <label for="orderArchiveShowAll">Bereits gelieferte Auftr&auml;ge einblenden</label>
     </div>
@@ -991,7 +998,7 @@
     </div>
     <p class="note" style="margin-top:0;">Lieferscheine werden aus den best&auml;tigten Auftr&auml;gen erstellt. Angebote erscheinen hier erst, wenn du sie im Reiter <b>&#128203; Auftr&auml;ge</b> best&auml;tigt hast.</p>
 
-    <div class="vat-row" style="margin:14px 0 4px;">
+    <div class="checkbox-row" style="margin:14px 0 4px;">
       <input type="checkbox" id="orderShowAll">
       <label for="orderShowAll">Bereits gelieferte Auftr&auml;ge einblenden</label>
     </div>
@@ -1175,7 +1182,7 @@
     </div>
     <p class="note" id="returnsEmptyNote">Noch keine Retouren oder Reklamationen erfasst.</p>
 
-    <button class="btn-secondary" id="btnNewReturn" type="button" style="margin-top:14px;">+ Neue Retoure/Reklamation erfassen</button>
+    <button class="btn-primary" id="btnNewReturn" type="button" style="margin-top:14px;">+ Neue Retoure/Reklamation erfassen</button>
   </div>
 
   <div class="card" id="returnFormCard" style="max-width: 660px; margin: 16px auto 0; display:none;">
@@ -1256,9 +1263,9 @@
 <div class="wrap" id="pageArticles" style="display:none;">
 
   <header>
-    <div class="eyebrow"><span class="dot"></span><span>ARTIKELSTAMM · VERSAND</span></div>
+    <div class="eyebrow"><span class="dot"></span><span>ARTIKELSTAMM · VERSAND &amp; PRODUKTION</span></div>
     <h1>Artikel</h1>
-    <p>Alle Artikel, die in Lieferscheinen zum Versand verwendet werden, mit ihrem aktuellen Lagerbestand.</p>
+    <p>Artikel für Lieferscheine mit Lagerbestand sowie Druckzeit, Rüstzeit und Materialbedarf für die Produktion – wird dort im Dropdown "Produkt" zur Auswahl angeboten.</p>
   </header>
 
   <div class="card">
@@ -1272,7 +1279,7 @@
           <tr>
             <th>Artikelnummer</th>
             <th>Bezeichnung</th>
-            <th class="num">Bestand</th>
+            <th class="num">Lagerbestand (Stück)</th>
             <th class="num">Druckzeit (Std.)</th>
             <th class="num">Rüstzeit (Min.)</th>
             <th>Material</th>
@@ -1284,7 +1291,7 @@
     </div>
     <p class="note" id="articlesEmptyNote">Noch keine Artikel vorhanden. Artikel werden automatisch angelegt, sobald eine Position in einem Lieferschein erfasst wird, oder lassen sich unten manuell hinzufügen.</p>
 
-    <button class="btn-secondary" id="btnNewArticle" type="button" style="margin-top:14px;">+ Neuen Artikel anlegen</button>
+    <button class="btn-primary" id="btnNewArticle" type="button" style="margin-top:14px;">+ Neuen Artikel anlegen</button>
   </div>
 
   <div class="card" id="articleFormCard" style="max-width: 500px; margin: 16px auto 0; display:none;">
@@ -4520,16 +4527,20 @@
         actionCell = '<span class="note" style="color:var(--energy);">✓ Eingelagert</span>';
       }
 
+      const narrowSummary = [p.prodNumber, p.charge, fmtProdHours(p.printHours), fmtProdMinutes(p.setupMinutes), materialInfo !== '—' ? materialInfo : '', createdLabel]
+        .filter(Boolean).join(' · ');
+
       return (
         '<tr>' +
-          '<td>' + escapeHtml(p.prodNumber || '—') + '</td>' +
-          '<td>' + escapeHtml(p.productDescription || '—') + '</td>' +
-          '<td>' + escapeHtml(p.charge || '—') + '</td>' +
+          '<td class="prod-col-narrow">' + escapeHtml(p.prodNumber || '—') + '</td>' +
+          '<td>' + escapeHtml(p.productDescription || '—') +
+            '<span class="order-sub only-narrow">' + escapeHtml(narrowSummary) + '</span>' + '</td>' +
+          '<td class="prod-col-narrow">' + escapeHtml(p.charge || '—') + '</td>' +
           '<td class="num">' + (parseInt(p.quantity, 10) || 1) + '</td>' +
-          '<td class="num">' + fmtProdHours(p.printHours) + '</td>' +
-          '<td class="num">' + fmtProdMinutes(p.setupMinutes) + '</td>' +
-          '<td class="num">' + escapeHtml(materialInfo) + '</td>' +
-          '<td class="col-date">' + createdLabel + '</td>' +
+          '<td class="num prod-col-narrow">' + fmtProdHours(p.printHours) + '</td>' +
+          '<td class="num prod-col-narrow">' + fmtProdMinutes(p.setupMinutes) + '</td>' +
+          '<td class="num prod-col-narrow">' + escapeHtml(materialInfo) + '</td>' +
+          '<td class="col-date prod-col-narrow">' + createdLabel + '</td>' +
           '<td>' + statusBadge + '</td>' +
           '<td>' + actionCell + '</td>' +
         '</tr>'
@@ -4636,7 +4647,7 @@
 
   $('btnNewProduction').addEventListener('click', () => {
     $('productionNumberDisplay').value = nextProductionNumber();
-    $('productionCharge').value = '';
+    $('productionCharge').value = 'CH-' + todayISO();
     $('productionQuantity').value = '1';
     $('productionFormStatus').textContent = '';
 
@@ -4868,7 +4879,7 @@
         '<td class="num">' + itemCount + '</td>' +
         '<td class="num" style="white-space:nowrap;">' +
           '<button type="button" class="btn-secondary versand-pick" data-id="' + s.id + '" title="Kommissionieren" style="width:auto; margin:0 6px 0 0; padding:6px 12px; font-size:12px;">📦<span class="btn-label"> Picken</span></button>' +
-          '<button type="button" class="btn-secondary versand-reopen" data-id="' + s.id + '" title="Lieferschein öffnen" style="width:auto; margin-top:0; padding:6px 12px; font-size:12px;">🖨️<span class="btn-label"> Öffnen</span></button>' +
+          '<button type="button" class="btn-secondary versand-reopen" data-id="' + s.id + '" title="Lieferschein öffnen" style="width:auto; margin-top:0; padding:6px 12px; font-size:12px;">👁<span class="btn-label"> Öffnen</span></button>' +
         '</td>' +
         '</tr>';
     }).join('');
@@ -4912,7 +4923,7 @@
         '<td class="col-customer">' + escapeHtml(s.customerName || '—') + '</td>' +
         '<td class="num">' + itemCount + '</td>' +
         '<td class="num" style="white-space:nowrap;">' +
-          '<button type="button" class="btn-secondary versand-completed-reopen" data-id="' + s.id + '" title="Lieferschein öffnen" style="width:auto; margin-top:0; padding:6px 12px; font-size:12px;">🖨️<span class="btn-label"> Öffnen</span></button>' +
+          '<button type="button" class="btn-secondary versand-completed-reopen" data-id="' + s.id + '" title="Lieferschein öffnen" style="width:auto; margin-top:0; padding:6px 12px; font-size:12px;">👁<span class="btn-label"> Öffnen</span></button>' +
         '</td>' +
         '</tr>';
     }).join('');
@@ -5598,6 +5609,14 @@
     $('dashOpenProductionsSub').textContent = openProductions.length
       ? (plannedCount + ' geplant · ' + inProgressCount + ' in Arbeit · ' + openProductionsPieces + ' Stück')
       : 'Noch keine Produktionen';
+
+    const openReturns = returnsList.filter(r => !r.resolved);
+    $('dashOpenReturnsCount').textContent = openReturns.length;
+    $('dashOpenReturnsSub').textContent = openReturns.length
+      ? (openReturns.reduce((s, r) => s + (parseFloat(r.refundAmount) || 0), 0) > 0
+          ? fmtEUR(openReturns.reduce((s, r) => s + (parseFloat(r.refundAmount) || 0), 0)) + ' Erstattungswert'
+          : openReturns.length + ' zu bearbeiten')
+      : 'Noch keine Retouren';
   }
 
   /* ---------- Retouren / Reklamationen ---------- */
@@ -5663,7 +5682,7 @@
           '<span class="order-sub">' + returnTypeLabel(r) + (r.reason ? ' · ' + escapeHtml(r.reason) : '') + '</span>' +
           '<span class="order-sub only-narrow">' + fmtDateShortDE(r.date) + ' · ' + escapeHtml(r.customerName || 'ohne Kunde') + '</span>' +
           '<span class="order-badge' + (r.resolved ? ' is-shipped' : '') + '">' + (r.resolved ? 'abgeschlossen' : 'offen') + '</span>' +
-          '<span class="order-badge is-quote">' + returnTypeLabel(r) + '</span>' +
+          '<span class="order-badge is-type">' + returnTypeLabel(r) + '</span>' +
           (returnNextActionLabel(r) ? '<span class="order-badge is-action">' + escapeHtml(returnNextActionLabel(r)) + '</span>' : '') +
         '</td>' +
         '<td class="col-customer">' + escapeHtml(r.customerName || '—') + '</td>' +
