@@ -878,7 +878,7 @@
   <header>
     <div class="eyebrow"><span class="dot"></span><span>FERTIGUNG · PRODUKTION</span></div>
     <h1>Produktion</h1>
-    <p>Laufende Fertigungsaufträge im Blick behalten und neue Produktionen anlegen.</p>
+    <p>Jede Produktion durchläuft Geplant → In Arbeit → Fertig. Beim Abschließen werden Filament automatisch ausgebucht und die gefertigte Stückzahl ins Lager eingebucht.</p>
   </header>
 
   <div class="card">
@@ -902,6 +902,7 @@
             <th class="num">Rüstzeit</th>
             <th class="num">Material</th>
             <th class="col-date">Erstellt</th>
+            <th>Status</th>
             <th></th>
           </tr>
         </thead>
@@ -4441,13 +4442,27 @@
   /* ---------- Produktion: Fertigungsaufträge ---------- */
 
   const PRODUCTIONS_KEY = 'productions';
-  let productions = []; // { id, prodNumber, articleNo, productDescription, charge, quantity, printHours, setupMinutes, materialType, materialWeight (je Stück), status, createdAt, completedAt }
+  // Status-Workflow: 'planned' (Geplant) -> 'in_progress' (In Arbeit) -> 'done' (Fertig).
+  let productions = []; // { id, prodNumber, articleNo, productDescription, charge, quantity, printHours, setupMinutes, materialType, materialWeight (je Stück), status, createdAt, startedAt, completedAt }
+
+  const PRODUCTION_STATUS = {
+    planned:     { label: 'Geplant',    badgeClass: '' },
+    in_progress: { label: 'In Arbeit',  badgeClass: 'is-action' },
+    done:        { label: 'Fertig',     badgeClass: 'is-shipped' }
+  };
 
   async function loadProductions(){
     try {
       const value = await storageGet(PRODUCTIONS_KEY);
       if (value) productions = JSON.parse(value);
     } catch (err) {}
+    // Ältere Produktionen kannten nur "open"/"done" – als "geplant" fortführen,
+    // damit der neue dreistufige Workflow auch auf bestehenden Daten passt.
+    let migrated = false;
+    productions.forEach(p => {
+      if (p.status !== 'in_progress' && p.status !== 'done') { p.status = 'planned'; migrated = true; }
+    });
+    if (migrated) await saveProductions();
     renderProductions();
   }
 
@@ -4493,9 +4508,18 @@
         ? (totalWeight.toLocaleString('de-DE', {maximumFractionDigits:2}) + ' g' + (materialLabel ? ' ' + materialLabel : ''))
         : '—';
       const createdLabel = p.createdAt ? new Date(p.createdAt).toLocaleDateString('de-DE') : '—';
-      const actionCell = p.status === 'done'
-        ? '<span class="note" style="color:var(--energy);">✓ Abgeschlossen</span>'
-        : '<button type="button" class="btn-secondary production-complete-btn" data-id="' + p.id + '" style="margin-top:0; width:auto; padding:8px 12px;">✓ Abschließen</button>';
+      const status = PRODUCTION_STATUS[p.status] || PRODUCTION_STATUS.planned;
+      const statusBadge = '<span class="order-badge' + (status.badgeClass ? ' ' + status.badgeClass : '') + '">' + status.label + '</span>';
+
+      let actionCell;
+      if (p.status === 'planned') {
+        actionCell = '<button type="button" class="btn-secondary production-start-btn" data-id="' + p.id + '" style="margin-top:0; width:auto; padding:8px 12px;">▶ Starten</button>';
+      } else if (p.status === 'in_progress') {
+        actionCell = '<button type="button" class="btn-secondary production-complete-btn" data-id="' + p.id + '" style="margin-top:0; width:auto; padding:8px 12px;">✓ Abschließen</button>';
+      } else {
+        actionCell = '<span class="note" style="color:var(--energy);">✓ Eingelagert</span>';
+      }
+
       return (
         '<tr>' +
           '<td>' + escapeHtml(p.prodNumber || '—') + '</td>' +
@@ -4506,11 +4530,19 @@
           '<td class="num">' + fmtProdMinutes(p.setupMinutes) + '</td>' +
           '<td class="num">' + escapeHtml(materialInfo) + '</td>' +
           '<td class="col-date">' + createdLabel + '</td>' +
+          '<td>' + statusBadge + '</td>' +
           '<td>' + actionCell + '</td>' +
         '</tr>'
       );
     }).join('');
 
+    $('productionListBody').querySelectorAll('.production-start-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const entry = productions.find(p => p.id === btn.dataset.id);
+        if (!entry) return;
+        startProduction(entry);
+      });
+    });
     $('productionListBody').querySelectorAll('.production-complete-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const entry = productions.find(p => p.id === btn.dataset.id);
@@ -4520,6 +4552,15 @@
     });
   }
   $('productionShowAll').addEventListener('change', renderProductions);
+
+  // Erster Schritt im Workflow: Geplant -> In Arbeit. Noch keine Buchung,
+  // markiert nur den Start der eigentlichen Fertigung.
+  function startProduction(entry){
+    entry.status = 'in_progress';
+    entry.startedAt = new Date().toISOString();
+    saveProductions();
+    renderProductions();
+  }
 
   // Sucht die am besten passende Lagerposition für den Materialbedarf einer
   // Produktion: gleicher Filamenttyp und genug Restbestand, bevorzugt die
@@ -4634,7 +4675,7 @@
       setupMinutes: parseFloat(entry.prodSetupMinutes) || 0,
       materialType: entry.prodMaterialType || '',
       materialWeight: parseFloat(entry.prodMaterialWeight) || 0,
-      status: 'open',
+      status: 'planned',
       createdAt: new Date().toISOString()
     });
     saveProductions();
@@ -5550,10 +5591,12 @@
       : 'Noch keine Sendungen';
 
     const openProductions = productions.filter(p => p.status !== 'done');
+    const plannedCount = openProductions.filter(p => p.status === 'planned').length;
+    const inProgressCount = openProductions.filter(p => p.status === 'in_progress').length;
     const openProductionsPieces = openProductions.reduce((s, p) => s + (parseInt(p.quantity, 10) || 1), 0);
     $('dashOpenProductionsCount').textContent = openProductions.length;
     $('dashOpenProductionsSub').textContent = openProductions.length
-      ? (openProductionsPieces + ' Stück insgesamt')
+      ? (plannedCount + ' geplant · ' + inProgressCount + ' in Arbeit · ' + openProductionsPieces + ' Stück')
       : 'Noch keine Produktionen';
   }
 
