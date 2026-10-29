@@ -279,45 +279,52 @@
             <div class="device-plate-icon" id="acePlateIcon"></div>
             <div class="device-plate-text"><b id="acePlateLabel">KEIN ZUSATZGERÄT</b><span id="acePlateSub">Manueller Filamentwechsel</span></div>
           </div>
-          <div class="input-row compact" style="margin-top:8px;">
-            <input type="number" id="acePower" value="0" step="1" min="0">
-            <span class="unit">W</span>
+        </div>
+
+        <div class="field">
+          <label for="pricePerKwh"><span id="lblPricePerKwh">Strompreis</span></label>
+          <div class="input-row compact">
+            <input type="number" id="pricePerKwh" value="0.30" step="0.01" min="0">
+            <span class="unit">€/kWh</span>
           </div>
         </div>
 
-        <div class="subgrid">
-          <div class="field">
-            <label for="heatPower"><span id="heatPowerLabel">Aufheizen</span> <span class="hint" id="hintPeak">Spitze</span></label>
-            <div class="input-row">
-              <input type="number" id="heatPower" value="398" step="1" min="0">
+        <details style="margin-top:14px;">
+          <summary>Details anpassen <span class="hint">automatisch aus Material/Zusatzgerät befüllt</span></summary>
+
+          <div class="field fdm-only">
+            <label for="acePower">Zusatzgerät-Leistung</label>
+            <div class="input-row compact">
+              <input type="number" id="acePower" value="0" step="1" min="0">
               <span class="unit">W</span>
             </div>
           </div>
-          <div class="field">
-            <label for="heatMinutes"><span id="heatMinutesLabel">Aufheizdauer</span></label>
-            <div class="input-row">
-              <input type="number" id="heatMinutes" value="5" step="0.5" min="0">
-              <span class="unit">Min.</span>
+
+          <div class="subgrid">
+            <div class="field">
+              <label for="heatPower"><span id="heatPowerLabel">Aufheizen</span> <span class="hint" id="hintPeak">Spitze</span></label>
+              <div class="input-row">
+                <input type="number" id="heatPower" value="398" step="1" min="0">
+                <span class="unit">W</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="heatMinutes"><span id="heatMinutesLabel">Aufheizdauer</span></label>
+              <div class="input-row">
+                <input type="number" id="heatMinutes" value="5" step="0.5" min="0">
+                <span class="unit">Min.</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="subgrid">
           <div class="field">
             <label for="printPower"><span id="printPowerLabel">Druckleistung</span> <span class="hint" id="hintOperating">im Betrieb</span></label>
-            <div class="input-row">
+            <div class="input-row compact">
               <input type="number" id="printPower" value="205" step="1" min="0">
               <span class="unit">W</span>
             </div>
           </div>
-          <div class="field">
-            <label for="pricePerKwh"><span id="lblPricePerKwh">Strompreis</span></label>
-            <div class="input-row">
-              <input type="number" id="pricePerKwh" value="0.30" step="0.01" min="0">
-              <span class="unit">€/kWh</span>
-            </div>
-          </div>
-        </div>
+        </details>
 
       </details>
 
@@ -420,20 +427,11 @@
           <span class="note" id="filamentArticleNoHint" style="display:block; margin-top:6px;"></span>
         </div>
 
-        <div class="subgrid">
-          <div class="field">
-            <label for="filamentWeight"><span id="weightLabelText">Filamentgewicht</span></label>
-            <div class="input-row">
-              <input type="number" id="filamentWeight" value="50" step="1" min="0">
-              <span class="unit">g</span>
-            </div>
-          </div>
-          <div class="field">
-            <label for="pricePerKg"><span id="lblPricePerKg">Preis pro kg</span> <span class="hint spec-tag" id="priceSourceHint">Redline PLA</span></label>
-            <div class="input-row">
-              <input type="number" id="pricePerKg" value="16.99" step="0.01" min="0">
-              <span class="unit">€/kg</span>
-            </div>
+        <div class="field">
+          <label for="filamentWeight"><span id="weightLabelText">Filamentgewicht</span></label>
+          <div class="input-row">
+            <input type="number" id="filamentWeight" value="50" step="1" min="0">
+            <span class="unit">g</span>
           </div>
         </div>
 
@@ -444,6 +442,17 @@
             <span class="unit">Std.</span>
           </div>
         </div>
+
+        <details style="margin-top:14px;">
+          <summary>Details anpassen <span class="hint">automatisch aus Material gewählt</span></summary>
+          <div class="field">
+            <label for="pricePerKg"><span id="lblPricePerKg">Preis pro kg</span> <span class="hint spec-tag" id="priceSourceHint">Redline PLA</span></label>
+            <div class="input-row compact">
+              <input type="number" id="pricePerKg" value="16.99" step="0.01" min="0">
+              <span class="unit">€/kg</span>
+            </div>
+          </div>
+        </details>
 
       </details>
 
