@@ -645,7 +645,7 @@
   .order-actions .order-delete:hover{ color: var(--margin-c); }
 
   /* Listen dürfen im Notfall in sich scrollen statt die Seite zu sprengen */
-  #orderListWrap, #versandHistoryWrap, #versandCompletedWrap, #quoteListWrap, #orderArchiveWrap, #returnsListWrap, #productionListWrap, #articlesListWrap{
+  #orderListWrap, #versandHistoryWrap, #versandCompletedWrap, #quoteListWrap, #orderArchiveWrap, #returnsListWrap, #productionListWrap, #articlesListWrap, #suppliersListWrap{
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -659,10 +659,13 @@
     #versandHistoryBody .btn-label,
     #versandCompletedBody .btn-label,
     #returnsListBody .btn-label,
-    #articlesListBody .btn-label{ display:none; }
+    #articlesListBody .btn-label,
+    #suppliersListBody .btn-label{ display:none; }
     .order-actions .btn-secondary,
     .order-actions .btn-primary{ padding: 6px 10px; margin-left: 4px; }
-    #articlesListBody .article-edit-btn{ padding: 6px 8px; }
+    #articlesListBody .article-edit-btn,
+    #suppliersListBody .supplier-edit-btn{ padding: 6px 8px; }
+    #suppliersListWrap .supplier-col-narrow{ display:none; }
     #orderListWrap .col-date,
     #orderListWrap .col-customer,
     #quoteListWrap .col-date,
@@ -684,7 +687,8 @@
     #versandHistoryWrap .order-sub.only-narrow,
     #versandCompletedWrap .order-sub.only-narrow,
     #returnsListWrap .order-sub.only-narrow,
-    #productionListWrap .order-sub.only-narrow{ display:block; }
+    #productionListWrap .order-sub.only-narrow,
+    #suppliersListWrap .order-sub.only-narrow{ display:block; }
     #orderListWrap table.inv-table thead th,
     #orderListWrap table.inv-table tbody td,
     #quoteListWrap table.inv-table thead th,
