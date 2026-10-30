@@ -39,8 +39,26 @@
 <div class="page-bg"></div>
 <div class="app-shell">
 <nav class="side-nav" id="sideNav">
-  <div class="select-row side-nav-select-row">
-    <select id="sideNavSelect" aria-label="Seite wählen">
+  <div class="side-nav-select-row">
+    <div class="nav-dropdown" id="navDropdown">
+      <button type="button" class="nav-dropdown-toggle" id="navDropdownToggle" aria-haspopup="true" aria-expanded="false">
+        <span id="navDropdownLabel">🧮 Kalkulator</span>
+      </button>
+      <div class="nav-dropdown-menu" id="navDropdownMenu">
+        <button type="button" class="nav-dropdown-item" data-page="dashboard">📊 Dashboard</button>
+        <button type="button" class="nav-dropdown-item" data-page="calculator">🧮 Kalkulator</button>
+        <details class="nav-dropdown-group" id="navGroupLager">
+          <summary>🗃️ Lager</summary>
+          <button type="button" class="nav-dropdown-item nav-dropdown-subitem" data-page="booking">📦 Filament buchen</button>
+          <button type="button" class="nav-dropdown-item nav-dropdown-subitem" data-page="articles">🏷️ Artikel</button>
+          <button type="button" class="nav-dropdown-item nav-dropdown-subitem" data-page="shipping">🚚 Versand</button>
+        </details>
+        <button type="button" class="nav-dropdown-item" data-page="production">🏭 Produktion</button>
+        <button type="button" class="nav-dropdown-item" data-page="orders">📋 Aufträge</button>
+        <button type="button" class="nav-dropdown-item" data-page="returns">↩️ Retouren/Reklamationen</button>
+      </div>
+    </div>
+    <select id="sideNavSelect" aria-label="Seite wählen" class="nav-select-legacy">
       <option value="dashboard">📊 Dashboard</option>
       <option value="calculator" selected>🧮 Kalkulator</option>
       <optgroup label="🗃️ Lager">
@@ -6873,11 +6891,45 @@
     $('btnPageReturns').classList.toggle('active', page === 'returns');
     $('btnPageArticles').classList.toggle('active', page === 'articles');
     $('sideNavSelect').value = page;
+    $('navDropdownLabel').textContent = NAV_DROPDOWN_LABELS[page] || '';
+    $('navDropdownMenu').querySelectorAll('.nav-dropdown-item').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.page === page);
+    });
+    if (NAV_LAGER_PAGES.includes(page)) $('navGroupLager').open = true;
+    closeNavDropdown();
     if (page === 'dashboard') renderDashboard();
     if (page === 'articles') renderArticles();
     if (page === 'production') renderProductions();
     window.scrollTo(0, 0);
   }
+
+  /* ---------- Navigations-Dropdown (Seitenwechsler) ---------- */
+  const NAV_DROPDOWN_LABELS = {
+    dashboard: '📊 Dashboard',
+    calculator: '🧮 Kalkulator',
+    booking: '📦 Filament buchen',
+    articles: '🏷️ Artikel',
+    shipping: '🚚 Versand',
+    production: '🏭 Produktion',
+    orders: '📋 Aufträge',
+    returns: '↩️ Retouren/Reklamationen'
+  };
+  const NAV_LAGER_PAGES = ['booking', 'articles', 'shipping'];
+
+  function closeNavDropdown(){
+    $('navDropdown').classList.remove('open');
+    $('navDropdownToggle').setAttribute('aria-expanded', 'false');
+  }
+  $('navDropdownToggle').addEventListener('click', () => {
+    const open = $('navDropdown').classList.toggle('open');
+    $('navDropdownToggle').setAttribute('aria-expanded', String(open));
+  });
+  $('navDropdownMenu').querySelectorAll('.nav-dropdown-item').forEach(btn => {
+    btn.addEventListener('click', () => switchPage(btn.dataset.page));
+  });
+  document.addEventListener('click', e => {
+    if (!$('navDropdown').contains(e.target)) closeNavDropdown();
+  });
   $('btnPageDashboard').addEventListener('click', () => switchPage('dashboard'));
   $('btnPageCalculator').addEventListener('click', () => switchPage('calculator'));
   $('btnPageOrders').addEventListener('click', () => switchPage('orders'));
