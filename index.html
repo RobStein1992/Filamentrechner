@@ -1274,7 +1274,7 @@
   <header>
     <div class="eyebrow"><span class="dot"></span><span>ARTIKELSTAMM · VERSAND &amp; PRODUKTION</span></div>
     <h1>Artikel</h1>
-    <p>Artikel für Lieferscheine mit Lagerbestand sowie Druckzeit, Rüstzeit und Materialbedarf für die Produktion – wird dort im Dropdown "Produkt" zur Auswahl angeboten.</p>
+    <p>Artikel für Lieferscheine mit Lagerbestand – wird dort im Dropdown "Produkt" zur Auswahl angeboten. Druckzeit, Rüstzeit und Materialbedarf für die Produktion lassen sich über "Bearbeiten" pflegen.</p>
   </header>
 
   <div class="card">
@@ -1289,10 +1289,7 @@
             <th>Artikelnummer</th>
             <th>Bezeichnung</th>
             <th class="num">Lagerbestand (Stück)</th>
-            <th class="num">Druckzeit (Std.)</th>
-            <th class="num">Rüstzeit (Min.)</th>
-            <th>Material</th>
-            <th class="num">Materialbedarf (g)</th>
+            <th></th>
           </tr>
         </thead>
         <tbody id="articlesListBody"></tbody>
@@ -1305,13 +1302,13 @@
 
   <div class="card" id="articleFormCard" style="max-width: 500px; margin: 16px auto 0; display:none;">
     <div class="card-head">
-      <h2 class="card-title"><span class="swatch" style="background:var(--filament)"></span><span>Artikel anlegen</span></h2>
+      <h2 class="card-title"><span class="swatch" style="background:var(--filament)"></span><span id="articleFormTitle">Artikel anlegen</span></h2>
     </div>
     <div class="field">
       <label for="articleDescription">Bezeichnung</label>
       <input type="text" id="articleDescription" placeholder="z. B. Gehäusedeckel rund" autocomplete="off">
     </div>
-    <div class="field">
+    <div class="field" id="articleInitialStockField">
       <label for="articleInitialStock">Anfangsbestand <span class="hint">optional</span></label>
       <input type="number" id="articleInitialStock" placeholder="0" min="0" step="1" inputmode="numeric">
     </div>
@@ -1355,6 +1352,43 @@
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
       <button class="btn-primary" id="btnCreateArticle" type="button">💾 Anlegen</button>
       <button class="btn-secondary" id="btnCancelArticle" type="button">✕ Abbrechen</button>
+    </div>
+  </div>
+
+  <div class="card" id="articleEditCard" style="max-width: 500px; margin: 16px auto 0; display:none;">
+    <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--filament)"></span><span>Artikel bearbeiten</span></h2>
+    </div>
+    <div class="field">
+      <label>Bezeichnung</label>
+      <p class="note" id="articleEditDescription" style="margin-top:0;"></p>
+    </div>
+    <div class="subgrid">
+      <div class="field">
+        <label for="articleEditPrintHours">Druckzeit (Std.) <span class="hint">optional</span></label>
+        <input type="number" id="articleEditPrintHours" placeholder="0" min="0" step="0.1" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label for="articleEditSetupMinutes">Rüstzeit (Min.) <span class="hint">optional</span></label>
+        <input type="number" id="articleEditSetupMinutes" placeholder="0" min="0" step="1" inputmode="numeric">
+      </div>
+    </div>
+    <div class="subgrid">
+      <div class="field">
+        <label for="articleEditMaterialType">Material <span class="hint">optional</span></label>
+        <select id="articleEditMaterialType">
+          <option value="">—</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="articleEditMaterialWeight">Materialbedarf (g) <span class="hint">optional</span></label>
+        <input type="number" id="articleEditMaterialWeight" placeholder="0" min="0" step="0.1" inputmode="decimal">
+      </div>
+    </div>
+    <p class="note" id="articleEditStatus"></p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn-primary" id="btnSaveArticleEdit" type="button">💾 Speichern</button>
+      <button class="btn-secondary" id="btnCancelArticleEdit" type="button">✕ Abbrechen</button>
     </div>
   </div>
 
@@ -4333,18 +4367,12 @@
     $('articlesEmptyNote').style.display = 'none';
 
     $('articlesListBody').innerHTML = list.map(p => {
-      const materialOptions = Object.keys(bookMaterialLabels).map(code =>
-        '<option value="' + code + '"' + (p.prodMaterialType === code ? ' selected' : '') + '>' + escapeHtml(bookMaterialLabels[code]) + '</option>'
-      ).join('');
       return (
       '<tr>' +
         '<td>' + escapeHtml(p.articleNo || '—') + '</td>' +
         '<td>' + escapeHtml(p.description || '—') + '</td>' +
         '<td class="num"><input type="number" class="article-stock-input" data-articleno="' + escapeHtml(p.articleNo || '') + '" min="0" step="1" value="' + (parseInt(p.stock, 10) || 0) + '"></td>' +
-        '<td class="num"><input type="number" class="article-printhours-input" data-articleno="' + escapeHtml(p.articleNo || '') + '" min="0" step="0.1" value="' + (parseFloat(p.prodPrintHours) || 0) + '"></td>' +
-        '<td class="num"><input type="number" class="article-setupmin-input" data-articleno="' + escapeHtml(p.articleNo || '') + '" min="0" step="1" value="' + (parseFloat(p.prodSetupMinutes) || 0) + '"></td>' +
-        '<td><select class="article-materialtype-input" data-articleno="' + escapeHtml(p.articleNo || '') + '"><option value="">—</option>' + materialOptions + '</select></td>' +
-        '<td class="num"><input type="number" class="article-materialweight-input" data-articleno="' + escapeHtml(p.articleNo || '') + '" min="0" step="0.1" value="' + (parseFloat(p.prodMaterialWeight) || 0) + '"></td>' +
+        '<td class="num"><button type="button" class="btn-secondary article-edit-btn" data-articleno="' + escapeHtml(p.articleNo || '') + '" style="width:auto; padding:4px 10px; font-size:13px;">✎ <span class="btn-label">Bearbeiten</span></button></td>' +
       '</tr>'
       );
     }).join('');
@@ -4360,48 +4388,49 @@
         saveProductCatalog();
       });
     });
-    $('articlesListBody').querySelectorAll('.article-printhours-input').forEach(input => {
-      input.addEventListener('change', () => {
-        const entry = productCatalog.find(p => p.articleNo === input.dataset.articleno);
-        if (!entry) return;
-        let val = parseFloat(input.value);
-        if (isNaN(val) || val < 0) val = 0;
-        input.value = val;
-        entry.prodPrintHours = val;
-        saveProductCatalog();
-      });
-    });
-    $('articlesListBody').querySelectorAll('.article-setupmin-input').forEach(input => {
-      input.addEventListener('change', () => {
-        const entry = productCatalog.find(p => p.articleNo === input.dataset.articleno);
-        if (!entry) return;
-        let val = parseFloat(input.value);
-        if (isNaN(val) || val < 0) val = 0;
-        input.value = val;
-        entry.prodSetupMinutes = val;
-        saveProductCatalog();
-      });
-    });
-    $('articlesListBody').querySelectorAll('.article-materialtype-input').forEach(select => {
-      select.addEventListener('change', () => {
-        const entry = productCatalog.find(p => p.articleNo === select.dataset.articleno);
-        if (!entry) return;
-        entry.prodMaterialType = select.value;
-        saveProductCatalog();
-      });
-    });
-    $('articlesListBody').querySelectorAll('.article-materialweight-input').forEach(input => {
-      input.addEventListener('change', () => {
-        const entry = productCatalog.find(p => p.articleNo === input.dataset.articleno);
-        if (!entry) return;
-        let val = parseFloat(input.value);
-        if (isNaN(val) || val < 0) val = 0;
-        input.value = val;
-        entry.prodMaterialWeight = val;
-        saveProductCatalog();
-      });
+    $('articlesListBody').querySelectorAll('.article-edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => openArticleEditForm(btn.dataset.articleno));
     });
   }
+
+  // Öffnet die Produktionsdaten (Druckzeit, Rüstzeit, Material, Materialbedarf)
+  // eines bestehenden Artikels zum Bearbeiten. Die Bezeichnung bleibt fix, da
+  // sie andernorts (Lieferscheine, Retouren) als Schlüssel zur Artikelnummer dient.
+  function openArticleEditForm(articleNo){
+    const entry = productCatalog.find(p => p.articleNo === articleNo);
+    if (!entry) return;
+    $('articleFormCard').style.display = 'none';
+    $('articleEditCard').dataset.articleno = articleNo;
+    $('articleEditDescription').textContent = (entry.articleNo || '—') + ' · ' + (entry.description || '—');
+    $('articleEditPrintHours').value = parseFloat(entry.prodPrintHours) || '';
+    $('articleEditSetupMinutes').value = parseFloat(entry.prodSetupMinutes) || '';
+    const materialSelect = $('articleEditMaterialType');
+    materialSelect.innerHTML = '<option value="">—</option>' + Object.keys(bookMaterialLabels).map(code =>
+      '<option value="' + code + '"' + (entry.prodMaterialType === code ? ' selected' : '') + '>' + escapeHtml(bookMaterialLabels[code]) + '</option>'
+    ).join('');
+    $('articleEditMaterialWeight').value = parseFloat(entry.prodMaterialWeight) || '';
+    $('articleEditStatus').textContent = '';
+    $('articleEditCard').style.display = 'block';
+    $('articleEditCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  $('btnCancelArticleEdit').addEventListener('click', () => {
+    $('articleEditCard').style.display = 'none';
+  });
+  $('btnSaveArticleEdit').addEventListener('click', () => {
+    const articleNo = $('articleEditCard').dataset.articleno;
+    const entry = productCatalog.find(p => p.articleNo === articleNo);
+    if (!entry) return;
+    const printHours = parseFloat($('articleEditPrintHours').value);
+    const setupMinutes = parseFloat($('articleEditSetupMinutes').value);
+    const materialWeight = parseFloat($('articleEditMaterialWeight').value);
+    entry.prodPrintHours = isNaN(printHours) ? 0 : printHours;
+    entry.prodSetupMinutes = isNaN(setupMinutes) ? 0 : setupMinutes;
+    entry.prodMaterialType = $('articleEditMaterialType').value;
+    entry.prodMaterialWeight = isNaN(materialWeight) ? 0 : materialWeight;
+    saveProductCatalog();
+    renderArticles();
+    $('articleEditCard').style.display = 'none';
+  });
 
   $('btnNewArticle').addEventListener('click', () => {
     $('articleDescription').value = '';
@@ -4411,6 +4440,7 @@
     $('articleMaterialType').value = '';
     $('articleMaterialWeight').value = '';
     $('articleFormStatus').textContent = '';
+    $('articleEditCard').style.display = 'none';
     $('articleFormCard').style.display = 'block';
   });
   $('btnCancelArticle').addEventListener('click', () => {

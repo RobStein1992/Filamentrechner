@@ -642,7 +642,7 @@
   .order-actions .order-delete:hover{ color: var(--margin-c); }
 
   /* Listen dürfen im Notfall in sich scrollen statt die Seite zu sprengen */
-  #orderListWrap, #versandHistoryWrap, #versandCompletedWrap, #quoteListWrap, #orderArchiveWrap, #returnsListWrap, #productionListWrap{
+  #orderListWrap, #versandHistoryWrap, #versandCompletedWrap, #quoteListWrap, #orderArchiveWrap, #returnsListWrap, #productionListWrap, #articlesListWrap{
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -655,9 +655,11 @@
     #quoteListBody .btn-label,
     #versandHistoryBody .btn-label,
     #versandCompletedBody .btn-label,
-    #returnsListBody .btn-label{ display:none; }
+    #returnsListBody .btn-label,
+    #articlesListBody .btn-label{ display:none; }
     .order-actions .btn-secondary,
     .order-actions .btn-primary{ padding: 6px 10px; margin-left: 4px; }
+    #articlesListBody .article-edit-btn{ padding: 6px 8px; }
     #orderListWrap .col-date,
     #orderListWrap .col-customer,
     #quoteListWrap .col-date,
@@ -693,7 +695,11 @@
     #returnsListWrap table.inv-table thead th,
     #returnsListWrap table.inv-table tbody td,
     #productionListWrap table.inv-table thead th,
-    #productionListWrap table.inv-table tbody td{ padding-left: 4px; padding-right: 4px; }
+    #productionListWrap table.inv-table tbody td,
+    #articlesListWrap table.inv-table thead th,
+    #articlesListWrap table.inv-table tbody td{ padding-left: 4px; padding-right: 4px; }
+    #articlesListWrap table.inv-table thead th{ white-space:normal; overflow-wrap:anywhere; }
+    #articlesListBody input.article-stock-input{ width: 56px; padding: 6px 4px; }
   }
 
   .order-banner{
