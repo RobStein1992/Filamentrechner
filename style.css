@@ -283,7 +283,6 @@
     .side-nav{
       flex: none;
       position: relative;
-      z-index: 95;
       width:100%;
       flex-direction: row;
       align-items:center;
@@ -291,6 +290,9 @@
       border-radius: var(--radius-sm);
       margin-bottom: 16px;
     }
+    /* Nur bei geöffnetem Dropdown über die Toolbar heben, sonst deckt der
+       Navigationsrahmen sonst "Firmen-Einstellungen"/"Deutsch" leicht ab. */
+    .side-nav:has(.nav-dropdown.open){ z-index: 95; }
     .side-nav-select-row{
       flex: 1 1 auto;
       min-width: 0;
