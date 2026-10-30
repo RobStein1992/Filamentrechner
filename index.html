@@ -2275,7 +2275,7 @@
     if (!ok) throw new Error('storage unavailable');
     markLocalChange();
   }
-  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders', 'returns', 'lieferschein-worker-url', 'product-catalog', 'productions', 'suppliers'];
+  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders', 'returns', 'lieferschein-worker-url', 'product-catalog', 'productions', 'suppliers', 'suppliers-default-seeded'];
 
   // Zustand der Geräte-Synchronisierung (siehe weiter unten). Hier oben
   // deklariert, weil storageSet() darauf zugreift.
@@ -4600,6 +4600,24 @@
       const value = await storageGet(SUPPLIERS_KEY);
       if (value) suppliers = JSON.parse(value);
     } catch (err) {}
+    await seedDefaultSuppliers();
+  }
+
+  // Legt beim ersten Start einmalig die anfänglichen Lieferanten an, damit
+  // sie nicht von Hand über das Formular eingetragen werden müssen.
+  const SUPPLIERS_SEEDED_KEY = 'suppliers-default-seeded';
+  async function seedDefaultSuppliers(){
+    try {
+      const alreadySeeded = await storageGet(SUPPLIERS_SEEDED_KEY);
+      if (alreadySeeded) return;
+    } catch (err) {}
+    const defaults = ['Redline Filament', 'Material4Print', 'OWL Filament'];
+    defaults.forEach(name => {
+      if (suppliers.some(s => (s.name || '').trim().toLowerCase() === name.toLowerCase())) return;
+      suppliers.push({ id: 'LIEF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase(), name, contact: '', phone: '', email: '', street: '', zip: '', city: '', notes: '' });
+    });
+    await saveSuppliers();
+    try { await storageSet(SUPPLIERS_SEEDED_KEY, '1'); } catch (err) {}
   }
 
   async function saveSuppliers(){
