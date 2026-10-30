@@ -645,7 +645,7 @@
   .order-actions .order-delete:hover{ color: var(--margin-c); }
 
   /* Listen dürfen im Notfall in sich scrollen statt die Seite zu sprengen */
-  #orderListWrap, #versandHistoryWrap, #versandCompletedWrap, #quoteListWrap, #orderArchiveWrap, #returnsListWrap, #productionListWrap, #articlesListWrap, #suppliersListWrap{
+  #orderListWrap, #versandHistoryWrap, #versandCompletedWrap, #quoteListWrap, #orderArchiveWrap, #returnsListWrap, #productionListWrap, #articlesListWrap, #suppliersListWrap, #purchasingListWrap{
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -665,7 +665,8 @@
     .order-actions .btn-primary{ padding: 6px 10px; margin-left: 4px; }
     #articlesListBody .article-edit-btn,
     #suppliersListBody .supplier-edit-btn{ padding: 6px 8px; }
-    #suppliersListWrap .supplier-col-narrow{ display:none; }
+    #suppliersListWrap .supplier-col-narrow,
+    #purchasingListWrap .po-col-narrow{ display:none; }
     #orderListWrap .col-date,
     #orderListWrap .col-customer,
     #quoteListWrap .col-date,
@@ -688,7 +689,8 @@
     #versandCompletedWrap .order-sub.only-narrow,
     #returnsListWrap .order-sub.only-narrow,
     #productionListWrap .order-sub.only-narrow,
-    #suppliersListWrap .order-sub.only-narrow{ display:block; }
+    #suppliersListWrap .order-sub.only-narrow,
+    #purchasingListWrap .order-sub.only-narrow{ display:block; }
     #orderListWrap table.inv-table thead th,
     #orderListWrap table.inv-table tbody td,
     #quoteListWrap table.inv-table thead th,
@@ -704,7 +706,9 @@
     #productionListWrap table.inv-table thead th,
     #productionListWrap table.inv-table tbody td,
     #articlesListWrap table.inv-table thead th,
-    #articlesListWrap table.inv-table tbody td{ padding-left: 4px; padding-right: 4px; }
+    #articlesListWrap table.inv-table tbody td,
+    #purchasingListWrap table.inv-table thead th,
+    #purchasingListWrap table.inv-table tbody td{ padding-left: 4px; padding-right: 4px; }
     #articlesListWrap table.inv-table thead th{ white-space:normal; overflow-wrap:anywhere; }
     #articlesListBody input.article-stock-input{ width: 56px; padding: 6px 4px; }
   }

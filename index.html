@@ -53,7 +53,11 @@
           <button type="button" class="nav-dropdown-item nav-dropdown-subitem" data-page="booking">📦 Filament buchen</button>
           <button type="button" class="nav-dropdown-item nav-dropdown-subitem" data-page="articles">🏷️ Artikel</button>
           <button type="button" class="nav-dropdown-item nav-dropdown-subitem" data-page="shipping">🚚 Versand</button>
+        </details>
+        <details class="nav-dropdown-group" id="navGroupEinkauf">
+          <summary>🛒 Einkauf</summary>
           <button type="button" class="nav-dropdown-item nav-dropdown-subitem" data-page="suppliers">🚛 Lieferanten</button>
+          <button type="button" class="nav-dropdown-item nav-dropdown-subitem" data-page="purchasing">🧾 Bestellungen</button>
         </details>
         <button type="button" class="nav-dropdown-item" data-page="production">🏭 Produktion</button>
         <button type="button" class="nav-dropdown-item" data-page="orders">📋 Aufträge</button>
@@ -67,7 +71,10 @@
         <option value="booking">📦 Filament buchen</option>
         <option value="articles">🏷️ Artikel</option>
         <option value="shipping">🚚 Versand</option>
+      </optgroup>
+      <optgroup label="🛒 Einkauf">
         <option value="suppliers">🚛 Lieferanten</option>
+        <option value="purchasing">🧾 Bestellungen</option>
       </optgroup>
       <option value="production">🏭 Produktion</option>
       <option value="orders">📋 Aufträge</option>
@@ -1498,6 +1505,45 @@
 
 </div>
 
+<div class="wrap" id="pagePurchasing" style="display:none;">
+
+  <header>
+    <div class="eyebrow"><span class="dot"></span><span>EINKAUF · BESTELLUNGEN</span></div>
+    <h1>Bestellungen</h1>
+    <p>Bestellungen bei Lieferanten durchlaufen Offen → Bestellt → Eingetroffen.</p>
+  </header>
+
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--extra)"></span><span>Bestellungen</span></h2>
+    </div>
+
+    <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:500; margin-bottom:12px; cursor:pointer;">
+      <input type="checkbox" id="purchasingShowAll" style="width:auto;"> Eingetroffene einblenden
+    </label>
+
+    <div id="purchasingListWrap" style="display:none;">
+      <table class="inv-table" style="margin-bottom:0;">
+        <thead>
+          <tr>
+            <th class="po-col-narrow">Bestell-Nr.</th>
+            <th>Lieferant</th>
+            <th class="po-col-narrow">Positionen</th>
+            <th class="col-date po-col-narrow">Datum</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="purchasingListBody"></tbody>
+      </table>
+    </div>
+    <p class="note" id="purchasingEmptyNote">Noch keine Bestellungen angelegt.</p>
+
+    <button class="btn-primary" id="btnNewPurchaseOrder" type="button" style="margin-top:14px;">+ Neue Bestellung anlegen</button>
+  </div>
+
+</div>
+
 <div class="wrap" id="pagePositionDetail" style="display:none;">
 
   <button type="button" class="settings-btn" id="btnBackToBooking" style="margin-bottom:18px;">← Zurück zum Lagerbestand</button>
@@ -2236,6 +2282,52 @@
   </div>
 </div>
 
+<div class="invoice-overlay" id="purchaseOrderOverlay" style="z-index:1000;">
+  <div class="invoice-toolbar">
+    <button class="btn-secondary" id="btnCancelPurchaseOrder" type="button">✕ Abbrechen</button>
+  </div>
+  <div style="max-width:460px; margin:0 auto; background:var(--card); border-radius:8px; padding:22px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'72','72override',Arial,Helvetica,sans-serif;">
+    <h2 style="font-family:'72','72override',Arial,Helvetica,sans-serif; font-size:19px; margin:0 0 8px;">Neue Bestellung anlegen</h2>
+
+    <div class="field">
+      <label for="purchaseOrderNumberDisplay">Bestellnummer</label>
+      <input type="text" id="purchaseOrderNumberDisplay" readonly>
+    </div>
+
+    <div class="field">
+      <label for="purchaseOrderSupplierSelect">Lieferant</label>
+      <select id="purchaseOrderSupplierSelect">
+        <option value="">— bitte wählen —</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="purchaseOrderDate">Datum</label>
+      <input type="date" id="purchaseOrderDate">
+    </div>
+
+    <div class="field">
+      <label for="purchaseOrderItems">Positionen</label>
+      <textarea id="purchaseOrderItems" placeholder="z. B. 5x PLA 1kg Schwarz, 2x PETG 1kg Transparent"></textarea>
+    </div>
+
+    <div class="field">
+      <label for="purchaseOrderAmount">Betrag <span class="hint">optional</span></label>
+      <input type="number" id="purchaseOrderAmount" placeholder="0,00" min="0" step="0.01" inputmode="decimal">
+    </div>
+
+    <div class="field">
+      <label for="purchaseOrderNotes">Notizen <span class="hint">optional</span></label>
+      <textarea id="purchaseOrderNotes" placeholder="z. B. Lieferzeit, Bestellreferenz ..."></textarea>
+    </div>
+
+    <p class="note" id="purchaseOrderFormStatus"></p>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn-primary" id="btnCreatePurchaseOrder" type="button">💾 Anlegen</button>
+    </div>
+  </div>
+</div>
+
 <div class="sync-banner" id="syncReloadBanner">
   <span id="syncBannerText">Die Daten wurden auf einem anderen Ger&auml;t ge&auml;ndert.</span>
   <button type="button" class="btn-primary" id="btnSyncReload">Neu laden</button>
@@ -2275,7 +2367,7 @@
     if (!ok) throw new Error('storage unavailable');
     markLocalChange();
   }
-  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders', 'returns', 'lieferschein-worker-url', 'product-catalog', 'productions', 'suppliers', 'suppliers-default-seeded'];
+  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders', 'returns', 'lieferschein-worker-url', 'product-catalog', 'productions', 'suppliers', 'suppliers-default-seeded', 'purchase-orders'];
 
   // Zustand der Geräte-Synchronisierung (siehe weiter unten). Hier oben
   // deklariert, weil storageSet() darauf zugreift.
@@ -4725,6 +4817,151 @@
     $('supplierFormCard').style.display = 'none';
   });
 
+  /* ---------- Einkauf: Bestellungen ---------- */
+
+  const PURCHASE_ORDERS_KEY = 'purchase-orders';
+  let purchaseOrders = [];   // { id, poNumber, supplierId, supplierName, date, items, amount, notes, status, createdAt, orderedAt, receivedAt }
+
+  const PURCHASE_ORDER_STATUS = {
+    open:     { label: 'Offen',        badgeClass: '' },
+    ordered:  { label: 'Bestellt',     badgeClass: 'is-action' },
+    received: { label: 'Eingetroffen', badgeClass: 'is-shipped' }
+  };
+
+  async function loadPurchaseOrders(){
+    try {
+      const value = await storageGet(PURCHASE_ORDERS_KEY);
+      if (value) purchaseOrders = JSON.parse(value);
+    } catch (err) {}
+    renderPurchaseOrders();
+  }
+
+  async function savePurchaseOrders(){
+    try { await storageSet(PURCHASE_ORDERS_KEY, JSON.stringify(purchaseOrders)); } catch (err) {}
+  }
+
+  function nextPurchaseOrderNumber(){
+    let max = 0;
+    purchaseOrders.forEach(p => {
+      const m = /^BEST-(\d+)$/.exec(p.poNumber || '');
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    });
+    return 'BEST-' + String(max + 1).padStart(4, '0');
+  }
+
+  function renderPurchaseOrders(){
+    const showAll = $('purchasingShowAll').checked;
+    const list = purchaseOrders
+      .filter(p => showAll || p.status !== 'received')
+      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+    if (!list.length) {
+      $('purchasingListWrap').style.display = 'none';
+      $('purchasingEmptyNote').style.display = 'block';
+      $('purchasingListBody').innerHTML = '';
+      return;
+    }
+    $('purchasingListWrap').style.display = 'block';
+    $('purchasingEmptyNote').style.display = 'none';
+
+    $('purchasingListBody').innerHTML = list.map(p => {
+      const dateLabel = p.date ? new Date(p.date).toLocaleDateString('de-DE') : '—';
+      const status = PURCHASE_ORDER_STATUS[p.status] || PURCHASE_ORDER_STATUS.open;
+      const statusBadge = '<span class="order-badge' + (status.badgeClass ? ' ' + status.badgeClass : '') + '">' + status.label + '</span>';
+
+      let actionCell;
+      if (p.status === 'open') {
+        actionCell = '<button type="button" class="btn-secondary po-order-btn" data-id="' + p.id + '" style="margin-top:0; width:auto; padding:8px 12px;">📨 Bestellen</button>';
+      } else if (p.status === 'ordered') {
+        actionCell = '<button type="button" class="btn-secondary po-receive-btn" data-id="' + p.id + '" style="margin-top:0; width:auto; padding:8px 12px;">✓ Eingetroffen</button>';
+      } else {
+        actionCell = '<span class="note" style="color:var(--energy);">✓ Eingetroffen</span>';
+      }
+
+      const narrowSummary = [p.poNumber, p.items, dateLabel].filter(Boolean).join(' · ');
+
+      return (
+        '<tr>' +
+          '<td class="po-col-narrow">' + escapeHtml(p.poNumber || '—') + '</td>' +
+          '<td>' + escapeHtml(p.supplierName || '—') +
+            '<span class="order-sub only-narrow">' + escapeHtml(narrowSummary) + '</span>' + '</td>' +
+          '<td class="po-col-narrow">' + escapeHtml(p.items || '—') + '</td>' +
+          '<td class="col-date po-col-narrow">' + dateLabel + '</td>' +
+          '<td>' + statusBadge + '</td>' +
+          '<td>' + actionCell + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+
+    $('purchasingListBody').querySelectorAll('.po-order-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const entry = purchaseOrders.find(p => p.id === btn.dataset.id);
+        if (!entry) return;
+        entry.status = 'ordered';
+        entry.orderedAt = new Date().toISOString();
+        savePurchaseOrders();
+        renderPurchaseOrders();
+      });
+    });
+    $('purchasingListBody').querySelectorAll('.po-receive-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const entry = purchaseOrders.find(p => p.id === btn.dataset.id);
+        if (!entry) return;
+        entry.status = 'received';
+        entry.receivedAt = new Date().toISOString();
+        savePurchaseOrders();
+        renderPurchaseOrders();
+      });
+    });
+  }
+  $('purchasingShowAll').addEventListener('change', renderPurchaseOrders);
+
+  $('btnNewPurchaseOrder').addEventListener('click', () => {
+    $('purchaseOrderNumberDisplay').value = nextPurchaseOrderNumber();
+    $('purchaseOrderDate').value = todayISO();
+    $('purchaseOrderItems').value = '';
+    $('purchaseOrderAmount').value = '';
+    $('purchaseOrderNotes').value = '';
+    $('purchaseOrderFormStatus').textContent = '';
+
+    const options = [...suppliers].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    $('purchaseOrderSupplierSelect').innerHTML = '<option value="">— bitte wählen —</option>' +
+      options.map(s => '<option value="' + escapeHtml(s.id) + '">' + escapeHtml(s.name) + '</option>').join('');
+    $('purchaseOrderSupplierSelect').value = '';
+
+    $('purchaseOrderOverlay').classList.add('open');
+  });
+  $('btnCancelPurchaseOrder').addEventListener('click', () => $('purchaseOrderOverlay').classList.remove('open'));
+  $('purchaseOrderOverlay').addEventListener('click', (e) => {
+    if (e.target === $('purchaseOrderOverlay')) $('purchaseOrderOverlay').classList.remove('open');
+  });
+
+  $('btnCreatePurchaseOrder').addEventListener('click', () => {
+    const supplierId = $('purchaseOrderSupplierSelect').value;
+    const supplier = suppliers.find(s => s.id === supplierId);
+    if (!supplier) {
+      $('purchaseOrderFormStatus').textContent = '✕ Bitte einen Lieferanten wählen.';
+      $('purchaseOrderFormStatus').style.color = 'var(--danger)';
+      return;
+    }
+    const amount = parseFloat($('purchaseOrderAmount').value);
+    purchaseOrders.push({
+      id: 'po-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+      poNumber: $('purchaseOrderNumberDisplay').value,
+      supplierId: supplier.id,
+      supplierName: supplier.name,
+      date: $('purchaseOrderDate').value || todayISO(),
+      items: $('purchaseOrderItems').value.trim(),
+      amount: isNaN(amount) ? 0 : amount,
+      notes: $('purchaseOrderNotes').value.trim(),
+      status: 'open',
+      createdAt: new Date().toISOString()
+    });
+    savePurchaseOrders();
+    renderPurchaseOrders();
+    $('purchaseOrderOverlay').classList.remove('open');
+  });
+
   /* ---------- Produktion: Fertigungsaufträge ---------- */
 
   const PRODUCTIONS_KEY = 'productions';
@@ -6706,6 +6943,7 @@
   loadOrders();
   loadProductions();
   loadSuppliers();
+  loadPurchaseOrders();
 
   function parseCSV(text, delimiter){
     const rows = [];
@@ -7101,6 +7339,7 @@
     $('pageReturns').style.display = page === 'returns' ? '' : 'none';
     $('pageArticles').style.display = page === 'articles' ? '' : 'none';
     $('pageSuppliers').style.display = page === 'suppliers' ? '' : 'none';
+    $('pagePurchasing').style.display = page === 'purchasing' ? '' : 'none';
     $('pagePositionDetail').style.display = 'none';
     $('modeBarRow').style.display = page === 'calculator' ? '' : 'none';
     $('sideNav').style.display = '';
@@ -7118,11 +7357,13 @@
       btn.classList.toggle('active', btn.dataset.page === page);
     });
     if (NAV_LAGER_PAGES.includes(page)) $('navGroupLager').open = true;
+    if (NAV_EINKAUF_PAGES.includes(page)) $('navGroupEinkauf').open = true;
     closeNavDropdown();
     if (page === 'dashboard') renderDashboard();
     if (page === 'articles') renderArticles();
     if (page === 'production') renderProductions();
     if (page === 'suppliers') renderSuppliers();
+    if (page === 'purchasing') renderPurchaseOrders();
     window.scrollTo(0, 0);
   }
 
@@ -7134,11 +7375,13 @@
     articles: '🏷️ Artikel',
     shipping: '🚚 Versand',
     suppliers: '🚛 Lieferanten',
+    purchasing: '🧾 Bestellungen',
     production: '🏭 Produktion',
     orders: '📋 Aufträge',
     returns: '↩️ Retouren/Reklamationen'
   };
-  const NAV_LAGER_PAGES = ['booking', 'articles', 'shipping', 'suppliers'];
+  const NAV_LAGER_PAGES = ['booking', 'articles', 'shipping'];
+  const NAV_EINKAUF_PAGES = ['suppliers', 'purchasing'];
 
   function closeNavDropdown(){
     $('navDropdown').classList.remove('open');
