@@ -43,11 +43,13 @@
     <select id="sideNavSelect" aria-label="Seite wählen">
       <option value="dashboard">📊 Dashboard</option>
       <option value="calculator" selected>🧮 Kalkulator</option>
-      <option value="booking">📦 Filament buchen</option>
-      <option value="articles">🏷️ Artikel</option>
+      <optgroup label="🗃️ Lager">
+        <option value="booking">📦 Filament buchen</option>
+        <option value="articles">🏷️ Artikel</option>
+        <option value="shipping">🚚 Versand</option>
+      </optgroup>
       <option value="production">🏭 Produktion</option>
       <option value="orders">📋 Aufträge</option>
-      <option value="shipping">🚚 Versand</option>
       <option value="returns">↩️ Retouren/Reklamationen</option>
     </select>
   </div>
@@ -55,9 +57,9 @@
   <button type="button" class="page-switch-btn active" id="btnPageCalculator" data-page="calculator">🧮 Kalkulator</button>
   <button type="button" class="page-switch-btn" id="btnPageBooking" data-page="booking">📦 Filament buchen</button>
   <button type="button" class="page-switch-btn" id="btnPageArticles" data-page="articles">🏷️ Artikel</button>
+  <button type="button" class="page-switch-btn" id="btnPageVersand" data-page="shipping">🚚 Versand</button>
   <button type="button" class="page-switch-btn" id="btnPageProduction" data-page="production">🏭 Produktion</button>
   <button type="button" class="page-switch-btn" id="btnPageOrders" data-page="orders">📋 Aufträge</button>
-  <button type="button" class="page-switch-btn" id="btnPageVersand" data-page="shipping">🚚 Versand</button>
   <button type="button" class="page-switch-btn" id="btnPageReturns" data-page="returns">↩️ Retouren/Reklamationen</button>
   <button type="button" class="page-switch-btn side-nav-refresh" id="btnRefreshPage" title="Aktualisieren">🔄<span class="side-nav-refresh-label"> Aktualisieren</span></button>
 </nav>
