@@ -53,6 +53,7 @@
           <button type="button" class="nav-dropdown-item nav-dropdown-subitem" data-page="booking">📦 Filament buchen</button>
           <button type="button" class="nav-dropdown-item nav-dropdown-subitem" data-page="articles">🏷️ Artikel</button>
           <button type="button" class="nav-dropdown-item nav-dropdown-subitem" data-page="shipping">🚚 Versand</button>
+          <button type="button" class="nav-dropdown-item nav-dropdown-subitem" data-page="suppliers">🚛 Lieferanten</button>
         </details>
         <button type="button" class="nav-dropdown-item" data-page="production">🏭 Produktion</button>
         <button type="button" class="nav-dropdown-item" data-page="orders">📋 Aufträge</button>
@@ -66,6 +67,7 @@
         <option value="booking">📦 Filament buchen</option>
         <option value="articles">🏷️ Artikel</option>
         <option value="shipping">🚚 Versand</option>
+        <option value="suppliers">🚛 Lieferanten</option>
       </optgroup>
       <option value="production">🏭 Produktion</option>
       <option value="orders">📋 Aufträge</option>
@@ -1415,6 +1417,87 @@
 
 </div>
 
+<div class="wrap" id="pageSuppliers" style="display:none;">
+
+  <header>
+    <div class="eyebrow"><span class="dot"></span><span>LIEFERANTENSTAMM · EINKAUF</span></div>
+    <h1>Lieferanten</h1>
+    <p>Kontakt- und Adressdaten der Lieferanten für Filament, Material und sonstige Einkäufe.</p>
+  </header>
+
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--energy)"></span><span>Lieferanten</span></h2>
+    </div>
+
+    <div id="suppliersListWrap" style="display:none;">
+      <table class="inv-table" style="margin-bottom:0;">
+        <thead>
+          <tr>
+            <th>Firma</th>
+            <th class="supplier-col-narrow">Ansprechpartner</th>
+            <th>Kontakt</th>
+            <th class="supplier-col-narrow">Ort</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="suppliersListBody"></tbody>
+      </table>
+    </div>
+    <p class="note" id="suppliersEmptyNote">Noch keine Lieferanten vorhanden.</p>
+
+    <button class="btn-primary" id="btnNewSupplier" type="button" style="margin-top:14px;">+ Neuen Lieferanten anlegen</button>
+  </div>
+
+  <div class="card" id="supplierFormCard" style="max-width: 500px; margin: 16px auto 0; display:none;">
+    <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--filament)"></span><span id="supplierFormTitle">Lieferant anlegen</span></h2>
+    </div>
+    <div class="field">
+      <label for="supplierName">Firma</label>
+      <input type="text" id="supplierName" placeholder="z. B. Filament24 GmbH" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="supplierContact">Ansprechpartner <span class="hint">optional</span></label>
+      <input type="text" id="supplierContact" placeholder="Max Mustermann" autocomplete="off">
+    </div>
+    <div class="subgrid">
+      <div class="field">
+        <label for="supplierPhone">Telefon <span class="hint">optional</span></label>
+        <input type="tel" id="supplierPhone" placeholder="+49 ..." autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="supplierEmail">E-Mail <span class="hint">optional</span></label>
+        <input type="email" id="supplierEmail" placeholder="kontakt@firma.de" autocomplete="off">
+      </div>
+    </div>
+    <div class="field">
+      <label for="supplierStreet">Straße und Hausnummer <span class="hint">optional</span></label>
+      <input type="text" id="supplierStreet" placeholder="Musterstraße 1" autocomplete="off">
+    </div>
+    <div class="subgrid">
+      <div class="field">
+        <label for="supplierZip">PLZ <span class="hint">optional</span></label>
+        <input type="text" id="supplierZip" placeholder="12345" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="supplierCity">Ort <span class="hint">optional</span></label>
+        <input type="text" id="supplierCity" placeholder="Musterstadt" autocomplete="off">
+      </div>
+    </div>
+    <div class="field">
+      <label for="supplierNotes">Notizen <span class="hint">optional</span></label>
+      <textarea id="supplierNotes" placeholder="z. B. Mindestbestellmenge, Lieferzeiten ..."></textarea>
+    </div>
+    <p class="note" id="supplierFormStatus"></p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn-primary" id="btnSaveSupplier" type="button">💾 Speichern</button>
+      <button class="btn-secondary" id="btnCancelSupplier" type="button">✕ Abbrechen</button>
+    </div>
+  </div>
+
+</div>
+
 <div class="wrap" id="pagePositionDetail" style="display:none;">
 
   <button type="button" class="settings-btn" id="btnBackToBooking" style="margin-bottom:18px;">← Zurück zum Lagerbestand</button>
@@ -2192,7 +2275,7 @@
     if (!ok) throw new Error('storage unavailable');
     markLocalChange();
   }
-  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders', 'returns', 'lieferschein-worker-url', 'product-catalog', 'productions'];
+  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders', 'returns', 'lieferschein-worker-url', 'product-catalog', 'productions', 'suppliers'];
 
   // Zustand der Geräte-Synchronisierung (siehe weiter unten). Hier oben
   // deklariert, weil storageSet() darauf zugreift.
@@ -4506,6 +4589,124 @@
     renderArticles();
   }
 
+  /* ---------- Lieferanten ---------- */
+
+  const SUPPLIERS_KEY = 'suppliers';
+  let suppliers = [];      // { id, name, contact, phone, email, street, zip, city, notes }
+  let editingSupplierId = null;
+
+  async function loadSuppliers(){
+    try {
+      const value = await storageGet(SUPPLIERS_KEY);
+      if (value) suppliers = JSON.parse(value);
+    } catch (err) {}
+  }
+
+  async function saveSuppliers(){
+    try { await storageSet(SUPPLIERS_KEY, JSON.stringify(suppliers)); } catch (err) {}
+  }
+
+  function renderSuppliers(){
+    const list = [...suppliers].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    if (!list.length) {
+      $('suppliersListWrap').style.display = 'none';
+      $('suppliersEmptyNote').style.display = 'block';
+      $('suppliersListBody').innerHTML = '';
+      return;
+    }
+    $('suppliersListWrap').style.display = 'block';
+    $('suppliersEmptyNote').style.display = 'none';
+
+    $('suppliersListBody').innerHTML = list.map(s => {
+      const contactParts = [s.phone, s.email].filter(Boolean);
+      const narrowParts = [s.contact, s.city].filter(Boolean);
+      return (
+      '<tr>' +
+        '<td>' + escapeHtml(s.name || '—') + (narrowParts.length ? '<span class="order-sub only-narrow">' + escapeHtml(narrowParts.join(' · ')) + '</span>' : '') + '</td>' +
+        '<td class="supplier-col-narrow">' + escapeHtml(s.contact || '—') + '</td>' +
+        '<td>' + (contactParts.length ? escapeHtml(contactParts.join(' · ')) : '—') + '</td>' +
+        '<td class="supplier-col-narrow">' + escapeHtml(s.city || '—') + '</td>' +
+        '<td class="num"><button type="button" class="btn-secondary supplier-edit-btn" data-id="' + escapeHtml(s.id || '') + '" style="width:auto; padding:4px 10px; font-size:13px;">✎ <span class="btn-label">Bearbeiten</span></button></td>' +
+      '</tr>'
+      );
+    }).join('');
+
+    $('suppliersListBody').querySelectorAll('.supplier-edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => openSupplierEditForm(btn.dataset.id));
+    });
+  }
+
+  function resetSupplierForm(){
+    editingSupplierId = null;
+    $('supplierFormTitle').textContent = 'Lieferant anlegen';
+    $('btnSaveSupplier').textContent = '💾 Anlegen';
+    $('supplierName').value = '';
+    $('supplierContact').value = '';
+    $('supplierPhone').value = '';
+    $('supplierEmail').value = '';
+    $('supplierStreet').value = '';
+    $('supplierZip').value = '';
+    $('supplierCity').value = '';
+    $('supplierNotes').value = '';
+    $('supplierFormStatus').textContent = '';
+  }
+
+  function openSupplierEditForm(id){
+    const entry = suppliers.find(s => s.id === id);
+    if (!entry) return;
+    editingSupplierId = id;
+    $('supplierFormTitle').textContent = 'Lieferant bearbeiten';
+    $('btnSaveSupplier').textContent = '💾 Speichern';
+    $('supplierName').value = entry.name || '';
+    $('supplierContact').value = entry.contact || '';
+    $('supplierPhone').value = entry.phone || '';
+    $('supplierEmail').value = entry.email || '';
+    $('supplierStreet').value = entry.street || '';
+    $('supplierZip').value = entry.zip || '';
+    $('supplierCity').value = entry.city || '';
+    $('supplierNotes').value = entry.notes || '';
+    $('supplierFormStatus').textContent = '';
+    $('supplierFormCard').style.display = 'block';
+    $('supplierFormCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  $('btnNewSupplier').addEventListener('click', () => {
+    resetSupplierForm();
+    $('supplierFormCard').style.display = 'block';
+  });
+  $('btnCancelSupplier').addEventListener('click', () => {
+    $('supplierFormCard').style.display = 'none';
+  });
+  $('btnSaveSupplier').addEventListener('click', () => {
+    const name = $('supplierName').value.trim();
+    if (!name) {
+      $('supplierFormStatus').textContent = '✕ Bitte eine Firma angeben.';
+      $('supplierFormStatus').style.color = 'var(--danger)';
+      return;
+    }
+    const data = {
+      name,
+      contact: $('supplierContact').value.trim(),
+      phone: $('supplierPhone').value.trim(),
+      email: $('supplierEmail').value.trim(),
+      street: $('supplierStreet').value.trim(),
+      zip: $('supplierZip').value.trim(),
+      city: $('supplierCity').value.trim(),
+      notes: $('supplierNotes').value.trim()
+    };
+    if (editingSupplierId) {
+      const entry = suppliers.find(s => s.id === editingSupplierId);
+      if (entry) Object.assign(entry, data);
+    } else {
+      data.id = 'LIEF-' + Date.now().toString(36).toUpperCase();
+      suppliers.push(data);
+    }
+    saveSuppliers();
+    renderSuppliers();
+    $('supplierFormCard').style.display = 'none';
+  });
+
   /* ---------- Produktion: Fertigungsaufträge ---------- */
 
   const PRODUCTIONS_KEY = 'productions';
@@ -6486,6 +6687,7 @@
   loadProductCatalog().then(loadShipments);
   loadOrders();
   loadProductions();
+  loadSuppliers();
 
   function parseCSV(text, delimiter){
     const rows = [];
@@ -6880,6 +7082,7 @@
     $('pageVersand').style.display = page === 'shipping' ? '' : 'none';
     $('pageReturns').style.display = page === 'returns' ? '' : 'none';
     $('pageArticles').style.display = page === 'articles' ? '' : 'none';
+    $('pageSuppliers').style.display = page === 'suppliers' ? '' : 'none';
     $('pagePositionDetail').style.display = 'none';
     $('modeBarRow').style.display = page === 'calculator' ? '' : 'none';
     $('sideNav').style.display = '';
@@ -6901,6 +7104,7 @@
     if (page === 'dashboard') renderDashboard();
     if (page === 'articles') renderArticles();
     if (page === 'production') renderProductions();
+    if (page === 'suppliers') renderSuppliers();
     window.scrollTo(0, 0);
   }
 
@@ -6911,11 +7115,12 @@
     booking: '📦 Filament buchen',
     articles: '🏷️ Artikel',
     shipping: '🚚 Versand',
+    suppliers: '🚛 Lieferanten',
     production: '🏭 Produktion',
     orders: '📋 Aufträge',
     returns: '↩️ Retouren/Reklamationen'
   };
-  const NAV_LAGER_PAGES = ['booking', 'articles', 'shipping'];
+  const NAV_LAGER_PAGES = ['booking', 'articles', 'shipping', 'suppliers'];
 
   function closeNavDropdown(){
     $('navDropdown').classList.remove('open');
