@@ -1105,8 +1105,11 @@
     font-weight:600;
     color: var(--ink);
     cursor:pointer;
+    text-decoration:none;
+    box-sizing:border-box;
   }
   .nav-dropdown-item:hover{ background: var(--ov05); }
+  .nav-extlink-icon{ color: var(--ink-soft); font-size:12px; margin-left:2px; }
   .nav-dropdown-item.active{
     background: linear-gradient(135deg, var(--filament), var(--filament-dark));
     color:#fff;

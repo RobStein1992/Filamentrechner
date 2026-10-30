@@ -47,6 +47,7 @@
       <div class="nav-dropdown-menu" id="navDropdownMenu">
         <button type="button" class="nav-dropdown-item" data-page="dashboard">📊 Dashboard</button>
         <button type="button" class="nav-dropdown-item" data-page="calculator">🧮 Kalkulator</button>
+        <a href="https://solidcraft.online/de" target="_blank" rel="noopener noreferrer" class="nav-dropdown-item nav-dropdown-extlink" id="navLinkKonstruktion">📐 Konstruktion <span class="nav-extlink-icon">↗</span></a>
         <details class="nav-dropdown-group" id="navGroupLager">
           <summary>🗃️ Lager</summary>
           <button type="button" class="nav-dropdown-item nav-dropdown-subitem" data-page="booking">📦 Filament buchen</button>
@@ -6925,6 +6926,7 @@
     $('navDropdownToggle').setAttribute('aria-expanded', String(open));
   });
   $('navDropdownMenu').querySelectorAll('.nav-dropdown-item').forEach(btn => {
+    if (!btn.dataset.page) { btn.addEventListener('click', () => closeNavDropdown()); return; } // externe Links (z. B. Konstruktion) navigieren selbst
     btn.addEventListener('click', () => switchPage(btn.dataset.page));
   });
   document.addEventListener('click', e => {
