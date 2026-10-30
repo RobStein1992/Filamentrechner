@@ -282,7 +282,8 @@
     .app-shell{ flex-direction: column; gap:0; }
     .side-nav{
       flex: none;
-      position: static;
+      position: relative;
+      z-index: 95;
       width:100%;
       flex-direction: row;
       align-items:center;
@@ -1036,6 +1037,101 @@
     position:absolute; right:16px; top:50%; transform:translateY(-50%);
     color: var(--ink-soft); font-size:12px; pointer-events:none;
   }
+
+  /* Die echte <select>-Navigation bleibt für Testautomatisierung und
+     Barrierefreiheit funktional vorhanden, wird aber optisch durch das
+     Dropdown-Menü ersetzt (kein display:none, da sonst nicht mehr bedienbar). */
+  select.nav-select-legacy{
+    position:absolute; width:1px; height:1px; overflow:hidden;
+    opacity:0; pointer-events:none; padding:0; border:0; margin:0;
+  }
+
+  .nav-dropdown{ position:relative; width:100%; }
+  .nav-dropdown-toggle{
+    width:100%;
+    padding: 12px 40px 12px 14px;
+    font-family:'72','72override',Arial,Helvetica,sans-serif;
+    font-size: 15px;
+    font-weight:600;
+    text-align:left;
+    border: 1.5px solid var(--ov12);
+    border-radius: var(--radius-sm);
+    background: var(--card-2);
+    color: var(--ink);
+    cursor:pointer;
+    position:relative;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .nav-dropdown-toggle:hover{ border-color: var(--ov22); }
+  .nav-dropdown-toggle::after{
+    content:"▾";
+    position:absolute; right:16px; top:50%; transform:translateY(-50%);
+    color: var(--ink-soft); font-size:12px;
+    transition: transform .15s ease;
+  }
+  .nav-dropdown.open .nav-dropdown-toggle{
+    border-color: var(--filament);
+    background: var(--card-focus);
+    box-shadow: 0 0 0 4px var(--accent-glow);
+  }
+  .nav-dropdown.open .nav-dropdown-toggle::after{ transform: translateY(-50%) rotate(180deg); }
+
+  .nav-dropdown-menu{
+    display:none;
+    position:absolute;
+    top: calc(100% + 6px);
+    left:0; right:0;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg);
+    padding: 6px;
+    z-index: 90;
+    max-height: 70vh;
+    overflow-y:auto;
+  }
+  .nav-dropdown.open .nav-dropdown-menu{ display:block; }
+
+  .nav-dropdown-item{
+    display:block;
+    width:100%;
+    text-align:left;
+    padding: 10px 12px;
+    border:none;
+    background:none;
+    border-radius: calc(var(--radius-sm) - 2px);
+    font-family:'72','72override',Arial,Helvetica,sans-serif;
+    font-size: 14px;
+    font-weight:600;
+    color: var(--ink);
+    cursor:pointer;
+  }
+  .nav-dropdown-item:hover{ background: var(--ov05); }
+  .nav-dropdown-item.active{
+    background: linear-gradient(135deg, var(--filament), var(--filament-dark));
+    color:#fff;
+  }
+  .nav-dropdown-group{ margin:0; }
+  .nav-dropdown-group > summary{
+    padding: 10px 12px;
+    border-radius: calc(var(--radius-sm) - 2px);
+    font-size: 14px;
+    letter-spacing: normal;
+  }
+  .nav-dropdown-group > summary:hover{ background: var(--ov05); }
+  .nav-dropdown-group > summary::before,
+  .nav-dropdown-group[open] > summary::before{ content:none; }
+  .nav-dropdown-group > summary::after{
+    content:"+";
+    margin-left:auto;
+    font-family:'72','72override',Arial,Helvetica,sans-serif;
+    font-size:15px;
+    color: var(--filament);
+    width:16px; text-align:center;
+  }
+  .nav-dropdown-group[open] > summary::after{ content:"–"; }
+  .nav-dropdown-group[open] > summary{ margin-bottom: 4px; }
+  .nav-dropdown-group .nav-dropdown-subitem{ padding-left: 30px; font-size:13px; }
 
   .subgrid{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   @media(max-width: 480px){
