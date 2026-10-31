@@ -1,10 +1,10 @@
 /**
  * Cloudflare Worker: Lieferschein-Proxy für die Druckkosten-Rechner-App.
  *
- * Nimmt einen Lieferschein als PDF (base64) entgegen, schickt ihn an die
- * Claude-API (Anthropic) und liefert die daraus extrahierten Positionen als
- * JSON zurück. Der Anthropic-API-Key steckt nur hier als Worker-Secret,
- * nie im Browser der App.
+ * Nimmt einen Lieferschein als PDF oder Foto (base64) entgegen, schickt ihn
+ * an die Claude-API (Anthropic) und liefert die daraus extrahierten
+ * Positionen als JSON zurück. Der Anthropic-API-Key steckt nur hier als
+ * Worker-Secret, nie im Browser der App.
  *
  * Einrichtung: siehe README.md in diesem Ordner.
  */
@@ -41,15 +41,16 @@ const EXTRACTION_TOOL = {
             color: { type: 'string', description: 'Farbe bzw. Farbbezeichnung der Position.' },
             weight: {
               type: 'number',
-              description: 'Nettogewicht bzw. Füllmenge PRO EINHEIT in Gramm. Angaben in kg oder l in Gramm umrechnen (1 kg = 1000 g).'
+              description: 'Nettogewicht bzw. Füllmenge PRO EINHEIT in Gramm, falls angegeben. Angaben in kg oder l in Gramm umrechnen (1 kg = 1000 g).'
             },
             quantity: {
               type: 'integer',
               description: 'Anzahl gelieferter Einheiten/Spulen dieser Position. Falls nicht angegeben: 1.'
             },
-            articleNo: { type: 'string', description: 'Artikel- oder SKU-Nummer laut Lieferschein, falls vorhanden.' }
+            articleNo: { type: 'string', description: 'Artikel- oder SKU-Nummer laut Lieferschein, falls vorhanden.' },
+            price: { type: 'number', description: 'Einzelpreis pro Einheit in Euro, falls auf dem Lieferschein angegeben.' }
           },
-          required: ['material', 'weight']
+          required: ['material']
         }
       }
     },
@@ -94,9 +95,17 @@ export default {
       return jsonResponse({ error: 'Ungültiger Request-Body (JSON erwartet).' }, 400, origin);
     }
 
-    const pdfBase64 = payload && payload.pdf_base64;
-    if (!pdfBase64 || typeof pdfBase64 !== 'string') {
-      return jsonResponse({ error: 'Feld "pdf_base64" fehlt.' }, 400, origin);
+    // "file_base64" + "media_type" ist der aktuelle Vertrag (PDF ODER Foto).
+    // "pdf_base64" bleibt als Alt-Feld für Abwärtskompatibilität bestehen.
+    const fileBase64 = payload && (payload.file_base64 || payload.pdf_base64);
+    const mediaType = (payload && payload.media_type) || 'application/pdf';
+    if (!fileBase64 || typeof fileBase64 !== 'string') {
+      return jsonResponse({ error: 'Feld "file_base64" fehlt.' }, 400, origin);
+    }
+    const isPdf = mediaType === 'application/pdf';
+    const isImage = /^image\/(jpeg|png|gif|webp)$/.test(mediaType);
+    if (!isPdf && !isImage) {
+      return jsonResponse({ error: 'Nicht unterstützter Dateityp "' + mediaType + '". Erlaubt: PDF, JPEG, PNG, GIF, WEBP.' }, 400, origin);
     }
 
     const model = env.ANTHROPIC_MODEL || DEFAULT_MODEL;
@@ -110,13 +119,12 @@ export default {
         {
           role: 'user',
           content: [
-            {
-              type: 'document',
-              source: { type: 'base64', media_type: 'application/pdf', data: pdfBase64 }
-            },
+            isPdf
+              ? { type: 'document', source: { type: 'base64', media_type: mediaType, data: fileBase64 } }
+              : { type: 'image', source: { type: 'base64', media_type: mediaType, data: fileBase64 } },
             {
               type: 'text',
-              text: 'Dies ist ein Lieferschein für 3D-Druck-Filament oder -Resin. Extrahiere Lieferant, Lieferschein-Nummer, Datum und alle gelieferten Positionen über das bereitgestellte Werkzeug. Wenn ein Feld nicht erkennbar ist, lass es leer bzw. weg statt zu raten.'
+              text: 'Dies ist ein Lieferschein (als PDF oder Foto) für 3D-Druck-Filament, -Resin, Material oder sonstiges Einkaufszubehör. Extrahiere Lieferant, Lieferschein-Nummer, Datum und alle gelieferten Positionen über das bereitgestellte Werkzeug. Wenn ein Feld nicht erkennbar ist, lass es leer bzw. weg statt zu raten.'
             }
           ]
         }

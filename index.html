@@ -2221,7 +2221,7 @@
       <p class="note" id="dataTransferStatus"></p>
 
       <div class="section-label">🤖 KI-Lieferschein-Erkennung</div>
-      <p class="note" style="margin-top:0;">Liest hochgeladene Lieferschein-PDFs beim Wareneingang automatisch per KI (Claude) aus. Dafür wird ein kleiner, selbst gehosteter Cloud-Proxy benötigt, der den Anthropic-API-Key sicher verwahrt – er liegt nie im Browser dieser App. Einrichtung: Datei <code>worker/README.md</code> im Projekt-Repository.</p>
+      <p class="note" style="margin-top:0;">Liest hochgeladene Lieferscheine (PDF oder Foto) bei Bestellungen automatisch per KI (Claude) aus und schlägt die Positionen vor. Dafür wird ein kleiner, selbst gehosteter Cloud-Proxy benötigt, der den Anthropic-API-Key sicher verwahrt – er liegt nie im Browser dieser App. Einrichtung: Datei <code>worker/README.md</code> im Projekt-Repository.</p>
       <div class="field">
         <label for="lieferscheinWorkerUrl">Proxy-Adresse (Worker-URL)</label>
         <input type="text" id="lieferscheinWorkerUrl" placeholder="https://dein-worker.deinname.workers.dev" autocomplete="off">
@@ -2306,14 +2306,21 @@
       <input type="date" id="purchaseOrderDate">
     </div>
 
-    <div class="field">
-      <label for="purchaseOrderItems">Positionen</label>
-      <textarea id="purchaseOrderItems" placeholder="z. B. 5x PLA 1kg Schwarz, 2x PETG 1kg Transparent"></textarea>
+    <div class="section-label">Lieferschein hochladen <span class="hint">optional, PDF oder Foto</span></div>
+    <p class="note" id="poLieferscheinNoConfigNote" style="display:none; color:var(--filament); margin-top:0;">Noch keine Proxy-Adresse hinterlegt. Bitte zuerst unter ⚙️ Firmen-Einstellungen → Daten &amp; Geräte → KI-Lieferschein-Erkennung einrichten.</p>
+    <div class="field" style="margin-bottom:8px;">
+      <input type="file" id="purchaseOrderLieferscheinFile" accept="application/pdf,image/jpeg,image/png,image/webp,image/gif">
     </div>
+    <button type="button" id="btnScanPurchaseOrderLieferschein" class="btn-secondary" style="margin-top:0;">🔍 Positionen erkennen</button>
+    <p class="note" id="purchaseOrderScanStatus"></p>
 
-    <div class="field">
-      <label for="purchaseOrderAmount">Betrag <span class="hint">optional</span></label>
-      <input type="number" id="purchaseOrderAmount" placeholder="0,00" min="0" step="0.01" inputmode="decimal">
+    <div class="section-label">Positionen</div>
+    <div id="purchaseOrderItemsWrap"></div>
+    <button type="button" id="btnAddPurchaseOrderRow" class="btn-secondary" style="margin-top:10px;">+ Position hinzufügen</button>
+
+    <div class="field" style="margin-top:16px;">
+      <label>Gesamtbetrag</label>
+      <div id="purchaseOrderTotal" style="font-size:15px; font-weight:700; color:var(--ink); padding:11px 14px; border:1px solid var(--field-border); border-radius:var(--radius-sm); background:var(--ov03);">0,00 €</div>
     </div>
 
     <div class="field">
@@ -4820,7 +4827,21 @@
   /* ---------- Einkauf: Bestellungen ---------- */
 
   const PURCHASE_ORDERS_KEY = 'purchase-orders';
-  let purchaseOrders = [];   // { id, poNumber, supplierId, supplierName, date, items, amount, notes, status, createdAt, orderedAt, receivedAt }
+  let purchaseOrders = [];   // { id, poNumber, supplierId, supplierName, date, items: [{description,quantity,price}], amount, notes, status, createdAt, orderedAt, receivedAt }
+  let purchaseOrderItemsDraft = [];
+
+  // Fasst die Positionen einer Bestellung zu einem lesbaren Text zusammen,
+  // z. B. "5x PLA 1kg Schwarz, 2x PETG 1kg Transparent". Ältere Bestellungen
+  // (vor der Umstellung auf einzelne Positionen) hatten hier einen reinen
+  // Freitext – der wird unverändert weiter angezeigt.
+  function summarizePurchaseOrderItems(items){
+    if (typeof items === 'string') return items;
+    if (!Array.isArray(items)) return '';
+    return items
+      .filter(it => it && it.description)
+      .map(it => (parseInt(it.quantity, 10) || 1) + 'x ' + it.description)
+      .join(', ');
+  }
 
   const PURCHASE_ORDER_STATUS = {
     open:     { label: 'Offen',        badgeClass: '' },
@@ -4878,14 +4899,15 @@
         actionCell = '<span class="note" style="color:var(--energy);">✓ Eingetroffen</span>';
       }
 
-      const narrowSummary = [p.poNumber, p.items, dateLabel].filter(Boolean).join(' · ');
+      const itemsSummary = summarizePurchaseOrderItems(p.items);
+      const narrowSummary = [p.poNumber, itemsSummary, dateLabel].filter(Boolean).join(' · ');
 
       return (
         '<tr>' +
           '<td class="po-col-narrow">' + escapeHtml(p.poNumber || '—') + '</td>' +
           '<td>' + escapeHtml(p.supplierName || '—') +
             '<span class="order-sub only-narrow">' + escapeHtml(narrowSummary) + '</span>' + '</td>' +
-          '<td class="po-col-narrow">' + escapeHtml(p.items || '—') + '</td>' +
+          '<td class="po-col-narrow">' + escapeHtml(itemsSummary || '—') + '</td>' +
           '<td class="col-date po-col-narrow">' + dateLabel + '</td>' +
           '<td>' + statusBadge + '</td>' +
           '<td>' + actionCell + '</td>' +
@@ -4916,13 +4938,69 @@
   }
   $('purchasingShowAll').addEventListener('change', renderPurchaseOrders);
 
+  function purchaseOrderItemsTotal(){
+    return purchaseOrderItemsDraft.reduce((sum, it) => sum + (parseInt(it.quantity, 10) || 0) * (parseFloat(it.price) || 0), 0);
+  }
+  function updatePurchaseOrderTotal(){
+    $('purchaseOrderTotal').textContent = fmtEUR(purchaseOrderItemsTotal());
+  }
+
+  function renderPurchaseOrderItemsForm(){
+    $('purchaseOrderItemsWrap').innerHTML = purchaseOrderItemsDraft.map((item, i) => `
+      <div class="ls-item">
+        <div class="ls-item-head">
+          <span class="section-label" style="margin:0;">Position ${i + 1}</span>
+          <button type="button" class="ls-item-remove po-item-remove" data-index="${i}" title="Position entfernen">✕</button>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Bezeichnung</label>
+          <input type="text" class="po-item-field" data-index="${i}" data-key="description" value="${escapeHtml(item.description)}" placeholder="z. B. PLA 1kg Schwarz">
+        </div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <div class="field" style="margin-bottom:0; max-width:120px;">
+            <label>Menge</label>
+            <input type="number" class="po-item-field" data-index="${i}" data-key="quantity" value="${item.quantity}" min="1" step="1">
+          </div>
+          <div class="field" style="margin-bottom:0; max-width:140px;">
+            <label>Einzelpreis (€) <span class="hint">optional</span></label>
+            <input type="number" class="po-item-field" data-index="${i}" data-key="price" value="${item.price || ''}" placeholder="0,00" min="0" step="0.01" inputmode="decimal">
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    $('purchaseOrderItemsWrap').querySelectorAll('.po-item-field').forEach(input => {
+      input.addEventListener('input', () => {
+        const i = parseInt(input.dataset.index, 10);
+        purchaseOrderItemsDraft[i][input.dataset.key] = input.value;
+        updatePurchaseOrderTotal();
+      });
+    });
+    $('purchaseOrderItemsWrap').querySelectorAll('.po-item-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        purchaseOrderItemsDraft.splice(parseInt(btn.dataset.index, 10), 1);
+        if (!purchaseOrderItemsDraft.length) purchaseOrderItemsDraft.push({ description: '', quantity: 1, price: '' });
+        renderPurchaseOrderItemsForm();
+        updatePurchaseOrderTotal();
+      });
+    });
+    updatePurchaseOrderTotal();
+  }
+  $('btnAddPurchaseOrderRow').addEventListener('click', () => {
+    purchaseOrderItemsDraft.push({ description: '', quantity: 1, price: '' });
+    renderPurchaseOrderItemsForm();
+  });
+
   $('btnNewPurchaseOrder').addEventListener('click', () => {
     $('purchaseOrderNumberDisplay').value = nextPurchaseOrderNumber();
     $('purchaseOrderDate').value = todayISO();
-    $('purchaseOrderItems').value = '';
-    $('purchaseOrderAmount').value = '';
     $('purchaseOrderNotes').value = '';
     $('purchaseOrderFormStatus').textContent = '';
+    $('purchaseOrderLieferscheinFile').value = '';
+    $('purchaseOrderScanStatus').textContent = '';
+    $('poLieferscheinNoConfigNote').style.display = getLieferscheinWorkerUrl() ? 'none' : 'block';
+    purchaseOrderItemsDraft = [{ description: '', quantity: 1, price: '' }];
+    renderPurchaseOrderItemsForm();
 
     const options = [...suppliers].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     $('purchaseOrderSupplierSelect').innerHTML = '<option value="">— bitte wählen —</option>' +
@@ -4936,6 +5014,87 @@
     if (e.target === $('purchaseOrderOverlay')) $('purchaseOrderOverlay').classList.remove('open');
   });
 
+  // Fasst eine erkannte Lieferschein-Position (Material/Hersteller/Farbe/Gewicht)
+  // zu einer lesbaren Bezeichnung für die Bestellpositionen-Zeile zusammen.
+  function mapDeliveryNoteItemToPosition(it){
+    it = it || {};
+    const parts = [it.manufacturer, it.material, it.color].filter(Boolean);
+    let description = parts.join(' ') || it.material || 'Position';
+    if (it.weight) description += ' (' + it.weight + ' g)';
+    if (it.articleNo) description += ' · Art.-Nr. ' + it.articleNo;
+    return {
+      description,
+      quantity: Math.max(1, parseInt(it.quantity, 10) || 1),
+      price: parseFloat(it.price) || ''
+    };
+  }
+
+  $('btnScanPurchaseOrderLieferschein').addEventListener('click', async () => {
+    const file = $('purchaseOrderLieferscheinFile').files && $('purchaseOrderLieferscheinFile').files[0];
+    if (!file) {
+      $('purchaseOrderScanStatus').textContent = '✕ Bitte zuerst eine Datei auswählen.';
+      $('purchaseOrderScanStatus').style.color = 'var(--danger)';
+      return;
+    }
+    if (/heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name)) {
+      $('purchaseOrderScanStatus').textContent = '✕ HEIC-Fotos werden nicht unterstützt. Bitte als JPEG/PNG wählen (z. B. in den iPhone-Kameraeinstellungen "Format: Kompatibel" einstellen) oder ein PDF hochladen.';
+      $('purchaseOrderScanStatus').style.color = 'var(--danger)';
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      $('purchaseOrderScanStatus').textContent = '✕ Datei zu groß (max. 15 MB).';
+      $('purchaseOrderScanStatus').style.color = 'var(--danger)';
+      return;
+    }
+    const workerUrl = getLieferscheinWorkerUrl();
+    if (!workerUrl) {
+      $('purchaseOrderScanStatus').textContent = '✕ Bitte zuerst in den Firmen-Einstellungen unter "Daten & Geräte" die Proxy-Adresse für die KI-Lieferschein-Erkennung eintragen.';
+      $('purchaseOrderScanStatus').style.color = 'var(--danger)';
+      return;
+    }
+
+    $('purchaseOrderScanStatus').textContent = '⏳ Lieferschein wird analysiert …';
+    $('purchaseOrderScanStatus').style.color = '';
+    $('btnScanPurchaseOrderLieferschein').disabled = true;
+
+    try {
+      const base64 = await fileToBase64(file);
+      const mediaType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+      const res = await fetch(workerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file_base64: base64, media_type: mediaType, filename: file.name })
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data) throw new Error((data && data.error) || ('HTTP ' + res.status));
+
+      const items = Array.isArray(data.items) ? data.items : [];
+      if (!items.length) {
+        $('purchaseOrderScanStatus').textContent = '⚠️ Keine Positionen erkannt. Bitte manuell eintragen.';
+        $('purchaseOrderScanStatus').style.color = 'var(--filament)';
+        return;
+      }
+
+      purchaseOrderItemsDraft = items.map(mapDeliveryNoteItemToPosition);
+      renderPurchaseOrderItemsForm();
+
+      if (data.supplier) {
+        const match = Array.from($('purchaseOrderSupplierSelect').options)
+          .find(o => o.textContent.trim().toLowerCase() === String(data.supplier).trim().toLowerCase());
+        if (match) $('purchaseOrderSupplierSelect').value = match.value;
+      }
+      if (data.date) $('purchaseOrderDate').value = data.date;
+
+      $('purchaseOrderScanStatus').textContent = '✓ ' + items.length + ' Position(en) erkannt und eingetragen. Bitte vor dem Speichern prüfen.';
+      $('purchaseOrderScanStatus').style.color = 'var(--energy)';
+    } catch (err) {
+      $('purchaseOrderScanStatus').textContent = '⚠️ Analyse fehlgeschlagen (Proxy nicht erreichbar oder Fehler bei der Erkennung).';
+      $('purchaseOrderScanStatus').style.color = 'var(--filament)';
+    } finally {
+      $('btnScanPurchaseOrderLieferschein').disabled = false;
+    }
+  });
+
   $('btnCreatePurchaseOrder').addEventListener('click', () => {
     const supplierId = $('purchaseOrderSupplierSelect').value;
     const supplier = suppliers.find(s => s.id === supplierId);
@@ -4944,15 +5103,27 @@
       $('purchaseOrderFormStatus').style.color = 'var(--danger)';
       return;
     }
-    const amount = parseFloat($('purchaseOrderAmount').value);
+    const items = purchaseOrderItemsDraft
+      .filter(it => (it.description || '').trim())
+      .map(it => ({
+        description: it.description.trim(),
+        quantity: Math.max(1, parseInt(it.quantity, 10) || 1),
+        price: parseFloat(it.price) || 0
+      }));
+    if (!items.length) {
+      $('purchaseOrderFormStatus').textContent = '✕ Bitte mindestens eine Position mit Bezeichnung angeben.';
+      $('purchaseOrderFormStatus').style.color = 'var(--danger)';
+      return;
+    }
+    const amount = items.reduce((sum, it) => sum + it.quantity * it.price, 0);
     purchaseOrders.push({
       id: 'po-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
       poNumber: $('purchaseOrderNumberDisplay').value,
       supplierId: supplier.id,
       supplierName: supplier.name,
       date: $('purchaseOrderDate').value || todayISO(),
-      items: $('purchaseOrderItems').value.trim(),
-      amount: isNaN(amount) ? 0 : amount,
+      items,
+      amount,
       notes: $('purchaseOrderNotes').value.trim(),
       status: 'open',
       createdAt: new Date().toISOString()
