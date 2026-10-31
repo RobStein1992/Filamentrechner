@@ -1,9 +1,9 @@
 # Lieferschein-Proxy einrichten
 
-Dieser kleine Cloudflare Worker nimmt einen Lieferschein (PDF) von der App entgegen,
-schickt ihn an die Claude-API (Anthropic) zur automatischen Datenerkennung und gibt
-das Ergebnis zurück. Der Anthropic-API-Key liegt dabei **nur auf dem Worker**, nie im
-Browser der App.
+Dieser kleine Cloudflare Worker nimmt einen Lieferschein (PDF oder Foto) von der App
+entgegen, schickt ihn an die Claude-API (Anthropic) zur automatischen Datenerkennung
+und gibt das Ergebnis zurück. Der Anthropic-API-Key liegt dabei **nur auf dem Worker**,
+nie im Browser der App.
 
 Kostenlos möglich über den Cloudflare-Workers-Gratis-Tarif (100.000 Aufrufe/Tag).
 Kosten entstehen nur bei Anthropic pro tatsächlich analysiertem Lieferschein.
@@ -45,8 +45,10 @@ liefert das größere Modell tendenziell zuverlässigere Ergebnisse.
 2. In der App: ⚙️ **Firmen-Einstellungen → Daten & Geräte → KI-Lieferschein-Erkennung**
    → diese Adresse eintragen und speichern.
 
-Damit ist die Funktion einsatzbereit: Beim Wareneingang lässt sich jetzt ein
-Lieferschein-PDF hochladen, dessen Positionen automatisch vorausgefüllt werden.
+Damit ist die Funktion einsatzbereit: Bei einer Bestellung unter 🛒 **Einkauf →
+Bestellungen** lässt sich jetzt ein Lieferschein als PDF oder Foto hochladen, dessen
+Positionen automatisch vorausgefüllt werden (bitte vor dem Speichern trotzdem kurz
+prüfen – Mengen, Bezeichnungen und Preise können von der KI falsch erkannt werden).
 
 ## Sicherheitshinweis
 
