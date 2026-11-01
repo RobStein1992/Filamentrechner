@@ -645,7 +645,7 @@
   .order-actions .order-delete:hover{ color: var(--margin-c); }
 
   /* Listen dürfen im Notfall in sich scrollen statt die Seite zu sprengen */
-  #orderListWrap, #versandHistoryWrap, #versandCompletedWrap, #quoteListWrap, #orderArchiveWrap, #returnsListWrap, #productionListWrap, #articlesListWrap, #suppliersListWrap, #purchasingListWrap{
+  #orderListWrap, #versandHistoryWrap, #versandCompletedWrap, #quoteListWrap, #orderArchiveWrap, #returnsListWrap, #productionListWrap, #articlesListWrap, #suppliersListWrap, #purchasingListWrap, #materialThresholdsListWrap, #bookingListWrap{
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -660,13 +660,15 @@
     #versandCompletedBody .btn-label,
     #returnsListBody .btn-label,
     #articlesListBody .btn-label,
-    #suppliersListBody .btn-label{ display:none; }
+    #suppliersListBody .btn-label,
+    #materialThresholdsBody .btn-label{ display:none; }
     .order-actions .btn-secondary,
     .order-actions .btn-primary{ padding: 6px 10px; margin-left: 4px; }
     #articlesListBody .article-edit-btn,
     #suppliersListBody .supplier-edit-btn{ padding: 6px 8px; }
     #suppliersListWrap .supplier-col-narrow,
-    #purchasingListWrap .po-col-narrow{ display:none; }
+    #purchasingListWrap .po-col-narrow,
+    #bookingListWrap .stock-col-narrow{ display:none; }
     #orderListWrap .col-date,
     #orderListWrap .col-customer,
     #quoteListWrap .col-date,
@@ -681,7 +683,8 @@
     #versandCompletedWrap .col-customer,
     #returnsListWrap .col-date,
     #returnsListWrap .col-customer,
-    #productionListWrap .prod-col-narrow{ display:none; }
+    #productionListWrap .prod-col-narrow,
+    #materialThresholdsListWrap .mt-col-narrow{ display:none; width:0; }
     #orderListWrap .order-sub.only-narrow,
     #quoteListWrap .order-sub.only-narrow,
     #orderArchiveWrap .order-sub.only-narrow,
@@ -690,7 +693,9 @@
     #returnsListWrap .order-sub.only-narrow,
     #productionListWrap .order-sub.only-narrow,
     #suppliersListWrap .order-sub.only-narrow,
-    #purchasingListWrap .order-sub.only-narrow{ display:block; }
+    #purchasingListWrap .order-sub.only-narrow,
+    #materialThresholdsListWrap .order-sub.only-narrow,
+    #bookingListWrap .order-sub.only-narrow{ display:block; }
     #orderListWrap table.inv-table thead th,
     #orderListWrap table.inv-table tbody td,
     #quoteListWrap table.inv-table thead th,
@@ -708,9 +713,23 @@
     #articlesListWrap table.inv-table thead th,
     #articlesListWrap table.inv-table tbody td,
     #purchasingListWrap table.inv-table thead th,
-    #purchasingListWrap table.inv-table tbody td{ padding-left: 4px; padding-right: 4px; }
-    #articlesListWrap table.inv-table thead th{ white-space:normal; overflow-wrap:anywhere; }
+    #purchasingListWrap table.inv-table tbody td,
+    #materialThresholdsListWrap table.inv-table thead th,
+    #materialThresholdsListWrap table.inv-table tbody td,
+    #bookingListWrap table.inv-table thead th,
+    #bookingListWrap table.inv-table tbody td{ padding-left: 4px; padding-right: 4px; }
+    #articlesListWrap table.inv-table thead th,
+    #materialThresholdsListWrap table.inv-table thead th{ white-space:normal; overflow-wrap:anywhere; }
     #articlesListBody input.article-stock-input{ width: 56px; padding: 6px 4px; }
+    #materialThresholdsBody input.material-threshold-input{ width: 100%; min-width: 0; padding: 6px 4px; box-sizing: border-box; }
+    #materialThresholdsListWrap table.inv-table{ table-layout: fixed; }
+    #materialThresholdsListWrap table.inv-table th:first-child,
+    #materialThresholdsListWrap table.inv-table td:first-child{ width: 38%; }
+    #materialThresholdsListWrap table.inv-table th.num,
+    #materialThresholdsListWrap table.inv-table td.num{ width: 32%; }
+    #materialThresholdsListWrap table.inv-table th:last-child,
+    #materialThresholdsListWrap table.inv-table td:last-child{ width: 30%; }
+    #materialThresholdsBody .material-reorder-btn{ padding: 6px 8px; font-size:12px; }
   }
 
   .order-banner{
