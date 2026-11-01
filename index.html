@@ -42,7 +42,7 @@
   <div class="side-nav-select-row">
     <div class="nav-dropdown" id="navDropdown">
       <button type="button" class="nav-dropdown-toggle" id="navDropdownToggle" aria-haspopup="true" aria-expanded="false">
-        <span id="navDropdownLabel">🧮 Kalkulator</span>
+        <span id="navDropdownLabel">📊 Dashboard</span>
       </button>
       <div class="nav-dropdown-menu" id="navDropdownMenu">
         <button type="button" class="nav-dropdown-item" data-page="dashboard">📊 Dashboard</button>
@@ -65,8 +65,8 @@
       </div>
     </div>
     <select id="sideNavSelect" aria-label="Seite wählen" class="nav-select-legacy">
-      <option value="dashboard">📊 Dashboard</option>
-      <option value="calculator" selected>🧮 Kalkulator</option>
+      <option value="dashboard" selected>📊 Dashboard</option>
+      <option value="calculator">🧮 Kalkulator</option>
       <optgroup label="🗃️ Lager">
         <option value="booking">📦 Filament buchen</option>
         <option value="articles">🏷️ Artikel</option>
@@ -81,8 +81,8 @@
       <option value="returns">↩️ Retouren/Reklamationen</option>
     </select>
   </div>
-  <button type="button" class="page-switch-btn" id="btnPageDashboard" data-page="dashboard">📊 Dashboard</button>
-  <button type="button" class="page-switch-btn active" id="btnPageCalculator" data-page="calculator">🧮 Kalkulator</button>
+  <button type="button" class="page-switch-btn active" id="btnPageDashboard" data-page="dashboard">📊 Dashboard</button>
+  <button type="button" class="page-switch-btn" id="btnPageCalculator" data-page="calculator">🧮 Kalkulator</button>
   <button type="button" class="page-switch-btn" id="btnPageBooking" data-page="booking">📦 Filament buchen</button>
   <button type="button" class="page-switch-btn" id="btnPageArticles" data-page="articles">🏷️ Artikel</button>
   <button type="button" class="page-switch-btn" id="btnPageVersand" data-page="shipping">🚚 Versand</button>
@@ -106,7 +106,7 @@
       </select>
     </div>
   </div>
-  <div class="mode-bar" id="modeBarRow">
+  <div class="mode-bar" id="modeBarRow" style="display:none;">
     <span class="mode-label" id="modeBarLabel">Drucktechnologie</span>
     <div class="mode-toggle" id="modeToggle" role="tablist">
       <button type="button" class="mode-toggle-btn active" id="modeBtnFdm" data-mode="fdm" role="tab" aria-selected="true">🧵 FDM / Filament</button>
@@ -119,7 +119,7 @@
   </div>
 </div>
 
-<div class="wrap" id="pageCalculator">
+<div class="wrap" id="pageCalculator" style="display:none;">
 
   <header>
     <div class="eyebrow"><span class="dot"></span><span id="eyebrowText">KALKULATIONSBLATT · FDM-DRUCK</span></div>
@@ -671,7 +671,7 @@
   </button>
 </div>
 
-<div class="wrap" id="pageDashboard" style="display:none;">
+<div class="wrap" id="pageDashboard">
 
   <header>
     <div class="eyebrow"><span class="dot"></span><span>ÜBERBLICK · OFFENE VORGÄNGE</span></div>
@@ -4643,9 +4643,10 @@
     if (e.target === $('labelOverlay')) $('labelOverlay').classList.remove('open');
   });
 
-  loadStock();
+  const _initLoadPromises = [];
+  _initLoadPromises.push(loadStock());
   loadMovements();
-  loadMaterialThresholds();
+  _initLoadPromises.push(loadMaterialThresholds());
 
   /* ---------- Artikelstamm: feste Artikelnummer je Produktname ---------- */
 
@@ -6779,7 +6780,7 @@
     $('returnFormCard').style.display = 'none';
   });
 
-  loadReturns();
+  _initLoadPromises.push(loadReturns());
 
   // Die ersten drei Spalten sind in allen drei Listen gleich aufgebaut.
   function orderBaseCells(order, badgeHtml){
@@ -7254,11 +7255,15 @@
   // sonst könnte die Nummern-Vergabe für ältere Positionen auf einem noch
   // leeren Artikelstamm laufen und unnötig neue Nummern statt der
   // vorhandenen vergeben.
-  loadProductCatalog().then(loadShipments);
-  loadOrders();
-  loadProductions();
-  loadSuppliers();
-  loadPurchaseOrders();
+  _initLoadPromises.push(loadProductCatalog().then(loadShipments));
+  _initLoadPromises.push(loadOrders());
+  _initLoadPromises.push(loadProductions());
+  _initLoadPromises.push(loadSuppliers());
+  _initLoadPromises.push(loadPurchaseOrders());
+
+  // Dashboard ist die Startseite: erst anzeigen, wenn alle Daten geladen sind,
+  // damit die Kacheln direkt die richtigen Werte zeigen.
+  Promise.all(_initLoadPromises).catch(() => {}).then(() => switchPage('dashboard'));
 
   function parseCSV(text, delimiter){
     const rows = [];
