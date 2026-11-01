@@ -711,6 +711,12 @@
       <div class="dash-tile-sub" id="dashOpenReturnsSub">Noch keine Retouren</div>
     </div>
 
+    <div class="card dash-tile">
+      <div class="dash-tile-head"><span class="swatch" style="background:var(--danger)"></span><span class="dash-tile-label">⚠️ Niedriger Bestand</span></div>
+      <div class="dash-tile-value" id="dashLowStockCount">0</div>
+      <div class="dash-tile-sub" id="dashLowStockSub">Kein Meldebestand unterschritten</div>
+    </div>
+
   </div>
 </div>
 
@@ -878,9 +884,9 @@
       <table class="inv-table" style="margin-bottom:6px;">
         <thead>
           <tr>
-            <th>Artikel-Nr.</th>
+            <th class="stock-col-narrow">Artikel-Nr.</th>
             <th>Filament</th>
-            <th>Lagerplatz</th>
+            <th class="stock-col-narrow">Lagerplatz</th>
             <th class="num">Rest / Gesamt</th>
             <th style="width:56px;"></th>
           </tr>
@@ -893,6 +899,30 @@
       </div>
     </div>
     <p class="note" id="bookingEmptyNote">Noch keine Lagerpositionen vorhanden. Buche oben einen Wareneingang, um zu starten.</p>
+  </div>
+
+  <div class="card" style="max-width: 660px; margin: 18px auto 0;">
+    <span class="crossmark tl"></span><span class="crossmark tr"></span>
+    <div class="card-head">
+      <h2 class="card-title"><span class="swatch" style="background:var(--danger)"></span><span>Meldebestand</span></h2>
+    </div>
+    <p class="note" style="margin-top:0;">Lege je Material einen Meldebestand fest – fällt der Gesamtbestand darunter, erscheint ein Hinweis im Dashboard.</p>
+
+    <div id="materialThresholdsListWrap" style="display:none;">
+      <table class="inv-table" style="margin-bottom:0;">
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th class="num mt-col-narrow">Bestand</th>
+            <th class="num">Meldebestand (g)</th>
+            <th class="mt-col-narrow">Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="materialThresholdsBody"></tbody>
+      </table>
+    </div>
+    <p class="note" id="materialThresholdsEmptyNote">Noch kein Filament eingebucht – Materialien erscheinen hier automatisch, sobald ein Wareneingang gebucht wurde.</p>
   </div>
 
   <div class="card" style="max-width: 660px; margin: 18px auto 0;">
@@ -2374,7 +2404,7 @@
     if (!ok) throw new Error('storage unavailable');
     markLocalChange();
   }
-  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders', 'returns', 'lieferschein-worker-url', 'product-catalog', 'productions', 'suppliers', 'suppliers-default-seeded', 'purchase-orders'];
+  const ALL_STORAGE_KEYS = ['company-settings', 'storage-locations', 'filament-stock', 'filament-movements', 'shipments', 'orders', 'returns', 'lieferschein-worker-url', 'product-catalog', 'productions', 'suppliers', 'suppliers-default-seeded', 'purchase-orders', 'material-reorder-thresholds'];
 
   // Zustand der Geräte-Synchronisierung (siehe weiter unten). Hier oben
   // deklariert, weil storageSet() darauf zugreift.
@@ -4164,10 +4194,12 @@
         if (tempParts.length) subParts.push(tempParts.join(' · '));
         const sub = subParts.length ? '<span class="inv-item-sub">' + escapeHtml(subParts.join(' · ')) + '</span>' : '';
         const dot = '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + (p.colorHex || '#ccc') + ';border:1px solid var(--ov30);margin-right:5px;vertical-align:middle;"></span>';
+        const narrowSummary = [p.articleNo, p.location].filter(Boolean).join(' · ');
         return '<tr class="stock-row" data-id="' + p.id + '" style="cursor:pointer;' + (empty ? 'opacity:0.45;' : '') + '" title="Klicken für Ausbuchungs-Details">' +
-          '<td>' + escapeHtml(p.articleNo) + '<span class="inv-item-sub">' + escapeHtml(p.manufacturer || '—') + '</span></td>' +
-          '<td>' + dot + escapeHtml(label) + sub + '</td>' +
-          '<td>' + escapeHtml(p.location || '—') + '</td>' +
+          '<td class="stock-col-narrow">' + escapeHtml(p.articleNo) + '<span class="inv-item-sub">' + escapeHtml(p.manufacturer || '—') + '</span></td>' +
+          '<td>' + dot + escapeHtml(label) + sub +
+            '<span class="order-sub only-narrow">' + escapeHtml(narrowSummary) + '</span>' + '</td>' +
+          '<td class="stock-col-narrow">' + escapeHtml(p.location || '—') + '</td>' +
           '<td class="num">' + fmtGrams(p.remainingWeight) + ' / ' + fmtGrams(p.initialWeight) + (empty ? '<span class="inv-item-sub">leer</span>' : '') + '</td>' +
           '<td><button type="button" class="booking-delete" data-id="' + p.id + '" title="Position löschen" style="border:none;background:none;color:var(--ink-soft);cursor:pointer;font-size:15px;">✕</button></td>' +
           '</tr>';
@@ -4197,6 +4229,7 @@
 
     refreshOutPositionSelect();
     refreshFilamentArticleNoList();
+    renderMaterialThresholds();
   }
 
   function refreshFilamentArticleNoList(){
@@ -4244,6 +4277,110 @@
       await storageSet(STOCK_KEY, JSON.stringify(stockPositions));
     } catch (err) {
     }
+  }
+
+  /* ---------- Meldebestand je Material ---------- */
+
+  const MATERIAL_THRESHOLDS_KEY = 'material-reorder-thresholds';
+  let materialThresholds = {}; // { PLA: 500, ... } Meldebestand in Gramm
+
+  async function loadMaterialThresholds(){
+    try {
+      const value = await storageGet(MATERIAL_THRESHOLDS_KEY);
+      if (value) materialThresholds = JSON.parse(value);
+    } catch (err) {}
+    renderMaterialThresholds();
+  }
+
+  async function saveMaterialThresholds(){
+    try { await storageSet(MATERIAL_THRESHOLDS_KEY, JSON.stringify(materialThresholds)); } catch (err) {}
+  }
+
+  function materialStockTotal(code){
+    return stockPositions
+      .filter(p => p.material === code)
+      .reduce((sum, p) => sum + (parseFloat(p.remainingWeight) || 0), 0);
+  }
+
+  // Materialien, für die ein Meldebestand sinnvoll angezeigt wird: alle, die
+  // aktuell (oder noch) eine Lagerposition haben, plus bereits konfigurierte
+  // Materialien, auch wenn deren letzte Position zwischenzeitlich entfernt wurde.
+  function getTrackedMaterials(){
+    const codes = new Set();
+    stockPositions.forEach(p => { if (p.material) codes.add(p.material); });
+    Object.keys(materialThresholds).forEach(code => codes.add(code));
+    return Array.from(codes);
+  }
+
+  function getLowStockMaterials(){
+    return getTrackedMaterials().filter(code => {
+      const threshold = parseFloat(materialThresholds[code]);
+      return threshold > 0 && materialStockTotal(code) < threshold;
+    });
+  }
+
+  function renderMaterialThresholds(){
+    const codes = getTrackedMaterials().sort((a, b) => (bookMaterialLabels[a] || a).localeCompare(bookMaterialLabels[b] || b));
+
+    if (!codes.length) {
+      $('materialThresholdsListWrap').style.display = 'none';
+      $('materialThresholdsEmptyNote').style.display = 'block';
+      $('materialThresholdsBody').innerHTML = '';
+      return;
+    }
+    $('materialThresholdsListWrap').style.display = 'block';
+    $('materialThresholdsEmptyNote').style.display = 'none';
+
+    $('materialThresholdsBody').innerHTML = codes.map(code => {
+      const total = materialStockTotal(code);
+      const threshold = parseFloat(materialThresholds[code]);
+      const hasThreshold = threshold > 0;
+      const isLow = hasThreshold && total < threshold;
+      const statusBadge = !hasThreshold
+        ? '<span class="note" style="margin:0;">—</span>'
+        : '<span class="order-badge' + (isLow ? ' is-action' : ' is-shipped') + '">' + (isLow ? 'Niedrig' : 'OK') + '</span>';
+      const actionCell = isLow
+        ? '<button type="button" class="btn-secondary material-reorder-btn" data-material="' + code + '" style="width:auto; padding:6px 10px; font-size:13px;">🛒 <span class="btn-label">Bestellen</span></button>'
+        : '';
+      const narrowSummary = fmtGrams(total) + (hasThreshold ? (isLow ? ' · Niedrig' : ' · OK') : '');
+      return (
+        '<tr>' +
+          '<td>' + escapeHtml(bookMaterialLabels[code] || code) +
+            '<span class="order-sub only-narrow">' + escapeHtml(narrowSummary) + '</span>' + '</td>' +
+          '<td class="num mt-col-narrow">' + fmtGrams(total) + '</td>' +
+          '<td class="num"><input type="number" class="material-threshold-input" data-material="' + code + '" min="0" step="10" value="' + (hasThreshold ? threshold : '') + '" placeholder="kein Meldebestand"></td>' +
+          '<td class="mt-col-narrow">' + statusBadge + '</td>' +
+          '<td>' + actionCell + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+
+    $('materialThresholdsBody').querySelectorAll('.material-threshold-input').forEach(input => {
+      input.addEventListener('change', () => {
+        const code = input.dataset.material;
+        const val = parseFloat(input.value);
+        if (isNaN(val) || val <= 0) delete materialThresholds[code];
+        else materialThresholds[code] = val;
+        saveMaterialThresholds();
+        renderMaterialThresholds();
+        renderDashboard();
+      });
+    });
+    $('materialThresholdsBody').querySelectorAll('.material-reorder-btn').forEach(btn => {
+      btn.addEventListener('click', () => openPurchaseOrderForMaterial(btn.dataset.material));
+    });
+  }
+
+  // Öffnet eine neue Bestellung mit einem vorausgefüllten Positionsvorschlag
+  // für ein Material, dessen Bestand den Meldebestand unterschritten hat.
+  function openPurchaseOrderForMaterial(code){
+    switchPage('purchasing');
+    $('btnNewPurchaseOrder').click();
+    const label = bookMaterialLabels[code] || code;
+    purchaseOrderItemsDraft = [{ description: label + ' nachbestellen', quantity: 1, price: '' }];
+    renderPurchaseOrderItemsForm();
+    $('purchaseOrderFormStatus').textContent = '💡 Vorschlag wegen niedrigem Bestand – bitte Lieferant, Menge und Preis prüfen.';
+    $('purchaseOrderFormStatus').style.color = 'var(--ink-soft)';
   }
 
   function renderMovements(){
@@ -4508,6 +4645,7 @@
 
   loadStock();
   loadMovements();
+  loadMaterialThresholds();
 
   /* ---------- Artikelstamm: feste Artikelnummer je Produktname ---------- */
 
@@ -6304,6 +6442,12 @@
           ? fmtEUR(openReturns.reduce((s, r) => s + (parseFloat(r.refundAmount) || 0), 0)) + ' Erstattungswert'
           : openReturns.length + ' zu bearbeiten')
       : 'Noch keine Retouren';
+
+    const lowStockMaterials = getLowStockMaterials();
+    $('dashLowStockCount').textContent = lowStockMaterials.length;
+    $('dashLowStockSub').textContent = lowStockMaterials.length
+      ? lowStockMaterials.map(code => bookMaterialLabels[code] || code).join(', ')
+      : 'Kein Meldebestand unterschritten';
   }
 
   /* ---------- Retouren / Reklamationen ---------- */
