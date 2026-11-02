@@ -62,6 +62,8 @@
         <button type="button" class="nav-dropdown-item" data-page="production">🏭 Produktion</button>
         <button type="button" class="nav-dropdown-item" data-page="orders">📋 Aufträge</button>
         <button type="button" class="nav-dropdown-item" data-page="returns">↩️ Retouren/Reklamationen</button>
+        <div class="nav-dropdown-divider"></div>
+        <button type="button" class="nav-dropdown-item" id="btnOpenSettings">⚙️ Firmen-Einstellungen</button>
       </div>
     </div>
     <select id="sideNavSelect" aria-label="Seite wählen" class="nav-select-legacy">
@@ -92,20 +94,7 @@
   <button type="button" class="page-switch-btn side-nav-refresh" id="btnRefreshPage" title="Aktualisieren">🔄<span class="side-nav-refresh-label"> Aktualisieren</span></button>
 </nav>
 <div class="app-main">
-<div class="app-toolbar" id="appToolbar">
-  <div class="lang-bar">
-    <button class="settings-btn" id="btnOpenSettings" type="button">⚙️ Firmen-Einstellungen</button>
-    <div class="lang-select-row">
-      <select id="langSelect">
-        <option value="de" selected>🇩🇪 Deutsch</option>
-        <option value="en">🇬🇧 English</option>
-        <option value="zh">🇨🇳 中文</option>
-        <option value="hi">🇮🇳 हिन्दी</option>
-        <option value="es">🇪🇸 Español</option>
-        <option value="fr">🇫🇷 Français</option>
-      </select>
-    </div>
-  </div>
+<div class="app-toolbar" id="appToolbar" style="display:none;">
   <div class="mode-bar" id="modeBarRow" style="display:none;">
     <span class="mode-label" id="modeBarLabel">Drucktechnologie</span>
     <div class="mode-toggle" id="modeToggle" role="tablist">
@@ -2100,6 +2089,20 @@
       <div class="mode-toggle" id="themeToggle" role="tablist" style="max-width:320px;">
         <button type="button" class="mode-toggle-btn" id="themeBtnLight" data-theme="light" role="tab" aria-selected="false">☀️ Hell</button>
         <button type="button" class="mode-toggle-btn" id="themeBtnDark" data-theme="dark" role="tab" aria-selected="false">🌙 Dunkel</button>
+      </div>
+
+      <div class="field" style="margin-top:20px; max-width:320px;">
+        <label for="langSelect">Sprache</label>
+        <div class="select-row">
+          <select id="langSelect">
+            <option value="de" selected>🇩🇪 Deutsch</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="zh">🇨🇳 中文</option>
+            <option value="hi">🇮🇳 हिन्दी</option>
+            <option value="es">🇪🇸 Español</option>
+            <option value="fr">🇫🇷 Français</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -7662,6 +7665,7 @@
     $('pagePurchasing').style.display = page === 'purchasing' ? '' : 'none';
     $('pagePositionDetail').style.display = 'none';
     $('modeBarRow').style.display = page === 'calculator' ? '' : 'none';
+    $('appToolbar').style.display = page === 'calculator' ? '' : 'none';
     $('sideNav').style.display = '';
     $('btnPageDashboard').classList.toggle('active', page === 'dashboard');
     $('btnPageCalculator').classList.toggle('active', page === 'calculator');
@@ -7752,6 +7756,7 @@
     $('pageVersand').style.display = 'none';
     $('pagePositionDetail').style.display = '';
     $('modeBarRow').style.display = 'none';
+    $('appToolbar').style.display = 'none';
     $('sideNav').style.display = 'none';
 
     $('detailArticleNo').textContent = pos.articleNo;
