@@ -361,6 +361,13 @@
   }
   .app-toolbar .lang-bar{ margin-bottom: 12px; }
   .app-toolbar .mode-bar{ margin-bottom: 0; }
+  @media(max-width: 760px){
+    /* Der negative margin-top ist für die Desktop-Spaltenansicht gedacht
+       (Sidenav und Toolbar stehen dort nebeneinander). Mobil stehen sie
+       untereinander, sonst ragt die Toolbar sichtbar in die Sidenav-Box
+       hinein und überlappt "Firmen-Einstellungen"/"Deutsch". */
+    .app-toolbar{ margin-top: 0; }
+  }
 
   .mode-toggle{
     display:flex;
