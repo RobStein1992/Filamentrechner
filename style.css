@@ -157,16 +157,6 @@
 
   .wrap{ max-width: 1040px; margin: 0 auto; }
 
-  .lang-bar{
-    max-width: 1040px;
-    margin: 0 auto 12px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:10px;
-    flex-wrap:wrap;
-  }
-  .lang-select-row{ position:relative; min-width: 150px; }
   .settings-btn{
     font-family:'72','72override',Arial,Helvetica,sans-serif;
     font-size: 12px;
@@ -183,30 +173,6 @@
   }
   .settings-btn:hover{ border-color: var(--filament); background: var(--ov10); transform: translateY(-1px); }
   .settings-btn:active{ transform: translateY(0); }
-  #langSelect{
-    width:100%;
-    padding: 9px 32px 9px 16px;
-    font-family:'72','72override',Arial,Helvetica,sans-serif;
-    font-size: 12px;
-    font-weight:600;
-    letter-spacing:0.02em;
-    border: 1px solid var(--ov12);
-    border-radius: 999px;
-    background: var(--ov06);
-    backdrop-filter: blur(8px);
-    color: var(--ink);
-    appearance:none;
-    -webkit-appearance:none;
-    cursor:pointer;
-    transition: border-color .18s ease, background .18s ease;
-  }
-  #langSelect:hover{ background: var(--ov10); }
-  #langSelect:focus{ outline:none; border-color: var(--filament); }
-  .lang-select-row::after{
-    content:"▾";
-    position:absolute; right:14px; top:50%; transform:translateY(-50%);
-    color: var(--ov55); font-size:11px; pointer-events:none;
-  }
 
   .mode-bar{
     max-width: 1040px;
@@ -359,7 +325,6 @@
   .app-toolbar.scrolled{
     box-shadow: var(--shadow-float);
   }
-  .app-toolbar .lang-bar{ margin-bottom: 12px; }
   .app-toolbar .mode-bar{ margin-bottom: 0; }
   @media(max-width: 760px){
     /* Der negative margin-top ist für die Desktop-Spaltenansicht gedacht
@@ -1171,6 +1136,7 @@
   .nav-dropdown-group[open] > summary::after{ content:"–"; }
   .nav-dropdown-group[open] > summary{ margin-bottom: 4px; }
   .nav-dropdown-group .nav-dropdown-subitem{ padding-left: 30px; font-size:13px; }
+  .nav-dropdown-divider{ height:1px; margin:6px 4px; background: var(--ov10); }
 
   .subgrid{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   @media(max-width: 480px){
