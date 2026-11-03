@@ -2266,6 +2266,7 @@
       <div class="section-label">🧪 Testdaten</div>
       <p class="note" style="margin-top:0;">Legt einen vollst&auml;ndigen Beispielauftrag in der Auftragslage an, um den Ablauf bis zum Lieferschein auszuprobieren. Vorhandene Daten bleiben unber&uuml;hrt &ndash; den Testauftrag entfernst du jederzeit im Reiter <b>📋 Auftr&auml;ge</b> &uuml;ber das ✕.</p>
       <button type="button" id="btnCreateTestOrder" class="btn-secondary" style="margin-top:0;">🧪 Testauftrag anlegen</button>
+      <button type="button" id="btnCreateTestDeliveredOrders" class="btn-secondary" style="margin-top:8px;">🚚 3 ausgelieferte Beispiel-Aufträge anlegen</button>
       <button type="button" id="btnCreateTestShipments" class="btn-secondary" style="margin-top:8px;">📦 20 Beispiel-Lieferscheine anlegen</button>
       <button type="button" id="btnCreateTestProducts" class="btn-secondary" style="margin-top:8px;">🏭 10 Beispiel-Produkte anlegen</button>
       <p class="note" id="testDataStatus"></p>
@@ -2366,6 +2367,47 @@
     <div class="btn-row" style="margin-top:16px;">
       <button class="btn-primary" id="btnCreatePurchaseOrder" type="button">💾 Anlegen</button>
     </div>
+  </div>
+</div>
+
+<div class="invoice-overlay" id="returnDetailOverlay" style="z-index:1000;">
+  <div class="invoice-toolbar">
+    <button class="btn-secondary" id="btnCloseReturnDetail" type="button">✕ Schließen</button>
+  </div>
+  <div style="max-width:520px; margin:0 auto; background:var(--card); border-radius:8px; padding:22px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'72','72override',Arial,Helvetica,sans-serif;">
+    <h2 style="font-family:'72','72override',Arial,Helvetica,sans-serif; font-size:19px; margin:0 0 4px;" id="returnDetailTitle">Retoure</h2>
+    <p class="note" style="margin-top:0;" id="returnDetailMeta">—</p>
+
+    <div class="field">
+      <label>Kunde</label>
+      <div id="returnDetailCustomer" style="font-size:13.5px; padding:11px 14px; border:1px solid var(--field-border); border-radius:var(--radius-sm); background:var(--ov03); white-space:pre-line;">—</div>
+    </div>
+    <div class="field">
+      <label>Bezug <span class="hint">optional</span></label>
+      <div id="returnDetailReference" style="font-size:13.5px; padding:11px 14px; border:1px solid var(--field-border); border-radius:var(--radius-sm); background:var(--ov03);">—</div>
+    </div>
+    <div class="field">
+      <label>Grund / Beschreibung</label>
+      <div id="returnDetailReason" style="font-size:13.5px; padding:11px 14px; border:1px solid var(--field-border); border-radius:var(--radius-sm); background:var(--ov03); white-space:pre-line;">—</div>
+    </div>
+    <div class="field" id="returnDetailPositionsField" style="display:none;">
+      <label>Positionen</label>
+      <div id="returnDetailPositions" style="font-size:13.5px; padding:11px 14px; border:1px solid var(--field-border); border-radius:var(--radius-sm); background:var(--ov03);">—</div>
+    </div>
+    <div class="field">
+      <label>Erstattungsbetrag</label>
+      <div id="returnDetailRefund" style="font-size:13.5px; padding:11px 14px; border:1px solid var(--field-border); border-radius:var(--radius-sm); background:var(--ov03);">—</div>
+    </div>
+
+    <p class="note" id="returnDetailResolvedNote" style="display:none;"></p>
+
+    <div class="section-label">Was soll mit der Retoure passieren?</div>
+    <div class="btn-row" style="flex-wrap:wrap;">
+      <button class="btn-secondary" id="btnReturnActionRestock" type="button" style="margin-top:0;">📦 Einlagern</button>
+      <button class="btn-secondary" id="btnReturnActionReplacement" type="button" style="margin-top:0;">🔁 Ersatzlieferung</button>
+      <button class="btn-secondary" id="btnReturnActionResend" type="button" style="margin-top:0;">🚚 Erneut versenden</button>
+    </div>
+    <p class="note" id="returnDetailActionStatus"></p>
   </div>
 </div>
 
@@ -6485,8 +6527,14 @@
     replacement: 'Ersatzlieferung',
     restock: 'Wieder Einlagerung'
   };
+  const RETURN_RESOLVED_ACTION_LABELS = {
+    restock: '📦 Eingelagert',
+    replacement: '🔁 Ersatz geliefert',
+    resend: '🚚 Erneut versendet'
+  };
 
   function returnNextActionLabel(r){
+    if (r.resolved && r.resolvedAction) return RETURN_RESOLVED_ACTION_LABELS[r.resolvedAction] || '';
     return RETURN_ACTION_LABELS[r.nextAction] || '';
   }
 
@@ -6524,12 +6572,16 @@
         '<td class="col-customer">' + escapeHtml(r.customerName || '—') + '</td>' +
         '<td class="num">' + (r.refundAmount ? fmtEUR(r.refundAmount) : '—') + '</td>' +
         '<td class="num order-actions">' +
+          '<button type="button" class="btn-secondary return-open" data-id="' + r.id + '" title="Retoure öffnen">👁<span class="btn-label"> Öffnen</span></button>' +
           (r.resolved ? '' : '<button type="button" class="btn-secondary return-resolve" data-id="' + r.id + '" title="Als abgeschlossen markieren">✓<span class="btn-label"> Abschließen</span></button>') +
           '<button type="button" class="order-delete return-delete" data-id="' + r.id + '" title="Eintrag entfernen">✕</button>' +
         '</td>' +
       '</tr>';
     }).join('');
 
+    $('returnsListBody').querySelectorAll('.return-open').forEach(btn => {
+      btn.addEventListener('click', () => openReturnDetail(btn.dataset.id));
+    });
     $('returnsListBody').querySelectorAll('.return-resolve').forEach(btn => {
       btn.addEventListener('click', () => {
         const entry = returnsList.find(x => x.id === btn.dataset.id);
@@ -6552,6 +6604,126 @@
   }
 
   $('returnsShowAll').addEventListener('change', renderReturns);
+
+  /* ---------- Retoure öffnen: Einlagern / Ersatzlieferung / Erneut versenden ---------- */
+  let currentReturnDetailId = null;
+
+  function returnItemsSummary(items){
+    return (items || [])
+      .filter(it => it && it.description)
+      .map(it => (it.quantity || 1) + '× ' + it.description)
+      .join(', ');
+  }
+
+  function openReturnDetail(id){
+    const r = returnsList.find(x => x.id === id);
+    if (!r) return;
+    currentReturnDetailId = id;
+
+    $('returnDetailTitle').textContent = returnTypeLabel(r) + ' ' + (r.docNumber || '');
+    $('returnDetailMeta').textContent = fmtDateShortDE(r.date) + ' · ' + (r.resolved ? 'abgeschlossen' : 'offen');
+    $('returnDetailCustomer').textContent = [r.customerName, formatShippingAddress((r.address || {}).street, (r.address || {}).zip, (r.address || {}).city)].filter(Boolean).join('\n') || '—';
+    $('returnDetailReference').textContent = r.reference || '—';
+    $('returnDetailReason').textContent = r.reason || '—';
+
+    const itemsSummary = returnItemsSummary(r.items);
+    if (itemsSummary) {
+      $('returnDetailPositionsField').style.display = 'block';
+      $('returnDetailPositions').textContent = itemsSummary;
+    } else {
+      $('returnDetailPositionsField').style.display = 'none';
+    }
+
+    $('returnDetailRefund').textContent = r.refundAmount ? fmtEUR(r.refundAmount) : '—';
+
+    if (r.resolvedAction) {
+      $('returnDetailResolvedNote').style.display = 'block';
+      $('returnDetailResolvedNote').style.color = 'var(--ink-soft)';
+      $('returnDetailResolvedNote').textContent = 'Bereits entschieden: ' + (RETURN_RESOLVED_ACTION_LABELS[r.resolvedAction] || r.resolvedAction) +
+        (r.resolvedAt ? ' am ' + fmtDateShortDE(r.resolvedAt.slice(0, 10)) : '');
+    } else {
+      $('returnDetailResolvedNote').style.display = 'none';
+    }
+
+    $('returnDetailActionStatus').textContent = '';
+    $('returnDetailOverlay').classList.add('open');
+  }
+
+  // Legt bei "Ersatzlieferung"/"Erneut versenden" einen neuen Lieferschein
+  // mit den retournierten Positionen an; bei "Einlagern" werden die
+  // Positionen stattdessen per restockReturnItems() dem Artikel-Bestand
+  // wieder hinzugefügt.
+  function resolveReturnWithAction(action){
+    const r = returnsList.find(x => x.id === currentReturnDetailId);
+    if (!r) return;
+
+    if (action === 'restock') {
+      restockReturnItems(r);
+      r.resolved = true;
+      r.resolvedAt = new Date().toISOString();
+      r.resolvedAction = 'restock';
+      saveReturns();
+      renderReturns();
+      openReturnDetail(r.id);
+      $('returnDetailActionStatus').textContent = '✓ Positionen wurden dem Lagerbestand wieder hinzugefügt.';
+      $('returnDetailActionStatus').style.color = 'var(--energy)';
+      return;
+    }
+
+    const items = (r.items || [])
+      .filter(it => it && it.description && (parseInt(it.quantity, 10) || 0) > 0)
+      .map(it => ({
+        description: it.description,
+        quantity: parseInt(it.quantity, 10) || 1,
+        code: getOrCreateArticleNumber(it.description),
+        picked: 0
+      }));
+
+    if (!items.length) {
+      $('returnDetailActionStatus').textContent = '✕ Keine Positionen auf dieser Retoure erfasst – es kann kein Lieferschein erzeugt werden.';
+      $('returnDetailActionStatus').style.color = 'var(--danger)';
+      return;
+    }
+
+    const isResend = action === 'resend';
+    const shipment = {
+      id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+      docNumber: nextDeliveryNoteNumber(),
+      date: todayISO(),
+      customerName: r.customerName || '',
+      customerStreet: (r.address || {}).street || '',
+      customerZip: (r.address || {}).zip || '',
+      customerCity: (r.address || {}).city || '',
+      reference: r.docNumber || r.reference || '',
+      value: 0,
+      carrier: '',
+      trackingNumber: '',
+      notes: (isResend ? 'Erneuter Versand' : 'Ersatzlieferung') + ' zu ' + returnTypeLabel(r) + ' ' + (r.docNumber || ''),
+      orderId: null,
+      completed: false,
+      items
+    };
+    shipments.push(shipment);
+    saveShipments();
+    renderVersandHistory();
+
+    r.resolved = true;
+    r.resolvedAt = new Date().toISOString();
+    r.resolvedAction = action;
+    saveReturns();
+    renderReturns();
+
+    $('returnDetailOverlay').classList.remove('open');
+    openVersandSheet(shipment);
+  }
+
+  $('btnReturnActionRestock').addEventListener('click', () => resolveReturnWithAction('restock'));
+  $('btnReturnActionReplacement').addEventListener('click', () => resolveReturnWithAction('replacement'));
+  $('btnReturnActionResend').addEventListener('click', () => resolveReturnWithAction('resend'));
+  $('btnCloseReturnDetail').addEventListener('click', () => $('returnDetailOverlay').classList.remove('open'));
+  $('returnDetailOverlay').addEventListener('click', (e) => {
+    if (e.target === $('returnDetailOverlay')) $('returnDetailOverlay').classList.remove('open');
+  });
 
   function openReturnForm(){
     $('returnLookup').value = '';
@@ -7102,6 +7274,111 @@
     $('testDataStatus').style.color = 'var(--energy)';
     $('settingsOverlay').classList.remove('open');
     switchPage('orders');
+  });
+
+  // 3 Beispiel-Aufträge, die direkt als bereits ausgeliefert gelten (je ein
+  // verknüpfter, abgeschlossener Lieferschein) – mit unterschiedlichen
+  // Auftragswerten, um z. B. Dashboard-Summen oder Listen auszuprobieren.
+  $('btnCreateTestDeliveredOrders').addEventListener('click', () => {
+    const samples = [
+      { customerName: 'Nordwind Fertigung GmbH', street: 'Industriepark 7', zip: '48155', city: 'Münster', item: 'Gehäuseschale für Sensor', quantity: 4, unitPrice: 19.5, setupCost: 6, printHours: 1.8 },
+      { customerName: 'Rheinmetall Zuliefer KG', street: 'Uferstraße 22', zip: '50667', city: 'Köln', item: 'Halterung Lüftermodul', quantity: 10, unitPrice: 8.9, setupCost: 5, printHours: 3.2 },
+      { customerName: 'Alpenblick Maschinenbau', street: 'Bergweg 3', zip: '83022', city: 'Rosenheim', item: 'Distanzring für Antrieb', quantity: 1, unitPrice: 54, setupCost: 0, printHours: 0.6 }
+    ];
+
+    const d = new Date();
+    const stamp = d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate());
+    const today = todayISO();
+    const dateDE = fmtDateDE(today);
+    const createdTotals = [];
+
+    samples.forEach((sample, i) => {
+      let counter = 1;
+      let number;
+      do {
+        number = 'TEST-DEL-' + stamp + '-' + String(counter).padStart(3, '0');
+        counter++;
+      } while (orders.some(o => (o.docNumber || '').toLowerCase() === number.toLowerCase()));
+
+      const printLine = sample.unitPrice * sample.quantity;
+      const total = printLine + sample.setupCost;
+      const customerAddress = sample.street + '\n' + sample.zip + ' ' + sample.city;
+
+      const rowsHtml =
+        '<tr><td>1</td><td>' + escapeHtml(sample.item) + '<span class="inv-item-sub">' + sample.quantity + ' Stk.</span></td>' +
+          '<td class="num">' + sample.quantity + '</td>' +
+          '<td class="num">' + fmtEUR(sample.unitPrice) + '</td>' +
+          '<td class="num">' + fmtEUR(printLine) + '</td></tr>' +
+        (sample.setupCost ? '<tr><td>2</td><td>Rüsten<span class="inv-item-sub">einmalig pro Auftrag</span></td>' +
+          '<td class="num">1</td>' +
+          '<td class="num">' + fmtEUR(sample.setupCost) + '</td>' +
+          '<td class="num">' + fmtEUR(sample.setupCost) + '</td></tr>' : '');
+
+      saveOrderFromDocument({
+        docType: 'invoice',
+        docNumber: number,
+        date: today,
+        customerName: sample.customerName,
+        customerAddress,
+        items: [{ description: sample.item, quantity: sample.quantity }],
+        total,
+        printHours: sample.printHours,
+        sheet: {
+          title: 'RECHNUNG',
+          numberLabel: 'Rechnungs-Nr.:',
+          number,
+          dateLabel: 'Rechnungsdatum:',
+          date: dateDE,
+          date2Label: 'Leistungsdatum:',
+          date2: dateDE,
+          recipientTag: 'Rechnungsempfänger',
+          customer: sample.customerName + '\n' + customerAddress,
+          rowsHtml,
+          subtotal: fmtEUR(total),
+          vatVisible: false,
+          vatLabel: '',
+          vatAmount: '',
+          totalLabel: 'Rechnungsbetrag',
+          grandTotal: fmtEUR(total),
+          closingNote: 'Testbeleg – dient nur zum Ausprobieren des Ablaufs und ist keine echte Forderung.'
+        }
+      });
+
+      const order = orders.find(o => (o.docNumber || '').toLowerCase() === number.toLowerCase());
+      const shipment = {
+        id: Date.now() + '-' + i + '-' + Math.random().toString(36).slice(2, 7),
+        docNumber: nextDeliveryNoteNumber(),
+        date: today,
+        customerName: sample.customerName,
+        customerStreet: sample.street,
+        customerZip: sample.zip,
+        customerCity: sample.city,
+        reference: number,
+        value: total,
+        carrier: 'DHL',
+        trackingNumber: '',
+        notes: '',
+        orderId: order.id,
+        completed: true,
+        items: [{ description: sample.item, quantity: sample.quantity, code: getOrCreateArticleNumber(sample.item), picked: sample.quantity }]
+      };
+      shipments.push(shipment);
+      if (!Array.isArray(order.shipmentIds)) order.shipmentIds = [];
+      order.shipmentIds.push(shipment.id);
+      createdTotals.push(total);
+    });
+
+    saveOrders();
+    saveShipments();
+    renderAllOrderViews();
+    renderVersandHistory();
+
+    $('testDataStatus').textContent = '✓ 3 ausgelieferte Beispiel-Aufträge angelegt (' + createdTotals.map(fmtEUR).join(', ') + ').';
+    $('testDataStatus').style.color = 'var(--energy)';
+    $('settingsOverlay').classList.remove('open');
+    switchPage('orders');
+    $('orderArchiveShowAll').checked = true;
+    renderOrderArchive();
   });
 
   // 20 Beispiel-Lieferscheine mit 20 unterschiedlichen Produkten, um Liste,
