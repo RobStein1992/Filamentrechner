@@ -7723,6 +7723,14 @@
   document.addEventListener('click', e => {
     if (!$('navDropdown').contains(e.target)) closeNavDropdown();
   });
+  // Ziehharmonika-Verhalten: Öffnet sich eine Gruppe (z. B. Lager), schließen sich die anderen automatisch.
+  const navAccordionGroups = $('navDropdownMenu').querySelectorAll('.nav-dropdown-group');
+  navAccordionGroups.forEach(group => {
+    group.addEventListener('toggle', () => {
+      if (!group.open) return;
+      navAccordionGroups.forEach(other => { if (other !== group) other.open = false; });
+    });
+  });
   $('btnPageDashboard').addEventListener('click', () => switchPage('dashboard'));
   $('btnPageCalculator').addEventListener('click', () => switchPage('calculator'));
   $('btnPageOrders').addEventListener('click', () => switchPage('orders'));
