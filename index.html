@@ -42,7 +42,8 @@
   <div class="side-nav-select-row">
     <div class="nav-dropdown" id="navDropdown">
       <button type="button" class="nav-dropdown-toggle" id="navDropdownToggle" aria-haspopup="true" aria-expanded="false">
-        <span id="navDropdownLabel">📊 Dashboard</span>
+        <span class="nav-dropdown-toggle-icon" aria-hidden="true">☰</span>
+        <span id="navDropdownLabel" class="sr-only">Menü</span>
       </button>
       <div class="nav-dropdown-menu" id="navDropdownMenu">
         <button type="button" class="nav-dropdown-item" data-page="dashboard">📊 Dashboard</button>
@@ -7676,7 +7677,7 @@
     $('btnPageReturns').classList.toggle('active', page === 'returns');
     $('btnPageArticles').classList.toggle('active', page === 'articles');
     $('sideNavSelect').value = page;
-    $('navDropdownLabel').textContent = NAV_DROPDOWN_LABELS[page] || '';
+    $('navDropdownLabel').textContent = 'Menü · ' + (NAV_DROPDOWN_LABELS[page] || '');
     $('navDropdownMenu').querySelectorAll('.nav-dropdown-item').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.page === page);
     });

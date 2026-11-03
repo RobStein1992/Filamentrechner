@@ -1050,32 +1050,24 @@
   .nav-dropdown{ position:relative; width:100%; }
   .nav-dropdown-toggle{
     width:100%;
-    padding: 12px 40px 12px 14px;
-    font-family:'72','72override',Arial,Helvetica,sans-serif;
-    font-size: 15px;
-    font-weight:600;
-    text-align:left;
+    padding: 12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
     border: 1.5px solid var(--ov12);
     border-radius: var(--radius-sm);
     background: var(--card-2);
     color: var(--ink);
     cursor:pointer;
-    position:relative;
     transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
   }
   .nav-dropdown-toggle:hover{ border-color: var(--ov22); }
-  .nav-dropdown-toggle::after{
-    content:"▾";
-    position:absolute; right:16px; top:50%; transform:translateY(-50%);
-    color: var(--ink-soft); font-size:12px;
-    transition: transform .15s ease;
-  }
+  .nav-dropdown-toggle-icon{ font-size:18px; line-height:1; }
   .nav-dropdown.open .nav-dropdown-toggle{
     border-color: var(--filament);
     background: var(--card-focus);
     box-shadow: 0 0 0 4px var(--accent-glow);
   }
-  .nav-dropdown.open .nav-dropdown-toggle::after{ transform: translateY(-50%) rotate(180deg); }
 
   .nav-dropdown-menu{
     display:none;
