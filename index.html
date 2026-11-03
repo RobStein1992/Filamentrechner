@@ -6581,6 +6581,36 @@
     $('returnFormCard').style.display = 'none';
   });
 
+  function mapShipmentToReturnMatch(s){
+    // Ältere Lieferscheine ohne eigenen Warenwert: ersatzweise den Wert
+    // des verknüpften Auftrags verwenden, falls vorhanden (siehe Dashboard).
+    const linkedOrder = orders.find(o => o.id === s.orderId);
+    const refundAmount = s.value || (linkedOrder ? (parseFloat(linkedOrder.total) || 0) : 0);
+    return {
+      kind: 'Lieferschein',
+      docNumber: s.docNumber,
+      customerName: s.customerName,
+      date: s.date,
+      reference: s.docNumber,
+      refundAmount,
+      items: s.items || [],
+      address: { street: s.customerStreet || '', zip: s.customerZip || '', city: s.customerCity || '' }
+    };
+  }
+
+  function mapOrderToReturnMatch(o){
+    return {
+      kind: orderTypeLabel(o),
+      docNumber: o.docNumber,
+      customerName: o.customerName,
+      date: o.date,
+      reference: o.docNumber,
+      refundAmount: o.total || 0,
+      items: o.items || [],
+      address: splitLegacyAddress(o.customerAddress)
+    };
+  }
+
   // Live-Suche nach Lieferschein-Nr. oder Kundenname, die beim Tippen schon
   // passende Vorgänge (Lieferschein oder Auftrag/Rechnung) vorschlägt.
   function searchReturnLookup(query){
@@ -6590,38 +6620,27 @@
 
     shipments.forEach(s => {
       if ((s.docNumber || '').toLowerCase().includes(q) || (s.customerName || '').toLowerCase().includes(q)) {
-        // Ältere Lieferscheine ohne eigenen Warenwert: ersatzweise den Wert
-        // des verknüpften Auftrags verwenden, falls vorhanden (siehe Dashboard).
-        const linkedOrder = orders.find(o => o.id === s.orderId);
-        const refundAmount = s.value || (linkedOrder ? (parseFloat(linkedOrder.total) || 0) : 0);
-        results.push({
-          kind: 'Lieferschein',
-          docNumber: s.docNumber,
-          customerName: s.customerName,
-          date: s.date,
-          reference: s.docNumber,
-          refundAmount,
-          items: s.items || [],
-          address: { street: s.customerStreet || '', zip: s.customerZip || '', city: s.customerCity || '' }
-        });
+        results.push(mapShipmentToReturnMatch(s));
       }
     });
     orders.forEach(o => {
       if ((o.docNumber || '').toLowerCase().includes(q) || (o.customerName || '').toLowerCase().includes(q)) {
-        results.push({
-          kind: orderTypeLabel(o),
-          docNumber: o.docNumber,
-          customerName: o.customerName,
-          date: o.date,
-          reference: o.docNumber,
-          refundAmount: o.total || 0,
-          items: o.items || [],
-          address: splitLegacyAddress(o.customerAddress)
-        });
+        results.push(mapOrderToReturnMatch(o));
       }
     });
 
     return results.slice(0, 8);
+  }
+
+  // Ohne Eingabe (z. B. direkt beim Hineinklicken ins Feld) werden schon die
+  // zuletzt erstellten Lieferscheine vorgeschlagen, damit nicht erst eine
+  // Nummer abgetippt werden muss.
+  function defaultReturnLookupSuggestions(){
+    return shipments
+      .slice()
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+      .slice(0, 8)
+      .map(mapShipmentToReturnMatch);
   }
 
   function hideReturnLookupResults(){
@@ -6730,7 +6749,14 @@
     renderReturnLookupResults(searchReturnLookup($('returnLookup').value));
   });
   $('returnLookup').addEventListener('focus', () => {
-    if ($('returnLookup').value.trim()) renderReturnLookupResults(searchReturnLookup($('returnLookup').value));
+    // Per setTimeout entkoppelt: wird der Fokus programmgesteuert gesetzt
+    // (z. B. beim Öffnen des Formulars per Knopf), blubbert derselbe Klick
+    // sonst noch zum globalen "Klick außerhalb schließt Liste"-Handler und
+    // würde die gerade erst angezeigte Liste sofort wieder schließen.
+    setTimeout(() => {
+      const value = $('returnLookup').value;
+      renderReturnLookupResults(value.trim() ? searchReturnLookup(value) : defaultReturnLookupSuggestions());
+    }, 0);
   });
   document.addEventListener('click', (e) => {
     if (e.target !== $('returnLookup') && !$('returnLookupResults').contains(e.target)) {
