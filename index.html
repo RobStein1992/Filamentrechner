@@ -5808,7 +5808,10 @@
     });
   }
 
+  let currentVersandDocNumber = '';
+
   function openVersandSheet(shipment){
+    currentVersandDocNumber = shipment.docNumber || '';
     $('versSheetLogo').src = activeLogoDataUrl;
     $('versSheetCoName').textContent = companySettings.name || 'RS Construction & Printing';
     $('versSheetCoBlock').textContent =
@@ -7157,6 +7160,9 @@
       return;
     }
 
+    lastDocNumber = order.docNumber || '';
+    lastDocType = order.docType;
+
     $('invLogo').src = activeLogoDataUrl;
     $('invSheetCoName').textContent = companySettings.name || 'RS Construction & Printing';
     $('invSheetCoBlock').textContent =
@@ -7570,7 +7576,10 @@
 
   // Dashboard ist die Startseite: erst anzeigen, wenn alle Daten geladen sind,
   // damit die Kacheln direkt die richtigen Werte zeigen.
-  Promise.all(_initLoadPromises).catch(() => {}).then(() => switchPage('dashboard'));
+  Promise.all(_initLoadPromises).catch(() => {}).then(() => {
+    switchPage('dashboard');
+    handleAutoPrintParam();
+  });
 
   function parseCSV(text, delimiter){
     const rows = [];
@@ -8381,9 +8390,55 @@
   $('btnCreateQuote').addEventListener('click', () => generateDocument('quote'));
   $('btnCloseInvoice').addEventListener('click', () => $('invoiceOverlay').classList.remove('open'));
 
+  // Als "Zum Home-Bildschirm" installierte App (Standalone-Modus) unterstützt
+  // iOS Safari window.print() nicht – der Knopf tut dann einfach gar nichts.
+  // Workaround: die Seite in einem echten Safari-Tab (kein Standalone) neu
+  // öffnen; dort erkennt handleAutoPrintParam() den Beleg anhand der
+  // Belegnummer in der URL, öffnet ihn erneut und löst dort den Druck aus.
+  function isStandaloneMode(){
+    return window.navigator.standalone === true ||
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  }
+
   function doPrintDocument(){
+    if (isStandaloneMode()) {
+      const isVersand = $('versandOverlay').classList.contains('open');
+      const docNumber = isVersand ? currentVersandDocNumber : lastDocNumber;
+      if (docNumber) {
+        const url = new URL(location.href);
+        url.hash = '';
+        url.searchParams.set('autoprint', (isVersand ? 'shipment' : 'invoice') + ':' + docNumber);
+        window.open(url.toString(), '_blank');
+        return;
+      }
+    }
     $('dynamicPageStyle').textContent = '@page{ size: A4; margin: 0; }';
     window.print();
+  }
+
+  function handleAutoPrintParam(){
+    const params = new URLSearchParams(location.search);
+    const autoprint = params.get('autoprint');
+    if (!autoprint) return;
+    const sepIndex = autoprint.indexOf(':');
+    if (sepIndex === -1) return;
+    const kind = autoprint.slice(0, sepIndex);
+    const docNumber = autoprint.slice(sepIndex + 1);
+    if (!kind || !docNumber) return;
+
+    const cleanUrl = new URL(location.href);
+    cleanUrl.searchParams.delete('autoprint');
+    history.replaceState(null, '', cleanUrl.toString());
+
+    setTimeout(() => {
+      if (kind === 'shipment') {
+        const shipment = shipments.find(s => (s.docNumber || '').toLowerCase() === docNumber.toLowerCase());
+        if (shipment) { openVersandSheet(shipment); setTimeout(() => window.print(), 300); }
+      } else if (kind === 'invoice') {
+        const order = orders.find(o => (o.docNumber || '').toLowerCase() === docNumber.toLowerCase());
+        if (order) { openOrderSheet(order.id); setTimeout(() => window.print(), 300); }
+      }
+    }, 300);
   }
 
   $('btnPrintInvoice').addEventListener('click', () => {
