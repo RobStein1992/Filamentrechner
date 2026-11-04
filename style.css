@@ -1051,7 +1051,11 @@
   .nav-dropdown{ position:relative; width:100%; }
   .nav-dropdown-toggle{
     width:100%;
-    padding: 12px 14px;
+    /* Gleiche Höhe wie der "Aktualisieren"-Knopf daneben/darunter (.side-nav-refresh):
+       fixe Höhe + box-sizing:border-box, damit Rahmen/Icon-Größe sie nicht verändern. */
+    height: 39px;
+    box-sizing: border-box;
+    padding: 0 14px;
     display:flex;
     align-items:center;
     justify-content:center;
