@@ -17,6 +17,16 @@ contextBridge.exposeInMainWorld('desktopApp', {
     ipcRenderer.on('storage-changed', () => {
       try { callback(); } catch (err) {}
     });
+  },
+  // Automatische Updates: Version anzeigen, manuell prüfen, nach dem
+  // Herunterladen auf Bestätigung installieren (nie ungefragt).
+  getVersion: () => ipcRenderer.invoke('update:getVersion'),
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
+  onUpdateDownloaded: (callback) => {
+    ipcRenderer.on('update-downloaded', (event, version) => {
+      try { callback(version); } catch (err) {}
+    });
   }
 });
 

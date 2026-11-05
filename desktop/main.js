@@ -9,6 +9,7 @@
  */
 
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
@@ -139,6 +140,45 @@ async function checkForForeignChange(){
   }
 }
 
+/* ---------------- Automatische Updates ---------------- */
+
+// Prüft über GitHub Releases auf eine neue Version, lädt sie im Hintergrund
+// herunter und wartet dann auf eine ausdrückliche Bestätigung im Fenster
+// ("Jetzt neu starten") – es wird nie ungefragt neu gestartet oder installiert.
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
+
+autoUpdater.on('update-downloaded', (info) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update-downloaded', info.version);
+  }
+});
+
+// Fehlgeschlagene Prüfungen (z. B. ohne Internetverbindung) sollen die App
+// nicht stören – nur im Terminal protokollieren, wie bei den übrigen
+// optionalen Online-Funktionen (Schriftarten, Barcode-Bibliothek).
+autoUpdater.on('error', (err) => {
+  console.error('Update-Prüfung fehlgeschlagen:', err == null ? err : err.message);
+});
+
+ipcMain.handle('update:getVersion', () => app.getVersion());
+
+// checkForUpdates() liefert immer die Info zur neuesten veröffentlichten
+// Version zurück, auch wenn es die bereits installierte ist – daher hier
+// explizit mit der laufenden Version vergleichen, statt das für die
+// Oberfläche misszuverstehen.
+ipcMain.handle('update:check', async () => {
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    const latestVersion = result && result.updateInfo ? result.updateInfo.version : null;
+    return { currentVersion: app.getVersion(), latestVersion };
+  } catch (err) {
+    return { currentVersion: app.getVersion(), latestVersion: null, error: true };
+  }
+});
+
+ipcMain.handle('update:install', () => autoUpdater.quitAndInstall());
+
 /* ---------------- IPC ---------------- */
 
 ipcMain.handle('storage:get', (event, key) => {
@@ -238,6 +278,13 @@ if (!gotLock) {
     await loadData();
     startWatching();
     createWindow();
+
+    // Mit kurzer Verzögerung, damit die Prüfung nicht mit dem Programmstart
+    // konkurriert. Nicht in der Entwicklungsumgebung (npm start, kein Build) –
+    // da gibt es keine veröffentlichte Version, gegen die geprüft werden könnte.
+    if (app.isPackaged) {
+      setTimeout(() => autoUpdater.checkForUpdates().catch(() => null), 4000);
+    }
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

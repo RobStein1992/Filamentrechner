@@ -9,11 +9,17 @@
     "dist": "electron-builder",
     "dist:win": "electron-builder --win",
     "dist:mac": "electron-builder --mac",
-    "dist:linux": "electron-builder --linux"
+    "dist:linux": "electron-builder --linux",
+    "release:win": "electron-builder --win --publish always",
+    "release:mac": "electron-builder --mac --publish always",
+    "release:linux": "electron-builder --linux --publish always"
   },
   "devDependencies": {
     "electron": "^33.0.0",
     "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
   },
   "build": {
     "appId": "de.rsconstructionprinting.druckrechner",
@@ -26,6 +32,13 @@
       "favicon.ico",
       "desktop/**/*"
     ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "RobStein1992",
+        "repo": "Filamentrechner"
+      }
+    ],
     "win": {
       "target": "nsis",
       "icon": "icon-512.png"
@@ -35,7 +48,7 @@
       "allowToChangeInstallationDirectory": true
     },
     "mac": {
-      "target": "dmg",
+      "target": ["dmg", "zip"],
       "icon": "icon-512.png",
       "category": "public.app-category.productivity"
     },
