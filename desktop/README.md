@@ -37,6 +37,51 @@ Das Ergebnis liegt danach im Ordner `dist/`. Gebaut werden kann jeweils nur auf
 dem passenden Betriebssystem – eine Windows-Datei entsteht also auf einem
 Windows-Rechner, eine macOS-Datei auf einem Mac.
 
+## Automatische Updates
+
+Die App prüft beim Start selbstständig (über GitHub Releases dieses Repos),
+ob eine neuere Version vorliegt, und lädt sie bei Bedarf im Hintergrund
+herunter. Ist der Download fertig, meldet sich unten im Fenster ein Hinweis
+mit dem Knopf **🔄 Jetzt neu starten** – installiert wird erst nach diesem
+Klick, nie ungefragt. Unter **⚙️ Firmen-Einstellungen → 💾 Daten & Geräte**
+steht zusätzlich **🔄 Jetzt nach Updates suchen** für eine manuelle Prüfung
+zur Verfügung, direkt über der angezeigten aktuellen Versionsnummer.
+
+Das funktioniert nur in der **installierten** Version (z. B. über die
+Windows-Installationsdatei), nicht wenn die App per `npm start` aus dem
+Quellcode heraus gestartet wird – dafür gibt es ja noch keine veröffentlichte
+Version, gegen die geprüft werden könnte.
+
+### Eine neue Version veröffentlichen
+
+1. Versionsnummer in `package.json` erhöhen (z. B. `1.0.0` → `1.0.1`) und
+   committen.
+2. Einen [GitHub Personal Access Token](https://github.com/settings/tokens)
+   mit Schreibrecht auf dieses Repository erzeugen (Scope `repo` reicht) und
+   als Umgebungsvariable bereitstellen:
+   ```bash
+   export GH_TOKEN=dein_token_hier      # Windows (PowerShell): $env:GH_TOKEN="..."
+   ```
+3. Bauen **und** veröffentlichen:
+   ```bash
+   npm run release:win     # Windows
+   npm run release:mac     # macOS
+   npm run release:linux   # Linux
+   ```
+   Das legt automatisch einen neuen (unveröffentlichten) GitHub-Release mit
+   Tag `vX.Y.Z` an und lädt Installationsdatei sowie die für die
+   Update-Prüfung nötige `latest*.yml`-Datei dorthin hoch.
+4. Im GitHub-Repository unter **Releases** den neu angelegten Entwurf
+   kontrollieren und veröffentlichen (auf „Draft" steht er zunächst, damit
+   nichts versehentlich live geht, solange der Build noch nicht fertig
+   geprüft ist).
+
+Ab der Veröffentlichung finden alle laufenden Installationen die neue Version
+beim nächsten automatischen oder manuellen Prüfen. Der Token wird nur beim
+Veröffentlichen auf dem Rechner der Entwicklerin/des Entwicklers gebraucht –
+er landet nie in der App selbst, da das Repository öffentlich ist und die
+Update-Prüfung der installierten Apps ohne Anmeldung auskommt.
+
 ## Speicherort einrichten
 
 1. In der App oben rechts **⚙️ Firmen-Einstellungen** öffnen.

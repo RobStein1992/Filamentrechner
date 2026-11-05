@@ -2231,6 +2231,12 @@
           <button type="button" id="btnOpenDataFolder" class="btn-secondary">📂 Ordner öffnen</button>
         </div>
         <p class="note">Die App speichert bei jeder Änderung sofort lokal auf die Festplatte (funktioniert auch komplett offline). Liegt der gewählte Ordner in einem Cloud-Ordner, übernimmt dein Cloud-Client die Synchronisierung im Hintergrund automatisch.</p>
+
+        <div class="section-label">Programm-Updates</div>
+        <p class="note" style="margin-top:0;" id="desktopVersionInfo">Version —</p>
+        <p class="note" style="margin-top:0;">Beim Start wird automatisch im Hintergrund nach einer neueren Version gesucht. Ist eine verfügbar, lädt die App sie herunter und meldet sich danach unten im Fenster – installiert wird erst nach Bestätigung, nie ungefragt.</p>
+        <button type="button" id="btnCheckForUpdates" class="btn-secondary" style="margin-top:0;">🔄 Jetzt nach Updates suchen</button>
+        <p class="note" id="desktopUpdateStatus"></p>
       </div>
 
       <div id="icloudManualSection">
@@ -4031,7 +4037,7 @@
     opts = opts || {};
     $('syncBannerText').textContent = text;
     $('btnSyncKeepMine').style.display = opts.conflict ? '' : 'none';
-    $('btnSyncReload').textContent = opts.conflict ? 'Anderen Stand laden' : 'Neu laden';
+    $('btnSyncReload').textContent = opts.reloadLabel || (opts.conflict ? 'Anderen Stand laden' : 'Neu laden');
     syncBannerReload = opts.onReload || null;
     $('syncReloadBanner').classList.add('open');
   }
@@ -4128,6 +4134,42 @@
             } catch (err) {}
             location.reload();
           }
+        });
+      });
+    }
+
+    // Automatische Updates: Version anzeigen, manuell prüfen können, und nach
+    // dem Herunterladen im Hintergrund auf Bestätigung installieren.
+    if (typeof window.desktopApp.getVersion === 'function') {
+      window.desktopApp.getVersion().then(v => {
+        if (v) $('desktopVersionInfo').textContent = 'Version ' + v;
+      }).catch(() => {});
+    }
+    $('btnCheckForUpdates').addEventListener('click', async () => {
+      $('desktopUpdateStatus').textContent = 'Suche nach Updates …';
+      $('desktopUpdateStatus').style.color = 'var(--ink-soft)';
+      try {
+        const result = await window.desktopApp.checkForUpdates();
+        if (!result || result.error) {
+          $('desktopUpdateStatus').textContent = 'Update-Prüfung nicht möglich (z. B. ohne Internetverbindung).';
+          $('desktopUpdateStatus').style.color = 'var(--filament)';
+        } else if (result.latestVersion && result.latestVersion !== result.currentVersion) {
+          $('desktopUpdateStatus').textContent = '✓ Version ' + result.latestVersion + ' wird im Hintergrund heruntergeladen.';
+          $('desktopUpdateStatus').style.color = 'var(--energy)';
+        } else {
+          $('desktopUpdateStatus').textContent = '✓ Du verwendest bereits die neueste Version.';
+          $('desktopUpdateStatus').style.color = 'var(--energy)';
+        }
+      } catch (err) {
+        $('desktopUpdateStatus').textContent = 'Update-Prüfung nicht möglich (z. B. ohne Internetverbindung).';
+        $('desktopUpdateStatus').style.color = 'var(--filament)';
+      }
+    });
+    if (typeof window.desktopApp.onUpdateDownloaded === 'function') {
+      window.desktopApp.onUpdateDownloaded((version) => {
+        showSyncBanner('Eine neue Version (' + version + ') wurde heruntergeladen.', {
+          reloadLabel: '🔄 Jetzt neu starten',
+          onReload: () => window.desktopApp.installUpdate()
         });
       });
     }
