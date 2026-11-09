@@ -1927,6 +1927,18 @@
       <span class="note" id="pickingStatusNote" style="display:block; margin-top:6px;"></span>
     </div>
 
+    <div id="pickingActiveCard" style="display:none; margin-top:16px; background:var(--card-2); border:2px solid var(--filament); border-radius:var(--radius-sm); padding:16px;">
+      <div style="font-size:11px; letter-spacing:0.04em; color:var(--ink-soft); text-transform:uppercase;">Aktueller Artikel</div>
+      <div id="pickingActiveName" style="font-size:20px; font-weight:700; margin-top:2px; line-height:1.3;">—</div>
+      <div id="pickingActiveCode" class="note" style="margin-top:2px;">—</div>
+      <div style="display:flex; align-items:center; gap:10px; margin-top:16px; flex-wrap:wrap;">
+        <button type="button" id="btnPickingQtyMinus" class="btn-secondary" style="width:48px; height:48px; font-size:22px; margin-top:0; flex-shrink:0; padding:0;">–</button>
+        <input type="number" id="pickingActiveQty" min="1" step="1" inputmode="numeric" style="text-align:center; font-size:26px; font-weight:700; height:48px; padding:0; width:84px; flex:0 0 auto; margin-top:0;">
+        <button type="button" id="btnPickingQtyPlus" class="btn-secondary" style="width:48px; height:48px; font-size:22px; margin-top:0; flex-shrink:0; padding:0;">+</button>
+        <button type="button" id="btnPickingConfirm" class="btn-primary" style="margin-top:0; flex:1 1 160px; height:48px; font-size:15px;">✓ Bestätigen</button>
+      </div>
+    </div>
+
     <div class="section-label" style="margin-top:18px;">Positionen</div>
     <table class="inv-table" style="margin-bottom:0;">
       <thead>
@@ -5647,6 +5659,7 @@
   let versandItems = [];
   let currentVersandOrderId = null;
   let currentPickingShipment = null;
+  let pickingActiveItem = null;
 
   async function loadShipments(){
     try {
@@ -5982,6 +5995,7 @@
         if (!item) return;
         const wasAllDone = isShipmentFullyPicked(currentPickingShipment);
         item.picked = parseInt(item.quantity, 10) || 0;
+        if (pickingActiveItem === item) hidePickingActiveItem();
         saveShipments();
         renderPickingList();
         renderVersandHistory();
@@ -6007,14 +6021,66 @@
     currentPickingShipment = shipment;
     $('pickingSubline').textContent = 'Lieferschein ' + shipment.docNumber + (shipment.customerName ? ' · ' + shipment.customerName : '');
     $('pickingStatusNote').textContent = '';
+    hidePickingActiveItem();
     renderPickingList();
     $('pickingOverlay').classList.add('open');
+  }
+
+  // "Aktueller Artikel"-Karte wie an einer Kasse: zeigt den zuletzt
+  // gescannten Artikel groß mit editierbarer Menge an, bis entweder manuell
+  // bestätigt oder ein anderer Artikel gescannt wird (siehe pickItemByCode).
+  function showPickingActiveItem(item){
+    pickingActiveItem = item;
+    $('pickingActiveName').textContent = item.description || '—';
+    $('pickingActiveCode').textContent = item.code ? 'Artikel-Nr. ' + item.code : '';
+    $('pickingActiveQty').value = 1;
+    $('pickingActiveQty').max = itemRemaining(item);
+    $('pickingActiveCard').style.display = 'block';
+  }
+
+  function hidePickingActiveItem(){
+    pickingActiveItem = null;
+    $('pickingActiveCard').style.display = 'none';
+  }
+
+  // Bucht die im Mengenfeld stehende Anzahl auf den aktuell angezeigten
+  // Artikel und blendet die Karte wieder aus.
+  function commitPickingActiveItem(){
+    if (!pickingActiveItem) return;
+    const item = pickingActiveItem;
+    const remaining = itemRemaining(item);
+    let qty = parseInt($('pickingActiveQty').value, 10);
+    if (isNaN(qty) || qty < 1) qty = 1;
+    if (qty > remaining) qty = remaining;
+
+    const wasAllDone = isShipmentFullyPicked(currentPickingShipment);
+    item.picked = (parseInt(item.picked, 10) || 0) + qty;
+    hidePickingActiveItem();
+    saveShipments();
+    renderPickingList();
+    renderVersandHistory();
+
+    const stillRemaining = itemRemaining(item);
+    $('pickingStatusNote').textContent = stillRemaining > 0
+      ? '✓ ' + qty + '× ' + (item.description || 'Position') + ' gepickt (noch ' + stillRemaining + ').'
+      : '✓ ' + (item.description || 'Position') + ' vollständig gepickt.';
+    $('pickingStatusNote').style.color = 'var(--energy)';
+
+    if (!wasAllDone && isShipmentFullyPicked(currentPickingShipment)) {
+      openPickCompleteDialog(currentPickingShipment);
+    }
   }
 
   // Scan/Eingabe gegen die Positionen des aktuell geöffneten Lieferscheins
   // abgleichen: zuerst über den hinterlegten Artikel-Code, sonst über die
   // Bezeichnung – so funktioniert es auch ohne eigens angelegte Codes, wenn
   // z. B. ein Barcode die Produktbezeichnung selbst enthält.
+  //
+  // Wie an einer Kasse: Der gescannte Artikel erscheint groß mit
+  // editierbarer Menge. Scannt man denselben Artikel erneut, zählt das nur
+  // die Menge im Feld hoch. Scannt man einen anderen Artikel, wird der
+  // bisher angezeigte zuerst mit der eingetragenen Menge gebucht, bevor der
+  // neue Artikel angezeigt wird.
   function pickItemByCode(rawCode){
     if (!currentPickingShipment) return;
     const code = (rawCode || '').trim();
@@ -6038,21 +6104,22 @@
       return;
     }
 
-    const wasAllDone = isShipmentFullyPicked(currentPickingShipment);
-    match.picked = (parseInt(match.picked, 10) || 0) + 1;
-    saveShipments();
-    renderPickingList();
-    renderVersandHistory();
-
-    const remaining = itemRemaining(match);
-    $('pickingStatusNote').textContent = remaining > 0
-      ? '✓ ' + match.description + ' gepickt (noch ' + remaining + ').'
-      : '✓ ' + match.description + ' vollständig gepickt.';
-    $('pickingStatusNote').style.color = 'var(--energy)';
-
-    if (!wasAllDone && isShipmentFullyPicked(currentPickingShipment)) {
-      openPickCompleteDialog(currentPickingShipment);
+    if (pickingActiveItem === match) {
+      // Derselbe Artikel wurde erneut gescannt: Menge im Feld hochzählen,
+      // statt sofort zu buchen (wie mehrfaches Scannen an einer Kasse).
+      const qtyInput = $('pickingActiveQty');
+      const remaining = itemRemaining(match);
+      let qty = (parseInt(qtyInput.value, 10) || 0) + 1;
+      if (qty > remaining) qty = remaining;
+      qtyInput.value = qty;
+      return;
     }
+
+    // Ein anderer Artikel wird gescannt: den bisher angezeigten zuerst mit
+    // der eingetragenen Menge buchen.
+    if (pickingActiveItem) commitPickingActiveItem();
+
+    showPickingActiveItem(match);
   }
 
   $('pickingScanInput').addEventListener('keydown', (e) => {
@@ -6061,6 +6128,31 @@
       pickItemByCode($('pickingScanInput').value);
       $('pickingScanInput').value = '';
     }
+  });
+
+  $('btnPickingQtyMinus').addEventListener('click', () => {
+    const input = $('pickingActiveQty');
+    let v = (parseInt(input.value, 10) || 1) - 1;
+    if (v < 1) v = 1;
+    input.value = v;
+  });
+  $('btnPickingQtyPlus').addEventListener('click', () => {
+    const input = $('pickingActiveQty');
+    const max = parseInt(input.max, 10);
+    let v = (parseInt(input.value, 10) || 0) + 1;
+    if (!isNaN(max) && v > max) v = max;
+    input.value = v;
+  });
+  $('pickingActiveQty').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitPickingActiveItem();
+      $('pickingScanInput').focus();
+    }
+  });
+  $('btnPickingConfirm').addEventListener('click', () => {
+    commitPickingActiveItem();
+    $('pickingScanInput').focus();
   });
 
   $('btnPickingScanCamera').addEventListener('click', () => {
@@ -6315,6 +6407,7 @@
     if (!currentPickingShipment) return;
     if (!confirm('Picking-Fortschritt für diesen Lieferschein zurücksetzen?')) return;
     (currentPickingShipment.items || []).forEach(it => { it.picked = 0; });
+    hidePickingActiveItem();
     saveShipments();
     renderPickingList();
     $('pickingStatusNote').textContent = 'Zurückgesetzt.';
