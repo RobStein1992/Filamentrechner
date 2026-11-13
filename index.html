@@ -1914,7 +1914,7 @@
     <button class="btn-secondary" id="btnClosePicking" type="button">✕ Schließen</button>
     <button class="btn-secondary" id="btnPickingShowSheet" type="button">🖨️ Lieferschein anzeigen</button>
   </div>
-  <div style="max-width:620px; margin:0 auto; background:var(--card); border-radius:8px; padding:24px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'72','72override',Arial,Helvetica,sans-serif;">
+  <div style="max-width:860px; margin:0 auto; background:var(--card); border-radius:8px; padding:24px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6); color:var(--ink); font-family:'72','72override',Arial,Helvetica,sans-serif;">
     <h2 style="font-family:'72','72override',Arial,Helvetica,sans-serif; font-size:20px; margin:0 0 4px;">Kommissionierung</h2>
     <p class="note" id="pickingSubline" style="margin-top:4px;">Lieferschein —</p>
 
@@ -1927,23 +1927,46 @@
       <span class="note" id="pickingStatusNote" style="display:block; margin-top:6px;"></span>
     </div>
 
-    <div class="section-label" style="margin-top:18px;">Positionen</div>
-    <table class="inv-table" style="margin-bottom:0;">
-      <thead>
-        <tr>
-          <th style="width:8%;">Pos.</th>
-          <th>Bezeichnung</th>
-          <th class="num" style="width:16%;">Menge</th>
-          <th class="num" style="width:16%;">Offen</th>
-          <th style="width:40px;"></th>
-        </tr>
-      </thead>
-      <tbody id="pickingItemsBody"></tbody>
-    </table>
+    <div id="pickingRegisterLayout" style="display:flex; gap:20px; margin-top:18px; align-items:flex-start; flex-wrap:wrap;">
+      <div style="flex:1 1 360px; min-width:0;">
+        <div class="section-label" style="margin-top:0;">Positionen</div>
+        <table class="inv-table" style="margin-bottom:0;">
+          <thead>
+            <tr>
+              <th style="width:8%;">Pos.</th>
+              <th>Bezeichnung</th>
+              <th class="num" style="width:16%;">Menge</th>
+              <th class="num" style="width:16%;">Offen</th>
+              <th style="width:40px;"></th>
+            </tr>
+          </thead>
+          <tbody id="pickingItemsBody"></tbody>
+        </table>
 
-    <p class="note" id="pickingSummary" style="margin-top:14px;"></p>
+        <p class="note" id="pickingSummary" style="margin-top:14px;"></p>
 
-    <button type="button" id="btnPickingReset" class="btn-secondary" style="margin-top:4px;">↺ Picking zurücksetzen</button>
+        <button type="button" id="btnPickingReset" class="btn-secondary" style="margin-top:4px;">↺ Picking zurücksetzen</button>
+      </div>
+
+      <div style="flex:0 0 216px; background:var(--card-2); border-radius:var(--radius-sm); padding:14px;">
+        <div class="section-label" style="margin-top:0;">Menge für nächsten Scan</div>
+        <div id="pickingQtyDisplay" style="font-size:36px; font-weight:700; text-align:center; padding:8px 0 14px; line-height:1;">1</div>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
+          <button type="button" class="picking-keypad-btn" data-digit="1">1</button>
+          <button type="button" class="picking-keypad-btn" data-digit="2">2</button>
+          <button type="button" class="picking-keypad-btn" data-digit="3">3</button>
+          <button type="button" class="picking-keypad-btn" data-digit="4">4</button>
+          <button type="button" class="picking-keypad-btn" data-digit="5">5</button>
+          <button type="button" class="picking-keypad-btn" data-digit="6">6</button>
+          <button type="button" class="picking-keypad-btn" data-digit="7">7</button>
+          <button type="button" class="picking-keypad-btn" data-digit="8">8</button>
+          <button type="button" class="picking-keypad-btn" data-digit="9">9</button>
+          <button type="button" id="btnPickingQtyClear" class="picking-keypad-btn" title="Zurücksetzen auf 1">C</button>
+          <button type="button" class="picking-keypad-btn" data-digit="0">0</button>
+          <button type="button" id="btnPickingQtyBackspace" class="picking-keypad-btn" title="Letzte Ziffer löschen">⌫</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -5647,6 +5670,7 @@
   let versandItems = [];
   let currentVersandOrderId = null;
   let currentPickingShipment = null;
+  let pickingPendingQtyRaw = '';
 
   async function loadShipments(){
     try {
@@ -6007,8 +6031,25 @@
     currentPickingShipment = shipment;
     $('pickingSubline').textContent = 'Lieferschein ' + shipment.docNumber + (shipment.customerName ? ' · ' + shipment.customerName : '');
     $('pickingStatusNote').textContent = '';
+    resetPickingPendingQty();
     renderPickingList();
     $('pickingOverlay').classList.add('open');
+  }
+
+  // Ziffernfeld der Registrierkassen-Optik: Menge wird VOR dem Scan
+  // eingegeben und beim nächsten erfolgreichen Scan angewendet.
+  function pickingPendingQty(){
+    const n = parseInt(pickingPendingQtyRaw, 10);
+    return (!pickingPendingQtyRaw || isNaN(n) || n < 1) ? 1 : n;
+  }
+
+  function renderPickingQtyDisplay(){
+    $('pickingQtyDisplay').textContent = String(pickingPendingQty());
+  }
+
+  function resetPickingPendingQty(){
+    pickingPendingQtyRaw = '';
+    renderPickingQtyDisplay();
   }
 
   // Scan/Eingabe gegen die Positionen des aktuell geöffneten Lieferscheins
@@ -6039,14 +6080,16 @@
     }
 
     const wasAllDone = isShipmentFullyPicked(currentPickingShipment);
-    match.picked = (parseInt(match.picked, 10) || 0) + 1;
+    const qty = Math.min(pickingPendingQty(), itemRemaining(match));
+    match.picked = (parseInt(match.picked, 10) || 0) + qty;
     saveShipments();
     renderPickingList();
     renderVersandHistory();
+    resetPickingPendingQty();
 
     const remaining = itemRemaining(match);
     $('pickingStatusNote').textContent = remaining > 0
-      ? '✓ ' + match.description + ' gepickt (noch ' + remaining + ').'
+      ? '✓ ' + match.description + ' · ' + qty + ' Stk. gepickt (noch ' + remaining + ').'
       : '✓ ' + match.description + ' vollständig gepickt.';
     $('pickingStatusNote').style.color = 'var(--energy)';
 
@@ -6317,8 +6360,34 @@
     (currentPickingShipment.items || []).forEach(it => { it.picked = 0; });
     saveShipments();
     renderPickingList();
+    resetPickingPendingQty();
     $('pickingStatusNote').textContent = 'Zurückgesetzt.';
     $('pickingStatusNote').style.color = 'var(--ink-soft)';
+  });
+
+  // Ziffernfeld (Registrierkassen-Optik): Menge vor dem Scan eingeben.
+  // Fokus geht nach jedem Tastendruck zurück ins Scan-Feld, damit ein
+  // angeschlossener Barcode-Scanner (Tastatur-Emulation) weiter dorthin
+  // tippen kann.
+  document.querySelectorAll('.picking-keypad-btn[data-digit]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (pickingPendingQtyRaw.length < 4) {
+        pickingPendingQtyRaw += btn.getAttribute('data-digit');
+      }
+      renderPickingQtyDisplay();
+      $('pickingScanInput').focus();
+    });
+  });
+
+  $('btnPickingQtyClear').addEventListener('click', () => {
+    resetPickingPendingQty();
+    $('pickingScanInput').focus();
+  });
+
+  $('btnPickingQtyBackspace').addEventListener('click', () => {
+    pickingPendingQtyRaw = pickingPendingQtyRaw.slice(0, -1);
+    renderPickingQtyDisplay();
+    $('pickingScanInput').focus();
   });
 
   $('btnPickingShowSheet').addEventListener('click', () => {

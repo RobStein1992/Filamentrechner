@@ -1311,6 +1311,26 @@
   .btn-row .btn-primary, .btn-row .btn-secondary{ margin-top:0; flex:1; }
   @media(max-width: 420px){ .btn-row{ flex-direction:column; } }
 
+  /* Ziffernfeld der Kommissionierung (Registrierkassen-Optik) */
+  .picking-keypad-btn{
+    padding: 14px 0;
+    font-family:'72','72override',Arial,Helvetica,sans-serif;
+    font-size: 17px;
+    font-weight:700;
+    border: 1.5px solid var(--ov14);
+    border-radius: var(--radius-sm);
+    background: var(--card);
+    color: var(--ink);
+    cursor:pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .picking-keypad-btn:hover{ border-color: var(--filament); }
+  .picking-keypad-btn:active{ transform: scale(0.96); background: var(--card-focus); }
+  @media(max-width: 620px){
+    #pickingRegisterLayout{ flex-direction: column; }
+    #pickingRegisterLayout > div:last-child{ flex-basis:auto; width:100%; }
+  }
+
   .invoice-card{ margin-top: 16px; }
   .invoice-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
   @media(max-width: 620px){ .invoice-grid{ grid-template-columns: 1fr; } }
